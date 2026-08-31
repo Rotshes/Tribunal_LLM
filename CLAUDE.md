@@ -28,65 +28,62 @@ grades how well the agent is directed, not the app that ships. The written
 record in this repo is the deliverable; the app is the occasion for producing it.
 
 **The case domain is fixed**, supplied 24.08.2026: `T-001 — The Realm v. Jon
-Snow`, four representatives in two seats, three judges defined by method. It
-lives in `cases/` and the advocate prompts **as data** — nothing in the schema,
-backend, database or interface names a character. `T-001` is the first of
-several; keep it that way. (decision 0003)
+Snow`. It lives in `cases/` and the advocate prompts **as data** — nothing in
+the schema, backend, database or interface names a character. `T-001` is the
+first of several; keep it that way. (0003)
 
 ## The build
 
-- Browser: the charge sheet form and the opinion display.
-- Backend: holds the OpenRouter key, the rubric, the prompts. Calls the models.
-- Database (Supabase/Postgres): charge sheets, opinions, and one row per model
-  call — model, role, **its own ruling**, tokens in and out, cost, latency.
-  There is no column anywhere for a result derived from the three.
-- Deployment: Netlify.
+Browser (form and display) → backend (holds the key, the prompts, calls the
+models) → Supabase/Postgres → Netlify.
+
+One row per model call: model, role, its own ruling, tokens in and out, cost,
+latency. **No column anywhere for a result derived from the three.**
 
 The OpenRouter key never reaches the browser. Nothing whose correctness must
 hold lives in the browser.
 
 ## Settled decisions
 
-Do not reopen these without asking. Reasoning is in the record named after each.
+Do not reopen without asking. The reasoning is in the numbered record; these
+lines are the rule, not the argument.
 
 - **The three rulings are never combined** — no majority, headline, score,
-  average, or "2 of 3 agree". Any output reducing three rulings to one violates
-  the fixed course specification. If you find yourself computing a single result
-  from the three, stop. (0002)
-- **Every model call is logged, including failures** — the failures are the
+  average, or "2 of 3 agree". If you find yourself computing one result from the
+  three, stop. (0002)
+- **Every model call is logged, failures included** — the failures are the
   interesting rows. (0001)
-- **Model allocation:** one model for all seven calls to begin with, then a
-  deliberate progression toward several, driven by the per-call logs. The
-  progression must be visible in the commit history; it is graded.
-- **Failure is shown as failure** — never as a ruling, never silently defaulted
-  to acquittal. A blank result that reads as an answer is the worst thing this
-  app can produce.
-- **The seat does not fix the position.** An advocate's seat sets its procedural
-  role only. No gate, schema rule, prompt line or retry may require an advocate
-  to conclude in favour of its own seat. Divergence is reported, never blocked. (0004)
-- **The judges are methods, not people.** No prompt tells a model to speak as a
-  named person. The disclaimer is a required field on every judge opinion, not a
-  page footer. No citations — a fabricated citation attributed to a real judge is
-  the harm being prevented. (0005)
 - **All three judges receive identical input** and never see each other.
-  Load-bearing: identical input into three methods is the only arrangement in
-  which a divergent ruling means anything.
-- **Validation runs the schema files directly** rather than restating them in
-  code. (0006)
+  Load-bearing: it is the only arrangement in which divergence means anything.
+- **Failure is shown as failure** — never as a ruling, never defaulted to
+  acquittal. A blank result that reads as an answer is the worst output possible.
+- **The seat does not fix the position — but it does fix that the case gets
+  argued.** No gate, schema rule, prompt line or retry may require an advocate to
+  conclude in favour of its seat; divergence is reported, never blocked (0004).
+  Every advocate does argue `case_for_seat` in good faith regardless of where it
+  personally lands, because without that the unpopular side went unargued in
+  three runs of five and the judges ruled on a case only one side was put in.
+- **The judges are methods, not people.** No prompt speaks as a named person; no
+  citations, because a fabricated one attributed to a real judge is the harm. The
+  disclaimer is data, attached by the runner. (0005)
+- **One model for all seven calls to begin with**, then a progression toward
+  several, driven by the logs and visible in the history. Graded.
+- **Validation runs the schema files directly**, never restates them. (0006)
+- **Runs cited by a record are copied to `docs/evidence/` by hand**, never
+  reconstructed. (0007)
 
 ## How to work here
 
 - Write the plan before the code. I read plans; it is the cheapest place to
-  catch a misunderstanding.
-- One turn does one thing. A turn touching schema, prompts and UI at once
-  cannot be reviewed.
+  catch a misunderstanding. One turn does one thing — a turn touching schema,
+  prompts and UI at once cannot be reviewed.
 - **Commit before I invoke you, not only after**, so the diff is attributable to
-  the turn. Remind me if I forget. Graded directly.
-- Commit again at the end. Atomic — one change, one commit — and the message
-  names the intent, not the diff. Never overstate what was done.
+  the turn. Remind me if I forget. Graded directly. Commit again at the end:
+  atomic, one change per commit, message naming the intent and never
+  overstating it.
 - **Every turn ends with a record in `docs/turns/`**, written during the turn,
-  never reconstructed later. A retrofitted trail loses marks even when the build
-  is sound. See `docs/turns/TEMPLATE.md`.
+  never reconstructed. A retrofitted trail loses marks even when the build is
+  sound. See `docs/turns/TEMPLATE.md`.
 - **A gate must be able to fail.** One that has never caught anything, and could
   not, counts as no gate at all — and "written but never fired on real input" is
   *unproven*, not passing.
@@ -99,12 +96,10 @@ Do not reopen these without asking. Reasoning is in the record named after each.
 - **When a rule is stated in two places, add a check that they agree — or delete
   one statement.** Three silent prompt-versus-schema disagreements in three turns.
 - **Never ask the model for a value the system already has.** Identity, method,
-  provenance, the disclaimer — all known before the call. Asking buys nothing
-  and costs a whole call when the model fumbles a string it was handed. This has
-  cost four times: provenance (broke all seven calls), the disclaimer
-  (paraphrased), `representative_id` (misspelled twice). The model supplies only
-  what only it can supply — the reasoning. The runner attaches the rest and the
-  gates compare against the single source.
+  provenance, the disclaimer — all known before the call. The model supplies
+  only what only it can supply: the reasoning. The runner attaches the rest and
+  the gates compare against the single source. Four failures, one cause; see
+  the pitfalls.
 - **Where prompt and schema describe different shapes, the schema wins and the
   prompt is decoration.** A prompt asking for ordered tests against a schema
   offering `string[]` produces bullet points. If behaviour must differ, the
@@ -114,53 +109,48 @@ Do not reopen these without asking. Reasoning is in the record named after each.
 
 ## What good work looks like here
 
-- A success criterion is good when two people reading the result could not
-  disagree about whether it was met.
-- A specification is good when it settles what you would otherwise guess at. If
-  you are guessing, that is a gap — say so rather than filling it.
-- Documentation is good when it says *why*. You can describe the code
-  accurately; you cannot know why I chose it. Ask me.
-- An interface is good when a stranger knows what to do next without being told.
-- Slow, failed and empty states are part of the design. A build that handles
-  only the happy path is not finished.
+- A **criterion** is good when two readers could not disagree about whether it
+  was met. A **specification** is good when it settles what you would otherwise
+  guess at — if you are guessing, say so rather than filling the gap.
+- **Documentation** says *why*. You can describe the code accurately; you cannot
+  know why I chose it. Ask me.
+- An **interface** is good when a stranger knows what to do next unprompted, and
+  slow, failed and empty states are part of it. Only the happy path is not finished.
 
 ## Things that have gone wrong before
 
-One line per failure actually observed. Written once, permanently.
+Grouped by lesson, not by incident, because the incidents repeat. Instances are
+kept as evidence; a new one joins its group rather than starting a new line.
 
-- **Prompt and schema disagreeing, silently — three times.** 24.08 `responds_to`
-  (prompt demanded two advocates answered, schema allowed one). 24.08 provenance
-  fields (prompts forbid the model emitting them, schema required them — all
-  seven calls failed). 31.08 the judges' `grounds` array flattening three
-  distinct methods into one shape. Assume it is happening again somewhere.
-- 24.08 — Reached for a gate requiring each advocate to conclude in favour of its
-  own seat: the exact thing the simulation rule forbids, and it would have sat in
-  the suite looking like diligence.
-- 24.08 — Miscounted the agreed facts as six when there are five. The indices are
-  load-bearing. Count the record, do not remember it.
-- 24.08 — The first G5 skipped all of `src/`, the only place a combined result
-  could be introduced. It would have passed forever.
-- 31.08 — `config.js` read `TRIBUNAL_MODEL` at import time; imports evaluate
-  before the importing module's body, so the map was built before `.env` was
-  read. Read configuration when needed, never at module scope.
-- 31.08 — The `.env` parser split on `\n`, leaving a carriage return on every
-  value on Windows. Anything reading a file must assume CRLF.
-- 31.08 — `response_format` support on OpenRouter is per **endpoint**, not per
-  model. Without `provider: { require_parameters: true }` a call is routed to an
-  endpoint that ignores it: request succeeds, prose comes back, you pay.
-  Intermittent, and invisible without G2.
-- 31.08 — A judge paraphrased its own disclaimer. Anything whose exact wording
-  matters must be attached by the runner and compared, never requested.
-- 31.08 — Every judge cites every fact, every run, so G3 has never fired on real
-  output.
-- 31.08 — `--json-mode off` cost ~29% of calls to prose. One clean run had made
-  it look free; four runs showed otherwise. Do not conclude from n=1.
-- 31.08 — A model misspelled its own `representative_id` twice
-  (`daenerys_targator`, `daenerys_targatorn`) despite being handed it. Fixed by
-  attaching identity rather than requesting it.
-- 31.08 — A 600-character cap on one `responds_to` answer discarded an entire
-  judge opinion. A bound tight enough to reject good output is a bug in the
-  bound. Raised to 1200.
+- **Two statements of one contract drift, silently.** `responds_to` — prompt
+  demanded two answers, schema allowed one (24.08). Provenance fields — prompt
+  forbade them, schema required them, all seven calls failed (24.08). `grounds`
+  as `string[]` flattening three judicial methods into bullets (31.08). Assume
+  it is happening again somewhere.
+- **Asking the model for what we already hold.** Provenance (24.08),
+  the disclaimer, returned paraphrased (31.08), `representative_id`, misspelled
+  as `daenerys_targator` and `daenerys_targatorn` in two runs (31.08). Each cost
+  a whole call. Fixed by attaching, not requesting.
+- **Gates that could not catch, or caught the wrong thing.** A gate requiring an
+  advocate to agree with its seat — the exact thing the simulation rule forbids,
+  and it would have looked like diligence (24.08). G5 skipping all of `src/`,
+  the only place the defect could appear (24.08). A 600-character answer cap
+  discarding a whole judge opinion — a bound tight enough to reject good output
+  is a bug in the bound (31.08). G3, which has never fired on real input because
+  every judge cites every fact (31.08).
+- **Reading configuration or files wrongly.** `config.js` read
+  `TRIBUNAL_MODEL` at import time, before `.env` was loaded — imports evaluate
+  first, so read config when needed, never at module scope (31.08). The `.env`
+  parser split on `\n`, leaving a carriage return on every value on Windows —
+  anything reading a file must assume CRLF (31.08).
+- **Concluding from too little.** Called `--json-mode off` free after one clean
+  run; four runs showed ~29% of calls returning prose (31.08). Counted the
+  agreed facts from memory as six when there are five, and the indices are
+  load-bearing (24.08).
+- **Provider behaviour that is invisible without a gate.** `response_format`
+  support on OpenRouter is per *endpoint*, not per model: without
+  `require_parameters` a call is routed to one that ignores it, the request
+  succeeds, prose comes back, and you pay (31.08).
 
 ## Conventions
 
@@ -174,12 +164,9 @@ One line per failure actually observed. Written once, permanently.
   appends, never rewrites or reorders.
 - Secrets live in the environment, never the repo. Check before committing.
 - Hard cap on calls per deliberation; a run that exceeds it aborts.
-- **`logs/` is gitignored, so nothing in it reaches the repo.** A run cited by a
-  turn record must be copied into `docs/evidence/` by hand — JSON unmodified
-  from `logs/deliberations/`, or a labelled transcript for runs predating
-  persistence. Never reconstruct one. (0007) Remind me of this whenever a turn
-  record cites a run, and again at the end of the project:
-  `docs/PRE-SUBMISSION.md` is the checklist.
+- **`logs/` is gitignored, so nothing in it reaches the repo.** Remind me to copy
+  a cited run into `docs/evidence/` whenever a turn record cites one, and again
+  at the end of the project — `docs/PRE-SUBMISSION.md` is the checklist. (0007)
 
 ---
 

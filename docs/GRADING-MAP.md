@@ -40,12 +40,12 @@ choices.
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| The panel | Four advocates (`cases/T-001…json`), three judges (`panel/judges.json`) — defined; not yet wired to code | STARTED |
-| **Protocol refuses to combine verdicts** — three reported side by side | `docs/decisions/0002`; `schemas/opinion.schema.json` has no field able to hold a combined result and forbids nine by name; gate G5 specified | DONE (decided) / STARTED (designed into the shape) / OPEN (built) |
-| **Charge sheet written precisely as a specification, not free text** | `docs/02-charge-sheet-spec.md` (meaning) + `schemas/charge-sheet.schema.json` (enforceable) + `cases/T-001-realm-v-jon-snow.json` (first instance) | DONE (written) / OPEN (validator not yet code) |
-| **Seven agent prompts written and versioned** | `prompts/` — four advocates, three judges, stable paths, `version` headers, changelogs; convention and its reasoning in `prompts/README.md` | DONE (v1.0 written) / OPEN (never yet executed against a model) |
-| The cases | `T-001` supplied by the instructor 24.08 and encoded as a repository fixture; `docs/decisions/0003` | STARTED |
-| Models reached through OpenRouter | Backend calls OpenRouter; key never in the browser | OPEN |
+| The panel | Four advocates (`cases/T-001…json`), three judges (`panel/judges.json`); `src/deliberate.js` runs all seven, advocates concurrent, judges after | DONE (against a stub) / OPEN (against real models) |
+| **Protocol refuses to combine verdicts** — three reported side by side | `docs/decisions/0002`; `schemas/opinion.schema.json` forbids nine field names and has nowhere to hold a combined result; G5 scans the whole repo including `src/` with per-line pragmas; `src/render.js` shows three peers with no headline; a test greps the result object | DONE |
+| **Charge sheet written precisely as a specification, not free text** | `docs/02-charge-sheet-spec.md` (meaning) + `schemas/charge-sheet.schema.json` (enforceable) + `cases/T-001-realm-v-jon-snow.json` (first instance) + G1 in `src/gates.js`, running before any model call | DONE |
+| **Seven agent prompts written and versioned** | `prompts/` — stable paths, `version` headers, changelogs; loaded and SHA-256'd at call time, with version and hash on every log row so an opinion traces to the exact text that made it | DONE (v1.0, executed against a stub) / OPEN (never yet against a model) |
+| The cases | `T-001` supplied by the instructor 24.08, encoded as a repository fixture, validated by G1; `docs/decisions/0003` | DONE |
+| Models reached through OpenRouter | `src/providers/openrouter.js` — key read from the environment, never leaves the module, nothing browser-side imports it. **Written and never executed.** | STARTED |
 | **Progression from one model toward several is visible** | Per-role `MODEL_MAP` specified in `docs/01-spec.md` §3 with all seven entries equal at the start, so the progression is a config diff plus a decision record citing the logs | STARTED (shape fixed) / OPEN (not yet carried) |
 
 ## Third 3 — Your own project (33%)
@@ -68,7 +68,7 @@ Specification is yours. Domain does not affect the grade; neither does polish.
 | Context files kept **and maintained** across sessions | `CLAUDE.md` with a history of edits, not one initial commit — second edit 24.08 adding three standing rules and the first two entries in the pitfalls list | STARTED |
 | **Commits made before agent invocations** | Clean tree before each turn; the diff attributable to that turn | OPEN — habit starts now |
 | Honest atomic commit messages | One change per commit; messages that do not overstate | OPEN |
-| **Verification gates that catch real failure modes** | Eight gates specified in `docs/01-spec.md` §4, each with a written answer to "will this actually fire?"; two properties deliberately reported rather than gated, with the reason | STARTED — the two schemas were exercised with 14 sample objects (turn 001 §6a) and rejected all 10 that should fail, but the validator is not yet in the repo and no gate has fired on real model output, which is the part that counts |
+| **Verification gates that catch real failure modes** | Eight gates specified in `docs/01-spec.md` §4, each with a written answer to "will this actually fire?"; two properties deliberately reported rather than gated, with the reason | **DONE for the failure modes reachable without a model.** Eight gates implemented in `src/gates.js` and `tools/repo-checks.js`; 24 tests, most written from the failing side; seven stub modes each making a specific gate fire, with the failing modes exiting non-zero. Three real defects were caught by the gates during this turn, one of which broke all seven calls (turn 002 §6a). OPEN: none has yet fired on real model output |
 | Final state left merge-ready | No broken build, no stranded branch, no uncommitted work at the deadline | OPEN |
 
 ---

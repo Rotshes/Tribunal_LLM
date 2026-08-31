@@ -104,6 +104,14 @@ These are settled. Do not reopen them without asking.
   true. It can enforce the opposite of the specification while looking like
   verification, and once it is green nobody re-reads it. This rule came out of
   an actual near-miss; see decision 0004.
+- **A gate that exempts the code it exists to check is decoration.** Scan
+  everything; where a line legitimately trips the check, mark it with a visible
+  per-line pragma and a reason. A whole file quietly excluded is a hole nobody
+  can see.
+- **When a rule is stated in two places, add a check that they agree — or delete
+  one of the statements.** Two prompt-versus-schema disagreements in two turns,
+  both silent, both found only by running the thing. This is why validation runs
+  the schema files directly rather than restating them in code (decision 0006).
 - When I correct you, do not just fix the instance. Ask whether the correction
   belongs in this file as a standing rule. A correction that lives only in the
   chat is gone next session.
@@ -132,6 +140,15 @@ Add to this list. One line per failure actually observed, written once, permanen
 - 24.08 — Miscounted the agreed factual record as six entries when it has five.
   Small, but the indices are load-bearing: opinions cite facts by index, so an
   off-by-one here corrupts every citation. Count the record, do not remember it.
+- 24.08 — Prompt and schema disagreed on `responds_to` (prompt demanded two
+  advocates answered, schema allowed one). Found by reading them side by side.
+- 24.08 — Prompt and schema disagreed on provenance fields: the prompts forbid
+  the model from emitting `model_id` / `prompt_version` / `prompt_sha256`, the
+  schema required them. Every one of the seven calls failed on the first
+  end-to-end run. The schema describes the *stored* opinion; the runner attaches
+  provenance before validating. Second instance of the same class in two turns.
+- 24.08 — The first version of G5 skipped all of `src/`, which is the only place
+  a combined result could be introduced. The gate would have passed forever.
 
 ## Conventions
 

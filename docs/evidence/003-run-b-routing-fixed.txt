@@ -1,0 +1,135 @@
+TERMINAL TRANSCRIPT — captured at the time of the run, pasted verbatim.
+Not a machine-written artifact. See docs/evidence/README.md.
+
+Run:      8cf460ba-20f6-4474-8b88-460444a4f51e
+Date:     31 August 2026
+Model:    google/gemini-3.5-flash-lite
+Provider: openrouter, response_format json_object, WITH require_parameters
+Cited by: docs/turns/003-first-real-deliberation.md §6a and §6b
+
+WHY THIS RUN IS EVIDENCE
+The same configuration as run A plus `provider: { require_parameters: true }`.
+Seven for seven. Confirms the diagnosis that run A's prose response came from
+being routed to an endpoint that ignored response_format, not from the model
+being unable to produce JSON.
+
+Also the run that supported — on the evidence then available — the claim that
+the three judges converge: all three ruled not_justified on near-identical
+grounds. Turn 004 later found this claim overstated on two runs; see
+004-run-d-judges-split.txt.
+
+Tyrion argued `justified` here, so unlike run A the panel had a real case to
+answer.
+
+--------------------------------------------------------------------------------
+
+The Realm v. Jon Snow  T-001
+══════════════════════════════════════════════════════════════════════════════
+Was Jon Snow's intentional killing of Daenerys Targaryen justified as the
+necessary defense of others and of the realm, given what he knew, the scale of
+the threatened harm, the absence or presence of safer alternatives, and his
+lack of formal authority?
+The Tribunal decides justified / not justified and gives reasons. It does not impose a sentence, and it does not combine the three opinions into one verdict.
+══════════════════════════════════════════════════════════════════════════════
+THE ARGUMENTS (four advocates, argued in parallel, none saw the others)
+  jon_snow (defense seat) → not_justified  ← concluded against own seat; permitted
+· King's Landing had surrendered and resistance had ceased when Daenerys
+used Drogon against the city and its people [0].
+· Daenerys stated her intent to continue her campaign beyond King's Landing
+[1].
+· Tyrion warned Jon that Daenerys would treat Jon's sisters and others as
+enemies [2].
+      cites facts [0, 1, 2, 3, 4]
+  tyrion_lannister (defense seat) → justified
+· Daenerys Targaryen had just demonstrated the absolute and unconstrained
+capacity for mass destruction against a surrendered population [0].
+· She explicitly promised to extend her violent campaign beyond King's
+Landing, signaling ongoing peril to the realm [1].
+· She refused all appeals for mercy and asserted her personal judgment as
+the sole arbiter of right and wrong [3].
+      cites facts [0, 1, 2, 3, 4]
+  daenerys_targaryen (prosecution seat) → not_justified
+· Jon Snow acted entirely without formal authority, legal mandate, or public
+process when he chose to end a life of supreme consequence.
+· The manner of the killing relied entirely upon deception, turning an
+intimate embrace into an instrument of assassination.
+· No council was convened, no open demand for a surrender of power was made,
+and no attempt at detention was ever tried.
+      cites facts [0, 1, 2, 3, 4]
+  grey_worm (prosecution seat) → not_justified
+· King's Landing had surrendered and organized resistance had ceased before
+Daenerys carried out further destruction.
+· Jon Snow heard Daenerys state that her campaign of liberation would
+continue beyond the city.
+· Tyrion Lannister warned Jon that Daenerys would treat Jon's sisters and
+other obstacles as enemies.
+      cites facts [0, 1, 2, 3, 4]
+══════════════════════════════════════════════════════════════════════════════
+THE RULINGS (three judges, identical input, none saw the others)
+──────────────────────────────────────────────────────────────────────────────
+barak_model  purposive, rights-centered, systemic
+RULING: not justified
+· Justification requires an imminent, unavoidable necessity to prevent
+catastrophic harm where no lesser means exist, a threshold not met by
+speculative future campaigns.
+· The absence of formal authority does not automatically bar defensive
+action, but it places a supreme burden of procedural exhaustion upon the
+actor.
+· Using personal intimacy and deception to execute an unarmed individual
+bypasses the institutional structures required to preserve a legal order.
+· The destruction of King's Landing [0] established a grave historical
+wrong, but past atrocities do not confer a roving commission of
+assassination against a static target.
+· A ruler's claim to a moral monopoly and rejection of mercy [3] signals
+tyranny, yet private apprehension of future tyranny does not substitute for
+demonstrable, immediate necessity.
+· The failure to attempt open detention or public surrender [4] severs the
+rational fit between the extreme harm and the clandestine method chosen.
+  answers: tyrion_lannister, daenerys_targaryen
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+elon_model  traditionalist, source-led, competence-limiting
+RULING: not justified
+· An individual possesses no legal or moral competence to arrogate the power
+of execution without public mandate, institutional office, or open process.
+· The justification of defensive force requires a present and specific
+threat of imminent harm, not a generalized dread of future political acts.
+· The method of the act—relying upon personal intimacy and trust to deliver
+a fatal blow to an unarmed person—violates the fundamental duties that
+sustain human community and lawful order.
+· Where institutional machinery is compromised or absent, a private person
+may not substitute clandestine assassination for public surrender or open
+opposition.
+· The vast destruction at King's Landing [0], while grave and lawless, does
+not retroactively validate a murder committed in secret by an uncommissioned
+actor.
+  answers: tyrion_lannister, jon_snow
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+shamgar_model  institutional, powers-first, fact-heavy
+RULING: not justified
+· Jon Snow held no office, legal mandate, or public commission authorizing
+him to arrest, depose, or execute the head of state.
+· The institutional machinery of the realm was bypassed entirely through
+secrecy, deception, and the abuse of personal intimacy [4].
+· Predictive fear of future political violence, however well-founded by
+prior acts and warnings [0, 1, 2, 3], cannot substitute for an imminent
+physical attack in establishing lawful necessity [4].
+· The failure to attempt lesser institutional measures—such as convening a
+council, demanding a public surrender, or open detention—leaves the
+clandestine killing without structural necessity [4].
+· A private individual cannot arrogate to himself the executive power of the
+realm based upon private moral disagreement with a sovereign's declared
+policy [3, 4].
+  answers: tyrion_lannister, daenerys_targaryen, jon_snow
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+══════════════════════════════════════════════════════════════════════════════
+These opinions are reported separately. The Tribunal does not combine them,
+and produces no majority, headline, score, or single result.
+RUN  8cf460ba-20f6-4474-8b88-460444a4f51e
+  status: complete · calls attempted: 7 · succeeded: 7 · failed: 0
+  tokens in/out: 20725/7004 · total latency: 32170ms
+  reported, not gated — advocates concluding against their seat: jon_snow · advocates conceding something: 4/4

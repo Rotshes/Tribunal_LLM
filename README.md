@@ -25,6 +25,8 @@ disagreement is the output.
 | `src/` | The runner: the seven calls, the gates, the providers, the call log. |
 | `tools/repo-checks.js` | G5 and G8 — the checks that run over the repository rather than over a run. |
 | `tests/` | The gates, tested mostly from the failing side. |
+| `docs/evidence/` | The runs a turn record cites. `logs/` is gitignored; these are copied by hand. |
+| `docs/PRE-SUBMISSION.md` | What to check before the deadline. Several items cannot be fixed late. |
 
 ## Reading this repo as a record
 

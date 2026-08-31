@@ -1,0 +1,97 @@
+TERMINAL TRANSCRIPT — captured at the time of the run, pasted verbatim.
+Not a machine-written artifact. See docs/evidence/README.md.
+
+Run:      286986f6-7fd8-432b-84f6-cbf0e134c040
+Date:     31 August 2026
+Model:    anthropic/claude-sonnet-5
+Provider: openrouter, response_format json_object, WITH require_parameters
+Cited by: docs/turns/004-…
+
+WHY THIS RUN IS EVIDENCE
+Turn 003 justified `require_parameters: true` by one failure mode: it prevents a
+silent downgrade to an endpoint that ignores response_format. This run shows the
+other side of the same setting — an unsupported configuration failing
+immediately, unambiguously, and for FREE.
+
+Seven failures, zero tokens, 1.263 seconds. Without the setting these seven
+calls would have been billed and would have returned prose.
+
+It also exposed a coupling nobody had noticed: `require_parameters` restricts
+routing to endpoints supporting EVERY parameter sent, so `response_format` was
+silently deciding which models could be tested at all. That is a routing
+constraint contaminating a model comparison, and it is why `--json-mode` exists.
+
+--------------------------------------------------------------------------------
+
+The Realm v. Jon Snow  T-001
+══════════════════════════════════════════════════════════════════════════════
+Was Jon Snow's intentional killing of Daenerys Targaryen justified as the
+necessary defense of others and of the realm, given what he knew, the scale of
+the threatened harm, the absence or presence of safer alternatives, and his
+lack of formal authority?
+The Tribunal decides justified / not justified and gives reasons. It does not impose a sentence, and it does not combine the three opinions into one verdict.
+══════════════════════════════════════════════════════════════════════════════
+THE ARGUMENTS (four advocates, argued in parallel, none saw the others)
+  jon_snow — FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+      This seat argued nothing. The judges were told so.
+  tyrion_lannister — FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+      This seat argued nothing. The judges were told so.
+  daenerys_targaryen — FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+      This seat argued nothing. The judges were told so.
+  grey_worm — FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+      This seat argued nothing. The judges were told so.
+══════════════════════════════════════════════════════════════════════════════
+THE RULINGS (three judges, identical input, none saw the others)
+──────────────────────────────────────────────────────────────────────────────
+barak_model — DELIBERATION FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+No ruling from this judge. This is a failure, not an acquittal,
+and the other rulings are not the outcome of the case.
+──────────────────────────────────────────────────────────────────────────────
+elon_model — DELIBERATION FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+No ruling from this judge. This is a failure, not an acquittal,
+and the other rulings are not the outcome of the case.
+──────────────────────────────────────────────────────────────────────────────
+shamgar_model — DELIBERATION FAILED
+OpenRouter 404: {"error":{"message":"No endpoints found that can handle the
+requested parameters. To learn more about provider routing, visit:
+https://openrouter.ai/docs/guides/routing/provider-selection","code":404}}
+No ruling from this judge. This is a failure, not an acquittal,
+and the other rulings are not the outcome of the case.
+══════════════════════════════════════════════════════════════════════════════
+These opinions are reported separately. The Tribunal does not combine them,
+and produces no majority, headline, score, or single result.
+RUN  286986f6-7fd8-432b-84f6-cbf0e134c040
+  status: failed · calls attempted: 7 · succeeded: 0 · failed: 7
+  tokens in/out: 0/0 · total latency: 1263ms
+  reported, not gated — advocates concluding against their seat: none · advocates conceding something: 0/4
+
+--------------------------------------------------------------------------------
+
+NOTE, ADDED WHEN FILED
+The same 404 occurred on a second attempt with openai/gpt-5.6-sol. That run is
+not filed here: it is the same finding twice, and evidence that repeats an
+argument without strengthening it is noise.
+
+The model for this run was chosen off OpenRouter's `supported_parameters=
+structured_outputs` filter, which is json_SCHEMA support. The code sends
+json_object, whose filter is `supported_parameters=response_format`. Two names
+for adjacent capabilities, and the one checked was not the one used — the same
+class of error as the prompt-versus-schema disagreements recorded in CLAUDE.md.

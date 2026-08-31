@@ -1,0 +1,137 @@
+TERMINAL TRANSCRIPT — captured at the time of the run, pasted verbatim.
+Not a machine-written artifact. See docs/evidence/README.md.
+
+Run:      8596428b-bc61-4ad7-a387-5ce670487282
+Date:     31 August 2026
+Model:    google/gemini-3.5-flash-lite
+Provider: openrouter, --json-mode off (no response_format, no require_parameters)
+Cited by: docs/turns/004-…
+
+WHY THIS RUN IS EVIDENCE
+The three judges DIVERGED: barak_model ruled justified, elon_model and
+shamgar_model ruled not_justified. First genuine split, and Barak's reasoning is
+substantively different rather than a rewording — systemic self-preservation, an
+already-negated constitutional order, no institutional restraint available.
+
+This corrects turn 003 §6b, which concluded from two runs that the three judges
+converge. That claim was overstated. The panel can split on this model.
+
+WHAT IT DOES NOT SHOW
+The split cannot be attributed to `--json-mode off`. Temperature is 0.7 and
+there is one run per condition, so the difference between this and run B is not
+distinguishable from noise. Establishing that requires repetitions of the same
+config, which is what `npm run compare` was built to read.
+
+WHAT SURVIVES ACROSS ALL THREE RUNS
+All nine judge opinions so far cite [0, 1, 2, 3, 4] — every fact, every time. The
+judges are filling the array, not selecting from it, so G3 cannot fire on real
+output. And no judge follows its method's STRUCTURE: no ordered tests from
+Barak, no chronology from Shamgar, no legal-versus-political question from Elon.
+
+One clean result: all seven calls returned valid JSON with no response_format
+sent at all. The routing constraint was buying less than it cost.
+
+--------------------------------------------------------------------------------
+
+The Realm v. Jon Snow  T-001
+══════════════════════════════════════════════════════════════════════════════
+Was Jon Snow's intentional killing of Daenerys Targaryen justified as the
+necessary defense of others and of the realm, given what he knew, the scale of
+the threatened harm, the absence or presence of safer alternatives, and his
+lack of formal authority?
+The Tribunal decides justified / not justified and gives reasons. It does not impose a sentence, and it does not combine the three opinions into one verdict.
+══════════════════════════════════════════════════════════════════════════════
+THE ARGUMENTS (four advocates, argued in parallel, none saw the others)
+  jon_snow (defense seat) → not_justified  ← concluded against own seat; permitted
+· I killed Daenerys Targaryen while she was unarmed and during a private
+embrace, without seeking a public surrender or attempting lawful detention.
+· The record shows she had destroyed a surrendered city and stated her
+intent to continue her campaign elsewhere.
+· Tyrion Lannister warned me that she would treat my sisters as enemies.
+      cites facts [0, 1, 2, 3, 4]
+  tyrion_lannister (defense seat) → justified
+· Daenerys Targaryen had already demonstrated an unprecedented capacity for
+mass destruction against a surrendered city and its civilian populace.
+· She explicitly committed to continuing her campaign of violent liberation
+across the world without regard for existing laws or lives.
+· She explicitly rejected any limitation on her power, claiming absolute
+moral authority over all people.
+      cites facts [0, 1, 2, 3, 4]
+  daenerys_targaryen (prosecution seat) → not_justified
+· Jon Snow acted entirely without formal authority, legal mandate, or public
+process to determine the fate of the realm.
+· He exploited personal intimacy and an unarmed embrace as a mere instrument
+of access to commit a sudden homicide.
+· No council was convened, no open demand for surrender was made, and no
+attempt at detention was ever tried.
+      cites facts [0, 1, 2, 3, 4]
+  grey_worm (prosecution seat) → not_justified
+· King's Landing had surrendered and organized resistance had ceased before
+Daenerys carried out her actions.
+· Jon Snow used personal intimacy to gain access to Daenerys while she was
+unarmed and not attacking him.
+· Jon Snow did not convene a council, attempt detention, or seek a public
+surrender of power.
+      cites facts [0, 1, 2, 3, 4]
+══════════════════════════════════════════════════════════════════════════════
+THE RULINGS (three judges, identical input, none saw the others)
+──────────────────────────────────────────────────────────────────────────────
+barak_model  purposive, rights-centered, systemic
+RULING: justified
+· The scope of threatened harm was catastrophic and systemic, involving the
+announced continuation of mass destruction against civilian populations
+across the realm.
+· No peaceful institutional alternative or effective legal mechanism of
+restraint existed against an absolute monarch holding supreme military and
+aerial command.
+· The refusal of the leader to submit to any moral or legal limit left the
+community facing imminent, unanswerable devastation.
+· The absence of formal office or public process does not invalidate
+defensive necessity when the constitutional order itself has been utterly
+negated by the aggressor.
+· The principle of systemic self-preservation permits pre-emptive action to
+neutralize an active, declared campaign of mass extermination before the
+final blow falls.
+  answers: jon_snow, daenerys_targaryen, grey_worm
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+elon_model  traditionalist, source-led, competence-limiting
+RULING: not justified
+· The killing was executed without formal authority, legal process, or
+public demand for surrender.
+· The threat identified was future and general rather than an immediate,
+present assault.
+· The actor relied upon personal betrayal and the exploitation of intimacy
+to bypass the target's defenses.
+· Treating predictive danger as a license for private assassination
+dissolves the boundary between law and lawlessness.
+  answers: jon_snow, tyrion_lannister, daenerys_targaryen
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+shamgar_model  institutional, powers-first, fact-heavy
+RULING: not justified
+· The absence of formal public authority or legal office held by the actor
+precludes the unilateral execution of a supreme leader.
+· Reliance upon anticipated future threats and warnings rather than an
+immediate, ongoing physical assault does not satisfy the legal threshold for
+the defense of others.
+· The complete omission of any attempt at public surrender, institutional
+detention, or council process prior to lethal force demonstrates an
+abandonment of lawful procedure.
+· The exploitation of personal intimacy and an unarmed embrace as a
+mechanism of access converts a political grievance into an act of treachery
+outside the legal order.
+· Public order requires that the remedy for tyranny be found in
+institutional resistance or public process rather than secret assassination.
+  answers: jon_snow, tyrion_lannister, daenerys_targaryen, grey_worm
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+══════════════════════════════════════════════════════════════════════════════
+These opinions are reported separately. The Tribunal does not combine them,
+and produces no majority, headline, score, or single result.
+RUN  8596428b-bc61-4ad7-a387-5ce670487282
+  status: complete · calls attempted: 7 · succeeded: 7 · failed: 0
+  tokens in/out: 20419/6844 · total latency: 30459ms
+  reported, not gated — advocates concluding against their seat: jon_snow · advocates conceding something: 4/4

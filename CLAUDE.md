@@ -159,6 +159,12 @@ One line per failure actually observed. Written once, permanently.
   appends, never rewrites or reorders.
 - Secrets live in the environment, never the repo. Check before committing.
 - Hard cap on calls per deliberation; a run that exceeds it aborts.
+- **`logs/` is gitignored, so nothing in it reaches the repo.** A run cited by a
+  turn record must be copied into `docs/evidence/` by hand — JSON unmodified
+  from `logs/deliberations/`, or a labelled transcript for runs predating
+  persistence. Never reconstruct one. (0007) Remind me of this whenever a turn
+  record cites a run, and again at the end of the project:
+  `docs/PRE-SUBMISSION.md` is the checklist.
 
 ---
 

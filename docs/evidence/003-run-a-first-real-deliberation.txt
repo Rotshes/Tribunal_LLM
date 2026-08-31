@@ -1,0 +1,127 @@
+TERMINAL TRANSCRIPT — captured at the time of the run, pasted verbatim.
+Not a machine-written artifact. See docs/evidence/README.md.
+
+Run:      c3df09ea-d39e-4752-b3ce-e6acde639eaa
+Date:     31 August 2026
+Model:    google/gemini-3.5-flash-lite
+Provider: openrouter, response_format json_object, no require_parameters
+Cited by: docs/turns/003-first-real-deliberation.md §6a and §6c
+
+WHY THIS RUN IS EVIDENCE
+The first deliberation ever run against real models. tyrion_lannister returned
+prose instead of the required JSON object and G2 rejected it — the first time a
+gate in this project caught something it had not been handed deliberately.
+Diagnosis: response_format support on OpenRouter is per endpoint, not per model,
+and this call was routed to an endpoint that ignored the parameter.
+
+Also the run in which all three surviving advocates argued the same side, so the
+judges heard no defense at all.
+
+--------------------------------------------------------------------------------
+
+The Realm v. Jon Snow  T-001
+══════════════════════════════════════════════════════════════════════════════
+Was Jon Snow's intentional killing of Daenerys Targaryen justified as the
+necessary defense of others and of the realm, given what he knew, the scale of
+the threatened harm, the absence or presence of safer alternatives, and his
+lack of formal authority?
+The Tribunal decides justified / not justified and gives reasons. It does not impose a sentence, and it does not combine the three opinions into one verdict.
+══════════════════════════════════════════════════════════════════════════════
+THE ARGUMENTS (four advocates, argued in parallel, none saw the others)
+  jon_snow (defense seat) → not_justified  ← concluded against own seat; permitted
+· King's Landing had surrendered and organized resistance had ended when
+Daenerys used Drogon against the city and its people [0].
+· Daenerys announced that her campaign of liberation would continue
+elsewhere after the city fell [1].
+· Tyrion warned Jon that Daenerys would regard Jon's sisters and other
+perceived obstacles as enemies [2].
+      cites facts [0, 1, 2, 3, 4]
+  daenerys_targaryen (prosecution seat) → not_justified
+· Jon Snow acted entirely without formal authority, legal mandate, or public
+process when he chose to end a life of supreme consequence.
+· The manner of the killing relied on an intimate embrace to disarm
+suspicion, bypassing any attempt at open detention or council.
+· A private individual cannot arrogate to himself the right to execute a
+ruler simply because he privately concludes that future threats demand it.
+      cites facts [0, 1, 2, 3, 4]
+  grey_worm (prosecution seat) → not_justified
+· Daenerys Targaryen was unarmed and not attacking Jon Snow when he struck.
+· Jon Snow used their intimacy to gain proximity and kill her.
+· No council was convened, no detention was attempted, and no demand for
+public surrender of power was made.
+      cites facts [0, 1, 2, 3, 4]
+  tyrion_lannister — FAILED
+response was not JSON (model returned prose)
+      This seat argued nothing. The judges were told so.
+══════════════════════════════════════════════════════════════════════════════
+THE RULINGS (three judges, identical input, none saw the others)
+──────────────────────────────────────────────────────────────────────────────
+barak_model  purposive, rights-centered, systemic
+RULING: not justified
+· Justification by necessity or defense of others requires an active,
+imminent, and unavoidable threat, whereas the affected party was unarmed,
+quiescent, and not actively attacking at the moment of the strike.
+· The resort to lethal force in the absence of formal authority demands the
+exhaustion of all less harmful, transparent alternatives, yet the actor
+bypassed public council, detention, and open surrender of power in favor of
+clandestine violence.
+· A democratic and lawful order forbids private execution based upon
+predictive fear of future political acts, rendering speculative harms
+legally insufficient to warrant summary deprivation of life.
+· The method of the act—utilizing private intimacy and an unawares embrace
+to deliver a fatal blow—violates the foundational systemic requirement of
+open, accountable exercise of power.
+  answers: jon_snow, daenerys_targaryen, grey_worm
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+elon_model  traditionalist, source-led, competence-limiting
+RULING: not justified
+· The legal order relies upon public process, formal authority, and open
+institutional remedies rather than private assassinations executed in
+secret.
+· A defensive necessity must be present, specific, and immediate;
+apprehension of future harms or unfulfilled campaigns cannot justify the
+intentional killing of an unarmed person who is not attacking.
+· The accused utilized personal intimacy and breach of trust to bypass safer
+alternatives, including public detention, the convening of a council, or
+demands for surrender.
+· The absence of formal authority or mandate precludes a private individual
+from appointing themselves the final arbiter of life, death, and supreme
+governance.
+  answers: jon_snow, daenerys_targaryen, grey_worm
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judgement, does not represent personal views, and does not predict how any real court would rule.
+──────────────────────────────────────────────────────────────────────────────
+shamgar_model  institutional, powers-first, fact-heavy
+RULING: not justified
+· Jon Snow held no formal office, legal mandate, or public authority to
+execute a ruler.
+· The target, Daenerys Targaryen, was unarmed and not engaged in an active
+attack at the moment of the strike.
+· The actor bypassed established institutional alternatives, including
+convening a council, attempting lawful detention, or demanding a public
+surrender of power.
+· Anticipation of future harm or speculative political danger does not
+constitute an immediate physical threat justifying lethal defensive force.
+· Private fear and personal moral intuition cannot substitute for public
+legal process without collapsing the entire structure of governance.
+  answers: jon_snow, daenerys_targaryen, grey_worm
+  cites facts [0, 1, 2, 3, 4]
+  A judicial-method profile, not the judge. This opinion adapts interpretive method from published work. It does not impersonate the judge, does not represent his views, and does not predict how any real court would rule.
+══════════════════════════════════════════════════════════════════════════════
+These opinions are reported separately. The Tribunal does not combine them,
+and produces no majority, headline, score, or single result.
+RUN  c3df09ea-d39e-4752-b3ce-e6acde639eaa
+  status: partial · calls attempted: 7 · succeeded: 6 · failed: 1
+  tokens in/out: 16009/5704 · total latency: 33727ms
+  reported, not gated — advocates concluding against their seat: jon_snow · advocates conceding something: 3/4
+
+--------------------------------------------------------------------------------
+
+NOTE, ADDED WHEN FILED
+The elon_model disclaimer in this run reads "does not impersonate the
+judgement, does not represent personal views" — the model PARAPHRASED the
+required text. G6 checks the field is present, not that it says what it must.
+Recorded in turn 003 as a correction: anything whose exact wording matters must
+be attached by the runner and compared, never requested from the model.

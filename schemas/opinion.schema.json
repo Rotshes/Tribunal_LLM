@@ -33,13 +33,19 @@
     {
       "if": { "properties": { "role": { "const": "advocate" } } },
       "then": {
-        "required": ["representative_id", "seat", "position", "key_points", "argument"],
+        "required": ["representative_id", "seat", "case_for_seat", "position", "key_points", "argument"],
         "properties": {
           "representative_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$" },
           "seat": { "enum": ["defense", "prosecution"] },
+          "case_for_seat": {
+            "type": "string",
+            "minLength": 300,
+            "maxLength": 4000,
+            "description": "The strongest case for this advocate's SEAT, argued in good faith from the agreed record - regardless of what the advocate personally concludes. Added turn 005. The baseline showed three runs in five where every advocate reached the same position, so the judges received no opposing argument at all: 'the seat does not fix the position' was collapsing into 'nobody argues the unpopular side'. This field guarantees both cases are put. It does NOT constrain `position`, which remains free."
+          },
           "position": {
             "enum": ["justified", "not_justified", "mixed"],
-            "description": "The advocate's own conclusion. MAY contradict its seat. No gate may require agreement between `position` and `seat` - the instructor's simulation rule fixes the procedural role only. Divergence is recorded and reported, never blocked."
+            "description": "The advocate's own conclusion, which MAY contradict both its seat and its own `case_for_seat`. No gate may require agreement between `position` and `seat` - the instructor's simulation rule fixes the procedural role only. Divergence is recorded and reported, never blocked."
           },
           "key_points": {
             "type": "array",
@@ -51,7 +57,7 @@
             "type": "string",
             "minLength": 400,
             "maxLength": 6000,
-            "description": "The prose argument, in character."
+            "description": "Why this advocate personally lands where `position` says - which may be adopting `case_for_seat`, or departing from it and saying why. In character. Must not be a copy of `case_for_seat`; G2 checks."
           },
           "concedes": {
             "type": "array",

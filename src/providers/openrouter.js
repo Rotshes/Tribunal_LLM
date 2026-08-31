@@ -7,7 +7,25 @@ import { modelMap, REQUIRES_MODEL_ENV } from '../config.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
-export function makeOpenRouterProvider({ timeoutMs = 90_000 } = {}) {
+/**
+ * jsonMode:
+ *   'object' — send response_format: { type: 'json_object' }, and require the
+ *              endpoint to support it. Safest, but narrows the model choice
+ *              sharply: many capable models offer no json-mode endpoint at all
+ *              and the request 404s with "no endpoints found".
+ *   'off'    — send no response_format. The prompts already demand one JSON
+ *              object and nothing else, and G2 rejects anything that is not
+ *              one. Costs a call when a model disobeys; buys the freedom to
+ *              compare models, which is the point of the exercise.
+ *
+ * This exists because the parameter was deciding which models could be tested.
+ * A verification gate we already have should not be substituted for by a
+ * routing constraint that halves the catalogue.
+ */
+export function makeOpenRouterProvider({
+  timeoutMs = 90_000,
+  jsonMode = 'object',
+} = {}) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) {
     throw new Error(
@@ -22,8 +40,25 @@ export function makeOpenRouterProvider({ timeoutMs = 90_000 } = {}) {
     );
   }
 
+  if (!['object', 'off'].includes(jsonMode)) {
+    throw new Error(`Unknown jsonMode "${jsonMode}". Use object or off.`);
+  }
+
+  // Built once. `require_parameters` is sent ONLY alongside response_format,
+  // because that is the parameter it exists to guarantee: it restricts routing
+  // to endpoints supporting everything sent, which prevents the silent
+  // downgrade that produced prose from tyrion_lannister in turn 003. Sending it
+  // with nothing to guarantee would only narrow routing for no benefit.
+  const jsonParams =
+    jsonMode === 'object'
+      ? {
+          response_format: { type: 'json_object' },
+          provider: { require_parameters: true },
+        }
+      : {};
+
   return {
-    name: 'openrouter',
+    name: `openrouter(json:${jsonMode})`,
     async call({ role, roleId, system, user }) {
       const model = modelMap()[`${role}.${roleId}`];
       if (!model) {
@@ -50,24 +85,7 @@ export function makeOpenRouterProvider({ timeoutMs = 90_000 } = {}) {
               { role: 'system', content: system },
               { role: 'user', content: user },
             ],
-            // The prompts demand one JSON object and nothing else. Asking the
-            // provider to enforce it as well does not make G2 redundant: not
-            // every model honours this, and G2 is what tells us which.
-            response_format: { type: 'json_object' },
-
-            // Support for response_format is per ENDPOINT, not per model: the
-            // same model is served by several providers and only some honour
-            // it. Without this, OpenRouter may route to one that ignores the
-            // parameter — the request succeeds, prose comes back, and G2
-            // rejects a call you have already paid for. That is exactly what
-            // happened to tyrion_lannister on the first real run (turn 003).
-            //
-            // require_parameters restricts routing to endpoints that support
-            // every parameter sent. It can mean fewer available endpoints and
-            // occasionally a slower or unavailable route; a hard failure is
-            // preferable to a silent downgrade.
-            provider: { require_parameters: true },
-
+            ...jsonParams,
             temperature: 0.7,
           }),
         });

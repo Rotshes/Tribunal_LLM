@@ -84,8 +84,20 @@ export function judgeUserMessage(caseObj, advocateOpinions) {
 THIS ADVOCATE FAILED TO PRODUCE AN ARGUMENT. Nothing was argued from this seat.
 Do not supply the argument yourself; judge the case that was actually argued.`;
     }
+    // The case for the seat comes FIRST and is labelled as the case to answer.
+    // The advocate's own position follows, marked as possibly departing from
+    // it. A judge that only read positions would, in three runs of five, have
+    // seen no opposing argument at all — which is what turn 005 exists to fix.
     return `--- ${rep.name} (${rep.seat} seat, id: ${id}) ---
-position: ${o.position}
+THE CASE FOR THE ${rep.seat.toUpperCase()} SEAT, as this advocate puts it:
+${o.case_for_seat}
+
+This advocate's own position: ${o.position}${
+      (rep.seat === 'defense' && o.position === 'not_justified') ||
+      (rep.seat === 'prosecution' && o.position === 'justified')
+        ? '  (departs from the case above; the case still stands to be answered)'
+        : ''
+    }
 key points:
 ${o.key_points.map((k) => `  - ${k}`).join('\n')}
 concedes:

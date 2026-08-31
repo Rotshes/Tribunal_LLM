@@ -23,6 +23,7 @@ function advocateOpinion(caseObj, rep, { position }) {
       pad('A second point, so the array is not minimal.', 60),
     ],
     concedes: [pad('A stub concession against this advocate own seat.', 60)],
+    case_for_seat: pad(`Stub case for the ${rep.seat} seat, argued in good faith.`, 400),
     argument: pad(`Stub argument in the voice of ${rep.name}.`, 600),
   };
 }
@@ -72,6 +73,7 @@ const DEFAULT_RULINGS = {
  *   onesided    one judge answers only the seat it ruled for         -> G2b
  *   judgefail   one judge call throws                                -> failure display
  *   unanimous   all three judges agree (a legitimate outcome)
+ *   copied_case one advocate pastes its own argument into case_for_seat -> G2
  */
 export function makeStubProvider(mode = 'good') {
   return {
@@ -99,10 +101,13 @@ export function makeStubProvider(mode = 'good') {
         }
         const position =
           rep.seat === 'defense' ? 'justified' : 'not_justified';
-        return {
-          raw: JSON.stringify(advocateOpinion(caseObj, rep, { position })),
-          usage: { in: 4200, out: 900 },
-        };
+        const op = advocateOpinion(caseObj, rep, { position });
+        if (mode === 'copied_case' && roleId === 'grey_worm') {
+          // The cheapest way to fake a steelman: paste your own argument into
+          // the field meant to hold the other case.
+          op.case_for_seat = op.argument;
+        }
+        return { raw: JSON.stringify(op), usage: { in: 4200, out: 900 } };
       }
 
       if (mode === 'judgefail' && roleId === 'elon_model') {

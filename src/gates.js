@@ -131,6 +131,18 @@ export function g2OpinionEnvelope(opinion, caseObj) {
         `/representative_id "${opinion.representative_id}" is not a representative in this case`,
       );
     }
+
+    // The seat's case and the advocate's own reasoning must be two different
+    // pieces of writing. A model that copies one into the other has satisfied
+    // the schema while doing exactly nothing the field was added for — the
+    // cheapest way to fake a steelman is to paste your own argument into it.
+    const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (norm(opinion.case_for_seat) === norm(opinion.argument)) {
+      problems.push(
+        '/case_for_seat is identical to /argument. The case for the seat and ' +
+          'this advocate\'s own reasoning must be distinct.',
+      );
+    }
   }
 
   if (opinion.role === 'judge') {

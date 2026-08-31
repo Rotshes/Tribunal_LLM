@@ -54,6 +54,7 @@ const goodAdvocate = {
   position: 'justified',
   relies_on_facts: [0, 1],
   key_points: ['K'.repeat(40)],
+  case_for_seat: 'C'.repeat(400),
   argument: 'A'.repeat(500),
 };
 
@@ -282,6 +283,45 @@ test('.env parsing survives Windows line endings, comments and quotes', () => {
   for (const v of Object.values(parsed)) {
     assert.ok(!/[\r\n]/.test(v), `value carries a line ending: ${JSON.stringify(v)}`);
   }
+});
+
+// ------------------------------------------- the case for the seat (turn 005)
+
+test('an advocate opinion without case_for_seat is rejected', () => {
+  const { case_for_seat, ...missing } = goodAdvocate;
+  const p = g2OpinionEnvelope(missing, CASE);
+  assert.ok(p.some((x) => x.includes('case_for_seat')), p.join(' | '));
+});
+
+test('case_for_seat copied from argument is rejected', () => {
+  const copied = { ...goodAdvocate, case_for_seat: goodAdvocate.argument };
+  const p = g2OpinionEnvelope(copied, CASE);
+  assert.ok(p.some((x) => x.includes('identical')), p.join(' | '));
+  // whitespace and case must not defeat it
+  const sneaky = {
+    ...goodAdvocate,
+    case_for_seat: '  ' + goodAdvocate.argument.toUpperCase() + '  ',
+  };
+  assert.ok(g2OpinionEnvelope(sneaky, CASE).some((x) => x.includes('identical')));
+});
+
+test('an advocate may still conclude against its seat while arguing for it', () => {
+  // Decision 0004 is untouched: case_for_seat constrains the ARGUMENT, never
+  // the position.
+  const against = {
+    ...goodAdvocate,
+    seat: 'defense',
+    position: 'not_justified',
+    case_for_seat: 'C'.repeat(400),
+  };
+  assert.deepEqual(g2OpinionEnvelope(against, CASE), []);
+});
+
+test('every judge receives the case for each seat, not only the positions', async () => {
+  const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+  const msg = judgeUserMessage(CASE, r.advocate_opinions);
+  assert.ok(msg.includes('THE CASE FOR THE DEFENSE SEAT'), 'defence case missing');
+  assert.ok(msg.includes('THE CASE FOR THE PROSECUTION SEAT'), 'prosecution case missing');
 });
 
 // ------------------------------------ identity is attached, not requested (turn 004)

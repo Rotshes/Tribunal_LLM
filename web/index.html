@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Tribunal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Archivo:wght@500;600;700&display=swap">
+<style>
+:root{
+  --ground:#F6F5F2; --raise:#FFFFFF; --ink:#191714; --soft:#57524A; --faint:#8A837A;
+  --line:#DEDAD2; --hair:#EBE8E2;
+  --accent:#5C4A2E; --accent-soft:#F0EADF;
+  --fail:#8B2E24; --fail-soft:#F8E9E6;
+  --f-head:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Newsreader",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --ground:#12110F; --raise:#1A1815; --ink:#EAE6DF; --soft:#A9A196; --faint:#7A736A;
+    --line:#2E2A25; --hair:#241F1B;
+    --accent:#C8A96B; --accent-soft:#241E14;
+    --fail:#E08A7E; --fail-soft:#2A1815;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{width:min(1240px,100% - 3rem);margin-inline:auto}
+
+header{border-bottom:1px solid var(--line);background:var(--raise);padding:2.25rem 0 1.75rem}
+h1{font-family:var(--f-head);font-weight:700;font-size:clamp(1.7rem,3.5vw,2.5rem);letter-spacing:-.02em;margin:0}
+.sub{color:var(--soft);margin:.5rem 0 0;max-width:62ch}
+.eyebrow{font-family:var(--f-head);font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 .5rem}
+
+section{padding:2rem 0}
+h2{font-family:var(--f-head);font-weight:700;font-size:1.15rem;letter-spacing:-.01em;margin:0 0 .25rem}
+.note{color:var(--faint);font-size:.9rem;margin:0 0 1.25rem}
+
+.case{background:var(--raise);border:1px solid var(--line);padding:1.4rem 1.5rem;margin-bottom:1.5rem}
+.case h3{font-family:var(--f-head);font-size:1.05rem;margin:0 0 .5rem}
+.issue{margin:0 0 1rem}
+.facts{margin:0;padding:0;list-style:none;counter-reset:f -1}
+.facts li{display:grid;grid-template-columns:2rem 1fr;gap:.6rem;padding:.4rem 0;border-top:1px solid var(--hair);font-size:.94rem}
+.facts li::before{counter-increment:f;content:"["counter(f)"]";font-family:var(--f-head);font-size:.75rem;color:var(--faint);padding-top:.28rem}
+.scope{margin:1rem 0 0;padding:.7rem .9rem;background:var(--accent-soft);font-size:.9rem;color:var(--soft)}
+
+button{font-family:var(--f-head);font-weight:600;font-size:.95rem;padding:.7rem 1.4rem;border:1px solid var(--ink);background:var(--ink);color:var(--ground);cursor:pointer}
+button:hover:not(:disabled){opacity:.88}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.cost{font-family:var(--f-head);font-size:.8rem;color:var(--faint);margin-left:.9rem}
+
+#status{margin-top:1.5rem}
+.stage{display:flex;gap:.75rem;align-items:baseline;padding:.45rem 0;font-family:var(--f-head);font-size:.9rem;color:var(--faint)}
+.stage b{font-weight:600;color:var(--ink)}
+.stage[data-state="doing"]{color:var(--ink)}
+.stage[data-state="done"]::before{content:"✓";color:var(--accent)}
+.stage[data-state="doing"]::before{content:"…"}
+.stage[data-state="todo"]::before{content:"·"}
+.stage::before{width:1rem;display:inline-block;font-family:var(--f-head)}
+.elapsed{font-family:var(--f-head);font-size:.8rem;color:var(--faint);margin-top:.5rem;font-variant-numeric:tabular-nums}
+
+.banner{border-left:3px solid var(--fail);background:var(--fail-soft);padding:1rem 1.2rem;margin:1.25rem 0}
+.banner h3{font-family:var(--f-head);font-size:1rem;margin:0 0 .4rem;color:var(--fail)}
+.banner ul{margin:.5rem 0 0;padding-left:1.2rem}
+.banner code{font-size:.85em}
+
+.advocates{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1rem;margin-bottom:2.5rem}
+.adv{background:var(--raise);border:1px solid var(--line);padding:1.1rem 1.2rem}
+.adv h4{font-family:var(--f-head);font-size:1rem;margin:0}
+.seat{font-family:var(--f-head);font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.pos{font-family:var(--f-head);font-size:.85rem;margin:.5rem 0 .75rem}
+.pos .depart{color:var(--accent);font-weight:600}
+.adv p{font-size:.92rem;margin:.5rem 0}
+.adv details{margin-top:.7rem;font-size:.9rem}
+.adv summary{cursor:pointer;font-family:var(--f-head);font-size:.8rem;color:var(--faint)}
+.adv summary:hover{color:var(--accent)}
+
+.rulings{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+@media (max-width:980px){.rulings{grid-template-columns:1fr}}
+.judge{background:var(--raise);border:1px solid var(--line);padding:1.2rem 1.3rem;display:flex;flex-direction:column}
+.judge.failed{border-color:var(--fail);background:var(--fail-soft)}
+.judge h4{font-family:var(--f-head);font-size:1.05rem;margin:0}
+.method{font-family:var(--f-head);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:.2rem 0 .9rem}
+.ruling{font-family:var(--f-head);font-weight:700;font-size:1.25rem;letter-spacing:-.01em;padding:.55rem 0;border-top:2px solid var(--ink);border-bottom:1px solid var(--hair);margin-bottom:.9rem}
+.judge.failed .ruling{color:var(--fail);border-top-color:var(--fail);font-size:1rem}
+.grounds{margin:0 0 1rem;padding-left:1.1rem}
+.grounds li{margin-bottom:.5rem;font-size:.93rem}
+.judge details{font-size:.92rem;margin-bottom:.9rem}
+.judge summary{cursor:pointer;font-family:var(--f-head);font-size:.8rem;color:var(--faint)}
+.judge summary:hover{color:var(--accent)}
+.disclaimer{margin-top:auto;padding-top:.9rem;border-top:1px solid var(--hair);font-size:.76rem;line-height:1.5;color:var(--faint)}
+
+.protocol{margin:2rem 0 0;padding:1rem 1.2rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.9rem;color:var(--soft)}
+.runline{font-family:var(--f-head);font-size:.78rem;color:var(--faint);margin-top:1.25rem;font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">A fictional proceeding</p>
+    <h1>The Tribunal</h1>
+    <p class="sub">Four advocates argue. Three judges rule, each by a different judicial method, each having read exactly the same arguments. The three rulings are reported side by side and are never combined.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="case-section">
+    <h2>The charge sheet</h2>
+    <p class="note">A case is a specification, not free text. It is validated before any model is called.</p>
+    <div class="case" id="case"></div>
+    <button id="run">Convene the tribunal</button>
+    <span class="cost">Seven model calls · about 35 seconds</span>
+
+    <div id="status" hidden>
+      <div class="stage" data-state="todo" id="s1"><span><b>Four advocates</b> argue, in parallel</span></div>
+      <div class="stage" data-state="todo" id="s2"><span><b>Three judges</b> rule on those arguments</span></div>
+      <p class="elapsed" id="elapsed"></p>
+    </div>
+
+    <div class="banner" id="error" hidden></div>
+  </section>
+
+  <section id="results" hidden>
+    <h2>The arguments</h2>
+    <p class="note">Each advocate puts the case for its seat, whatever it personally concludes. None saw the others.</p>
+    <div class="advocates" id="advocates"></div>
+
+    <h2>The rulings</h2>
+    <p class="note">Three judges. Identical input. None saw the others.</p>
+    <div class="rulings" id="rulings"></div>
+
+    <p class="protocol">These opinions are reported separately. The Tribunal produces no majority, headline, score or single result — the disagreement is the output.</p>
+    <p class="runline" id="runline"></p>
+  </section>
+
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const RULING = { justified: 'Justified', not_justified: 'Not justified' };
+const JUDGES = ['barak_model', 'elon_model', 'shamgar_model'];
+const LABEL = { barak_model: 'The Barak model', elon_model: 'The Elon model', shamgar_model: 'The Shamgar model' };
+
+let CASE = null;
+
+// ---- the charge sheet, loaded from the same fixture the backend uses
+async function loadCase() {
+  const res = await fetch('/api/case?id=T-001');
+  if (!res.ok) throw new Error('Could not load the case.');
+  CASE = await res.json();
+
+  $('case').innerHTML = `
+    <h3>${esc(CASE.title)} <span class="seat">${esc(CASE.case_id)}</span></h3>
+    <p class="issue">${esc(CASE.issue)}</p>
+    <p class="seat">The agreed record — the only facts anyone may cite</p>
+    <ul class="facts">${CASE.agreed_facts.map((f) => `<li><span>${esc(f)}</span></li>`).join('')}</ul>
+    <p class="scope">${esc(CASE.scope.note)}</p>`;
+}
+
+// ---- the wait. Seven calls take ~35s and nothing streams, so the honest
+// thing is to show which stage is running and how long it has taken. No fake
+// progress bar: we genuinely do not know how far along a model is.
+let timer = null;
+function startWaiting() {
+  const began = Date.now();
+  $('status').hidden = false;
+  $('error').hidden = true;
+  $('results').hidden = true;
+  $('s1').dataset.state = 'doing';
+  $('s2').dataset.state = 'todo';
+  timer = setInterval(() => {
+    const s = Math.round((Date.now() - began) / 1000);
+    $('elapsed').textContent = `${s}s elapsed`;
+    // The advocates finish first; after ~15s the judges are almost certainly
+    // the ones running. This is an estimate and is labelled as one.
+    if (s > 15) { $('s1').dataset.state = 'done'; $('s2').dataset.state = 'doing'; }
+  }, 250);
+}
+function stopWaiting() {
+  clearInterval(timer);
+  $('status').hidden = true;
+}
+
+function showError(title, lines = []) {
+  $('error').hidden = false;
+  $('error').innerHTML =
+    `<h3>${esc(title)}</h3>` +
+    (lines.length ? `<ul>${lines.map((l) => `<li><code>${esc(l)}</code></li>`).join('')}</ul>` : '');
+}
+
+function renderAdvocates(doc) {
+  const bySeat = new Map((doc.case_snapshot?.representatives ?? []).map((r) => [r.id, r.seat]));
+  const name = (id) => (CASE.representatives.find((r) => r.id === id)?.name) ?? id;
+
+  const cards = (doc.advocate_opinions ?? []).map((o) => {
+    const departs =
+      (o.seat === 'defense' && o.position === 'not_justified') ||
+      (o.seat === 'prosecution' && o.position === 'justified');
+    return `<article class="adv">
+      <h4>${esc(name(o.representative_id))}</h4>
+      <p class="seat">${esc(o.seat)} seat</p>
+      <p class="pos">Own position: ${esc(RULING[o.position] ?? o.position)}
+        ${departs ? '<span class="depart">— departs from this seat; the case below still stands</span>' : ''}</p>
+      <p class="seat">The case for the ${esc(o.seat)}</p>
+      <p>${esc(o.case_for_seat)}</p>
+      <details><summary>This advocate's own reasoning</summary><p>${esc(o.argument)}</p></details>
+      ${o.concedes?.length ? `<details><summary>Concedes</summary><ul>${o.concedes.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>` : ''}
+    </article>`;
+  });
+
+  // A seat that argued nothing is shown as having argued nothing.
+  const failed = (doc.advocate_failures ?? []).map((f) => `<article class="adv" style="border-color:var(--fail)">
+      <h4>${esc(name(f.roleId))}</h4>
+      <p class="seat" style="color:var(--fail)">failed — this seat argued nothing</p>
+      <p>${esc(f.reason)}</p>
+      <p class="seat">The judges were told this seat put no case.</p>
+    </article>`);
+
+  $('advocates').innerHTML = [...cards, ...failed].join('');
+}
+
+function renderRulings(doc) {
+  const byId = new Map((doc.judge_opinions ?? []).map((o) => [o.judge_id, o]));
+  const failedById = new Map((doc.judge_failures ?? []).map((f) => [f.roleId, f]));
+
+  // Fixed order, always three columns. A judge that failed occupies its column
+  // as a failure: two rulings must never be presented as the outcome.
+  $('rulings').innerHTML = JUDGES.map((id) => {
+    const o = byId.get(id);
+    const f = failedById.get(id);
+    if (!o) {
+      return `<article class="judge failed">
+        <h4>${esc(LABEL[id])}</h4>
+        <p class="method">no ruling</p>
+        <p class="ruling">Deliberation failed</p>
+        <p>${esc(f?.reason ?? 'This judge produced no opinion.')}</p>
+        <p class="disclaimer">This is a failure, not an acquittal. The other rulings are not the outcome of the case.</p>
+      </article>`;
+    }
+    return `<article class="judge">
+      <h4>${esc(LABEL[id])}</h4>
+      <p class="method">${esc(o.method)}</p>
+      <p class="ruling">${esc(RULING[o.ruling] ?? o.ruling)}</p>
+      <ul class="grounds">${(o.grounds ?? []).map((g) => `<li>${esc(g)}</li>`).join('')}</ul>
+      <details><summary>Full opinion</summary><p>${esc(o.reasoning)}</p></details>
+      <details><summary>Answers to the advocates</summary><ul>${(o.responds_to ?? [])
+        .map((r) => `<li><b>${esc(r.representative_id)}</b> — ${esc(r.answer)}</li>`).join('')}</ul></details>
+      <p class="disclaimer">${esc(o.disclaimer)}</p>
+    </article>`;
+  }).join('');
+}
+
+async function run() {
+  $('run').disabled = true;
+  startWaiting();
+
+  try {
+    const res = await fetch('/api/deliberate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: CASE.case_id }),
+    });
+    const doc = await res.json();
+    stopWaiting();
+
+    if (res.status === 422) {
+      showError(doc.error, doc.problems);
+      return;
+    }
+    if (!res.ok) {
+      showError(doc.error ?? `The tribunal could not sit (${res.status}).`,
+        doc.detail ? [doc.detail] : []);
+      return;
+    }
+
+    renderAdvocates(doc);
+    renderRulings(doc);
+    $('results').hidden = false;
+
+    const u = doc.usage ?? {};
+    $('runline').textContent =
+      `run ${doc.deliberation_id} · ${doc.status} · ${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ` +
+      `${u.tokens_in ?? 0} in / ${u.tokens_out ?? 0} out · ${doc.model ?? ''}` +
+      (doc.storage_warning ? ` · ${doc.storage_warning}` : '');
+
+    if (doc.status !== 'complete') {
+      showError('Some of the tribunal did not sit.',
+        [`${u.failed} of ${u.attempted} calls failed. What is shown below is incomplete.`]);
+    }
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    stopWaiting();
+    showError('The request failed before a result came back.', [err.message]);
+  } finally {
+    $('run').disabled = false;
+  }
+}
+
+$('run').addEventListener('click', run);
+loadCase().catch((e) => showError(e.message));
+</script>
+</body>
+</html>

@@ -25,6 +25,9 @@ disagreement is the output.
 | `src/` | The runner: the seven calls, the gates, the providers, the call log. |
 | `tools/repo-checks.js` | G5 and G8 — the checks that run over the repository rather than over a run. |
 | `tests/` | The gates, tested mostly from the failing side. |
+| `db/schema.sql` | The Supabase tables. Its most important property is a column that does not exist. |
+| `netlify/functions/` | The HTTP wrapper. Thin on purpose — all the logic is in `src/`. |
+| `web/` | One HTML file, no build step. See decision 0008. |
 | `docs/evidence/` | The runs a turn record cites. `logs/` is gitignored; these are copied by hand. |
 | `docs/PRE-SUBMISSION.md` | What to check before the deadline. Several items cannot be fixed late. |
 
@@ -56,41 +59,43 @@ Against real models — once `OPENROUTER_API_KEY` and `TRIBUNAL_MODEL` are set i
 `.env`:
 
 ```
-npm run deliberate -- T-001 --provider openrouter
+npm run deliberate -- T-001 --provider openrouter --json-mode object
+```
+
+Compare runs with `npm run compare`. In the browser:
+
+```
+npx netlify dev          # http://localhost:8888
 ```
 
 ## Status
 
-**Runs end to end against real models.** Two full deliberations on T-001,
-31.08.2026, seven calls each.
+**Runs against real models, writes to Postgres, and has a browser front end.**
+Eleven real deliberations on T-001 as of 31.08.2026.
 
-The first real run found what it was built to find: the three judges converge.
-All six judge opinions across both runs cite every agreed fact, and the three
-judicial methods survive as vocabulary rather than as structure. The cause looks
-to be the opinion schema, which gives all three methods the same container.
-Written up in `docs/turns/003-first-real-deliberation.md`; the experiment that
-separates model capability from prompt design is turn 004.
+What the runs established, in order:
 
-Also from the first run: `response_format` support on OpenRouter is per
-endpoint, not per model, so a call was silently routed to one that ignored it.
-G2 caught the prose it produced.
+- `response_format` support on OpenRouter is per *endpoint*, not per model. A
+  call was silently routed to one that ignored it; G2 caught the prose (turn 003).
+- Sending no `response_format` at all costs about 29% of calls. With it, 2%
+  (turn 004).
+- **Barak is the only judge that has ever flipped.** Elon and Shamgar have not
+  varied across eight runs. Read as: Barak's method weighs the defence case;
+  theirs turn on formal authority, which the agreed record settles flatly.
+- Before turn 005, three runs in five had **no defence case at all** — every
+  advocate reached the same position, so the judges ruled on a case only one
+  side was put in. Every advocate now argues `case_for_seat` regardless of where
+  it personally lands, and every run since has been contested.
 
----
+Two earlier claims here were wrong and were corrected in the records rather than
+quietly deleted: turn 003 concluded from two runs that the judges converge, and
+a later note called the routing constraint nearly free after one clean run.
+Both were premature. `docs/turns/` carries the corrections.
 
-*Previous status, kept for the record:*
-
-As of 24.08.2026: the case domain is fixed (`T-001 — The Realm v. Jon Snow`),
-the five-part specification is written, the charge sheet is a schema plus its
-first instance, all seven prompts are at v1.0, and the seven-call protocol
-executes with all eight gates in place. Each gate has failed at least once on
-purpose — see `docs/turns/002-…`.
-
-What that does **not** establish: no OpenRouter call has been made, so the
-provider is written and unexercised, the token and cost figures in the log are
-fabricated by the stub, and nothing shows whether the three judge prompts
-produce three distinct voices or one voice three times. That last one is the
-likeliest failure in this design and the stub cannot detect it — it invents the
-differences.
+**Not done:** nothing reads the database back, row-level security has no read
+policy, the Supabase failure path is untested, and `G3` has never fired on real
+output because the judges cite every fact almost every time. Written and
+unproven is recorded as such in `docs/GRADING-MAP.md`, not as passing.
 
 ## Grading
 

@@ -119,14 +119,19 @@ export function render(result, caseObj) {
   );
 
   // --- Run record
-  const s = result.log.summary();
+  const s = result.log.summary({ wall_ms: result.wall_ms ?? null });
   L.push('');
   L.push(`${BOLD}RUN${RESET}  ${DIM}${result.deliberation_id}${RESET}`);
   L.push(
     `  status: ${result.status} · calls attempted: ${s.attempted} · succeeded: ${s.succeeded} · failed: ${s.failed}`,
   );
   L.push(
-    `  tokens in/out: ${s.tokens_in}/${s.tokens_out} · total latency: ${s.total_latency_ms}ms`,
+    `  tokens in/out: ${s.tokens_in}/${s.tokens_out}`,
+  );
+  L.push(
+    `  ${BOLD}waited: ${(s.wall_ms / 1000).toFixed(1)}s${RESET}` +
+      `${DIM}  ·  model time (sum of 7 calls): ${(s.model_time_ms / 1000).toFixed(1)}s` +
+      `  ·  concurrency gain: ${s.concurrency_gain}×${RESET}`,
   );
   if (result.reported) {
     L.push(

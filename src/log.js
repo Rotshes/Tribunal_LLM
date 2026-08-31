@@ -65,7 +65,7 @@ export function makeCallLog() {
       return FILE;
     },
 
-    summary() {
+    summary({ wall_ms = null } = {}) {
       const ok = rows.filter((r) => r.succeeded).length;
       return {
         attempted: rows.length,
@@ -73,7 +73,27 @@ export function makeCallLog() {
         failed: rows.length - ok,
         tokens_in: rows.reduce((a, r) => a + (r.tokens_in ?? 0), 0),
         tokens_out: rows.reduce((a, r) => a + (r.tokens_out ?? 0), 0),
-        total_latency_ms: rows.reduce((a, r) => a + (r.latency_ms ?? 0), 0),
+
+        // MODEL TIME: the sum of seven call latencies. It measures how much
+        // model work a deliberation costs, and it is NOT how long anyone
+        // waited — running calls concurrently leaves it unchanged.
+        //
+        // It was previously the only figure reported, under the label "total
+        // latency", and was read as elapsed time all through turns 007 and 008.
+        // Every wall-clock claim made about the timeout problem rested on it.
+        // Renamed so the distinction cannot be misread again.
+        model_time_ms: rows.reduce((a, r) => a + (r.latency_ms ?? 0), 0),
+
+        // WALL CLOCK: what a person actually waits, measured by the caller
+        // around the whole deliberation. This is the number that has to fit
+        // inside a function timeout.
+        wall_ms,
+
+        // How much the concurrency is buying. 1.0 would mean fully sequential.
+        concurrency_gain:
+          wall_ms && wall_ms > 0
+            ? Number((rows.reduce((a, r) => a + (r.latency_ms ?? 0), 0) / wall_ms).toFixed(2))
+            : null,
       };
     },
   };

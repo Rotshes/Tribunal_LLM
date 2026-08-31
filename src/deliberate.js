@@ -27,6 +27,7 @@ class CapExceeded extends Error {}
 export async function deliberate({ caseObj, provider, modelOverrides = {}, allowedIds = null }) {
   const deliberation_id = crypto.randomUUID();
   const log = makeCallLog();
+  const began = Date.now();
 
   // Read once per deliberation, after the caller has loaded the environment.
   // Overrides are untrusted (a visitor's dropdown); resolveModelMap checks the
@@ -206,8 +207,10 @@ export async function deliberate({ caseObj, provider, modelOverrides = {}, allow
   // long in wall-clock instead of one.
   //
   // It also stopped mattering hypothetically on 31.08: `netlify dev` runs
-  // functions with a 30s cap, a sequential run took ~35s, and the browser could
-  // not complete a single deliberation locally. Concurrency takes it to ~20s.
+  // functions with a 30s cap and the browser could not complete a deliberation
+  // locally. The wall-clock figures quoted at the time were wrong — they came
+  // from the summed per-call latency, which concurrency does not change. The
+  // run now measures elapsed time separately; see `wall_ms` in log.js.
   //
   // Promise.all preserves input order, so judge_opinions still arrive in
   // JUDGE_ORDER and the display columns do not move.
@@ -240,6 +243,7 @@ export async function deliberate({ caseObj, provider, modelOverrides = {}, allow
     deliberation_id,
     case_id: caseObj.case_id,
     status,
+    wall_ms: Date.now() - began,
     // The actual per-role allocation for THIS run. A single `model` string is
     // wrong the moment two roles differ, and compare would group by it.
     model_map: MODELS,

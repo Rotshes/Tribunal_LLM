@@ -101,7 +101,7 @@ export default async function handler(req) {
     gate_problems: result.gate_problems ?? [],
     cap_error: result.cap_error ?? null,
     reported: result.reported ?? null,
-    usage: result.log.summary(),
+    usage: result.log.summary({ wall_ms: result.wall_ms ?? null }),
     model_calls: result.log.rows,
     advocate_opinions: result.advocate_opinions,
     advocate_failures: result.advocate_failures ?? [],

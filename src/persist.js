@@ -43,7 +43,7 @@ export function persistDeliberation(result, caseObj, meta = {}) {
     model_map: result.model_map ?? null,
     temperature: meta.temperature ?? null,
 
-    usage: result.log.summary(),
+    usage: result.log.summary({ wall_ms: result.wall_ms ?? null }),
 
     // Every call attempted, including failures. Duplicated from
     // logs/model-calls.jsonl on purpose: that file is append-only across all

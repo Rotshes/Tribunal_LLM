@@ -24,15 +24,21 @@
 # error page.
 #
 # `netlify dev` is stricter than production: it runs functions through
-# lambda-local with a 30-SECOND cap. A sequential run took ~35s, so the browser
-# could not complete a deliberation locally even though production would have
-# allowed it. That is now fixed at the source — the three judges run
-# concurrently (src/deliberate.js), which they should always have done, since
-# they are independent by construction and sequencing bought nothing.
+# lambda-local with a 30-SECOND cap, observed twice. The browser could not
+# complete a deliberation locally even though production would have allowed it.
 #
-# Current shape: four advocate calls concurrently, then three judge calls
-# concurrently. Roughly 20s on gemini-3.5-flash-lite, against a 30s local cap
-# and a 60s production one.
+# The three judges now run concurrently (src/deliberate.js) — they are
+# independent by construction and sequencing bought nothing.
+#
+# NO WALL-CLOCK FIGURE IS QUOTED HERE ANY MORE. The numbers previously written
+# in this file ("~35s", "roughly 20s") were taken from the summed per-call
+# latency, which is model work and not elapsed time, and which concurrency does
+# not change at all. Every timing claim made during turns 007 and 008 rested on
+# that mistake. The run now measures elapsed time separately and reports it as
+# `waited`; fill a real figure in here once one has been observed.
+#
+# Shape: four advocate calls concurrently, then three judge calls concurrently,
+# against a 30s local cap and a 60s production one.
 #
 # If a slow model on every role ever exceeds even that, the remaining answer is
 # a background function with the page polling for the result. Not needed yet,

@@ -71,10 +71,11 @@ console.log(
       pad('elon', 7) +
       pad('shamgar', 8) +
       pad('differ', 8) +
+      pad('waited', 9) +
       pad('tok in/out', 13),
   ),
 );
-console.log(dim('─'.repeat(114)));
+console.log(dim('─'.repeat(123)));
 
 for (const d of runs) {
   const byId = new Map(d.judge_opinions.map((o) => [o.judge_id, o]));
@@ -98,6 +99,9 @@ for (const d of runs) {
       pad(R[rulings[1]] ?? '—', 7) +
       pad(R[rulings[2]] ?? '—', 8) +
       pad(differ, 8) +
+      // Elapsed time, not the sum of call latencies. Runs stored before
+      // 31.08 have no wall_ms and show a dash rather than a wrong number.
+      pad(d.usage?.wall_ms ? `${(d.usage.wall_ms / 1000).toFixed(1)}s` : '—', 9) +
       pad(`${d.usage?.tokens_in ?? 0}/${d.usage?.tokens_out ?? 0}`, 13),
   );
 }

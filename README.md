@@ -105,11 +105,12 @@ What the runs established, in order:
   judges brought the split straight back, with the advocates concluding
   identically in both conditions. The committed allocation follows from that
   (turn 010, decision 0009).
-- **The catalogue is not evidence.** All five allowlisted models appear under
+- **The catalogue is not evidence.** Every allowlisted model appears under
   OpenRouter's `?supported_parameters=response_format`; two fail in production,
   one with no routable endpoint and one by returning prose. Every entry now
   records what it was *observed* to do, and `npm run try-model` earns that
-  record in one call (turn 013).
+  record in one call. Five candidates were evaluated that way, one added and
+  three rejected with dated reasons (turn 013).
 
 Several earlier claims here were wrong and were corrected in the records rather
 than quietly deleted: turn 003 concluded from two runs that the judges converge;

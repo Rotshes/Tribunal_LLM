@@ -43,6 +43,13 @@
       "observed": "works — argued the prosecution seat cleanly (31.08.2026)"
     },
     {
+      "id": "nvidia/nemotron-3.5-lightning",
+      "label": "Nemotron 3.5 Lightning",
+      "price_per_m_in": 0.08,
+      "note": "A fourth provider, and the only model on this list that earned its place before being added rather than after. Found by filtering openrouter.ai for cheap models supporting response_format, then verified with `npm run try-model` — one call, not seven.",
+      "observed": "works — produced a valid judge opinion (not_justified) in 14.4s (31.08.2026)"
+    },
+    {
       "id": "upstage/solar-pro4",
       "label": "Solar Pro 4",
       "price_per_m_in": 0.03,

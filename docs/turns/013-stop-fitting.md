@@ -232,6 +232,29 @@ The general shape: **a tool that formats output for a committed file is
 handling untrusted input**, because the provider wrote half of it. I treated it
 as a print statement.
 
+**One candidate passed.** `nvidia/nemotron-3.5-lightning` produced a valid judge
+opinion in 14.4 seconds and is now on the allowlist — the only entry there that
+earned its place **before** being added rather than after. The list is six
+models across five providers, four of which work:
+
+| Model | Provider | Observed |
+|---|---|---|
+| `google/gemini-3.5-flash-lite` | Google | works — the committed judge model |
+| `google/gemini-3.7-flash` | Google | works — the committed advocate model |
+| `qwen/qwen3.7-flash` | Qwen | works |
+| `nvidia/nemotron-3.5-lightning` | NVIDIA | works |
+| `upstage/solar-pro4` | Upstage | unreliable — returns prose |
+| `openai/gpt-5.6-luna` | OpenAI | fails — no routable endpoint |
+
+Three candidates were rejected on one call each: DeepSeek (no answer in 120s),
+Ling (JSON without `reasoning`), and — not a real observation — a mistyped
+NVIDIA id that OpenRouter refused in 0.3 seconds.
+
+Five candidates evaluated, one added, three rejected with dated reasons, and a
+mistype identified as a mistype. That is a short menu that was questioned rather
+than a short menu that was never examined, and the difference is legible in the
+file.
+
 Two things about it are worth stating rather than leaving to be discovered:
 
 - **It bypasses the allowlist deliberately.** That is safe because it is a
@@ -260,9 +283,12 @@ Two things about it are worth stating rather than leaving to be discovered:
   `observed` field is dated for that reason.
 - ~~**`npm run try-model` against a real model.**~~ Run: it rejected
   `deepseek/deepseek-v4-flash-0731` on a 120-second timeout.
-- **`nvidia/nemotron-3.5-lightning`.** Not tried: the id was mistyped with a
-  trailing `2` and OpenRouter rejected it in 0.3s as not a valid model. That is
-  a typo, not an observation, and it is not recorded as one.
+- **That Nemotron works more than once.** One call. It is on the allowlist on
+  the strength of a single observation, which is exactly what the tool's own
+  closing line warns about. The `observed` field is dated so the claim's age is
+  visible.
+- **Nemotron in a full seven-call run.** It answered a judge prompt; it has
+  never argued an advocate seat, where the prompt differs.
 - **Whether DeepSeek's timeout is capacity or the model.** One call at one
   moment. The rejection is dated for that reason; it is not a permanent verdict
   on the model.

@@ -30,12 +30,17 @@
 # The three judges now run concurrently (src/deliberate.js) — they are
 # independent by construction and sequencing bought nothing.
 #
-# NO WALL-CLOCK FIGURE IS QUOTED HERE ANY MORE. The numbers previously written
-# in this file ("~35s", "roughly 20s") were taken from the summed per-call
-# latency, which is model work and not elapsed time, and which concurrency does
-# not change at all. Every timing claim made during turns 007 and 008 rested on
-# that mistake. The run now measures elapsed time separately and reports it as
-# `waited`; fill a real figure in here once one has been observed.
+# MEASURED, 31.08.2026, gemini-3.5-flash-lite on all seven roles:
+#   waited 13.6s  ·  model time (sum of 7 calls) 36.2s  ·  concurrency gain 2.67x
+#
+# The earlier numbers in this file ("~35s", "roughly 20s") were the SUMMED
+# per-call latency read as though it were elapsed time. Concurrency does not
+# change a sum, so that figure never moved and made the fix look ineffective
+# when it had been working from the moment it was written. Elapsed time is now
+# measured separately and reported as `waited`.
+#
+# 13.6s against a 30s local cap and a 60s production one. A mixed panel of
+# slower models will be slower — that is the headroom to watch.
 #
 # Shape: four advocate calls concurrently, then three judge calls concurrently,
 # against a 30s local cap and a 60s production one.

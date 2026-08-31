@@ -42,6 +42,12 @@ export function persistDeliberation(result, caseObj, meta = {}) {
 
     usage: result.log.summary(),
 
+    // Every call attempted, including failures. Duplicated from
+    // logs/model-calls.jsonl on purpose: that file is append-only across all
+    // runs, this document is one run readable on its own — and it is what the
+    // Supabase sink writes from.
+    model_calls: result.log.rows,
+
     // There is no combined result here and there is no field able to hold one.
     // The three rulings are stored as three peers, exactly as they are shown.
     advocate_opinions: result.advocate_opinions,
@@ -67,7 +73,7 @@ export function persistDeliberation(result, caseObj, meta = {}) {
   };
 
   fs.writeFileSync(file, JSON.stringify(doc, null, 2), 'utf8');
-  return file;
+  return { file, doc };
 }
 
 export function loadDeliberations() {

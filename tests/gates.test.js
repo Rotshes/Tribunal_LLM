@@ -285,6 +285,82 @@ test('.env parsing survives Windows line endings, comments and quotes', () => {
   }
 });
 
+// ------------------------------------------------- the Supabase sink (turn 006)
+
+test('the Supabase sink posts four tables in dependency order, and no combined result', async () => {
+  const { writeDeliberation } = await import('../src/sinks/supabase.js');
+  const before = {
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_SECRET_KEY,
+  };
+  const calls = [];
+  const fetchImpl = async (url, opts) => {
+    calls.push({ table: url.split('/rest/v1/')[1], rows: JSON.parse(opts.body) });
+    return { ok: true, text: async () => '' };
+  };
+
+  try {
+    process.env.SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SECRET_KEY = 'sb_secret_test';
+
+    const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+    const doc = {
+      deliberation_id: r.deliberation_id,
+      case_id: r.case_id,
+      ran_at: new Date().toISOString(),
+      status: r.status,
+      provider: 'stub',
+      json_mode: null,
+      model: null,
+      temperature: 0.7,
+      gate_problems: [],
+      cap_error: null,
+      reported: r.reported,
+      case_snapshot: { agreed_facts: CASE.agreed_facts },
+      advocate_opinions: r.advocate_opinions,
+      judge_opinions: r.judge_opinions,
+      model_calls: r.log.rows,
+    };
+
+    const written = await writeDeliberation(doc, CASE, { fetchImpl });
+
+    assert.deepEqual(
+      calls.map((c) => c.table),
+      ['charge_sheets', 'deliberations', 'opinions', 'model_calls'],
+      'foreign keys require this order',
+    );
+    assert.equal(written.opinions, 7);
+    assert.equal(written.model_calls, 7);
+
+    const body = JSON.stringify(calls);
+    for (const forbidden of ['"verdict"', '"majority"', '"consensus"', '"score"']) {
+      assert.ok(!body.includes(forbidden), `${forbidden} was sent to the database`);
+    }
+    const adv = calls[2].rows.filter((r2) => r2.role === 'advocate');
+    assert.ok(adv.every((r2) => r2.case_for_seat), 'case_for_seat was not written');
+  } finally {
+    if (before.url === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = before.url;
+    if (before.key === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = before.key;
+  }
+});
+
+test('the sink refuses to run unconfigured, naming the right key', async () => {
+  const { writeDeliberation, supabaseConfigured } = await import('../src/sinks/supabase.js');
+  const before = process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_URL;
+  try {
+    assert.equal(supabaseConfigured(), false);
+    await assert.rejects(
+      () => writeDeliberation({ advocate_opinions: [], judge_opinions: [] }, CASE),
+      /sb_secret_/,
+    );
+  } finally {
+    if (before !== undefined) process.env.SUPABASE_URL = before;
+  }
+});
+
 // ------------------------------------------- the case for the seat (turn 005)
 
 test('an advocate opinion without case_for_seat is rejected', () => {
@@ -395,7 +471,7 @@ test('a persisted deliberation stores the opinions and no combined field', async
   try {
     process.chdir(tmp);
     const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
-    const file = persistDeliberation(r, CASE, { provider: 'stub', json_mode: null });
+    const { file } = persistDeliberation(r, CASE, { provider: 'stub', json_mode: null });
     const doc = JSON.parse(fsp.readFileSync(file, 'utf8'));
 
     assert.equal(doc.judge_opinions.length, 3);

@@ -11,6 +11,7 @@ import { render } from './render.js';
 import { makeStubProvider } from './providers/stub.js';
 import { loadEnv } from './env.js';
 import { persistDeliberation } from './persist.js';
+import { supabaseConfigured, writeDeliberation } from './sinks/supabase.js';
 
 function findCase(caseId) {
   const dir = 'cases';
@@ -51,7 +52,7 @@ const logFile = result.log.flush();
 
 // Record what was said, not only what it cost. Written even for a failed run:
 // a run where all seven calls failed is exactly the one you want to re-read.
-const runFile = persistDeliberation(result, caseObj, {
+const { file: runFile, doc } = persistDeliberation(result, caseObj, {
   provider: provider.name,
   json_mode: jsonMode,
   model: process.env.TRIBUNAL_MODEL ?? null,
@@ -61,6 +62,26 @@ const runFile = persistDeliberation(result, caseObj, {
 console.log(render(result, caseObj));
 console.log(`\n\x1b[2mmodel calls logged to ${logFile}\x1b[0m`);
 console.log(`\x1b[2mdeliberation saved to ${runFile}\x1b[0m`);
+
+// The file is written first and always. The database is additional, and a
+// database failure must not lose the run — the local copy already exists by the
+// time this is attempted.
+if (supabaseConfigured()) {
+  try {
+    const written = await writeDeliberation(doc, caseObj);
+    console.log(
+      `\x1b[2mwritten to Supabase: ${written.opinions} opinions, ${written.model_calls} calls\x1b[0m`,
+    );
+  } catch (err) {
+    console.error(`\x1b[31mSupabase write failed: ${err.message}\x1b[0m`);
+    console.error(`\x1b[2mThe run is not lost — it is in ${runFile}\x1b[0m`);
+  }
+} else {
+  console.log(
+    `\x1b[2mSupabase not configured; run kept locally only\x1b[0m`,
+  );
+}
+
 console.log(`\x1b[2mcompare runs with: npm run compare\x1b[0m`);
 
 // Exit non-zero unless every one of the seven calls succeeded and every gate

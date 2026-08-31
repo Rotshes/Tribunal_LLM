@@ -119,7 +119,7 @@ browser (React + Vite, on Netlify)
     │  charge sheet in, three opinions out
     ▼
 Netlify Function  ── holds OPENROUTER_API_KEY, the prompts, the call budget
-    ├──► OpenRouter  ── 4 advocate calls in parallel, then 3 judge calls
+    ├──► OpenRouter  ── 4 advocate calls concurrently, then 3 judge calls concurrently
     └──► Supabase    ── charge sheets, opinions, one row per model call
 ```
 
@@ -131,7 +131,7 @@ it does not decide, validate for real, or hold a key.
 | Order | Call | Sees |
 |---|---|---|
 | 1–4, parallel | Jon Snow · Tyrion Lannister · Daenerys Targaryen · Grey Worm | The charge sheet only |
-| 5–7, after 1–4 | Barak model · Elon model · Shamgar model | The charge sheet **and** all four advocate opinions |
+| 5–7, parallel, after 1–4 | Barak model · Elon model · Shamgar model | The charge sheet **and** all four advocate opinions |
 
 **There is no rebuttal round.** Advocates do not see each other. That is partly a
 budget consequence — a rebuttal round would put the count at eleven, and the
@@ -144,6 +144,26 @@ design. Identical input into three different judicial methods is the only
 arrangement in which a divergent ruling means something. If judges could read
 one another, divergence would be contaminated by order and by deference, and
 the output would no longer answer the question the app exists to ask.
+
+**The three judge calls are also issued concurrently.** They are independent by
+construction — each receives the same assembled input, none sees another's
+ruling, none is told another exists — so sequencing them buys nothing and costs
+three times the wall-clock.
+
+*Amended 31.08.2026.* This paragraph is new. Until then the judges ran one after
+another, for no reason anyone had ever stated: the independence that makes
+concurrency safe is the same property the design already rested on. What forced
+the question was `netlify dev`, which caps a function at 30 seconds against
+production's 60 — a sequential run took about 35 and could not complete in the
+browser at all. Concurrency brings it to roughly 20.
+
+Worth recording as more than a performance note: the improvement was available
+from the first working version and went unmade because nothing made the waste
+visible. A constraint did not create the fix; it only revealed one that had been
+sitting there.
+
+The judges' order in the output is unchanged and remains fixed —
+`barak · elon · shamgar` — so the three columns do not move between runs.
 
 ### Model allocation
 

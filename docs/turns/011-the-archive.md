@@ -72,7 +72,8 @@ rulings as three. Opening one calls the same `renderAdvocates()` and
 | An unconfigured archive is distinguishable from an empty one | Test against the handler with a real `Request` | Pass — 503 with a message, not `[]` |
 | Method restriction | Test | Pass — 405 on POST |
 | No Supabase key in the browser | `web/` imports nothing from `src/`; the key is read in the function | Pass by construction |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 54 tests, 76 files, G5 and G8 clean |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 54 tests, 78 files, G5 and G8 clean |
+| The endpoint works against the real database | `netlify dev`, browser | Pass — 16 runs listed, one opened in full (§6c) |
 
 ### 6a. The failure that would have been invisible
 
@@ -111,17 +112,31 @@ first time it caught a statement about the future rather than the present.
 Updated to state what is true and to name 0010, so that adding a policy later
 reads as reopening a decision rather than as filling a gap.
 
+### 6c. Exercised against the real database
+
+Run under `netlify dev`, 31.08. The archive listed **sixteen runs**, newest
+first, each with its three rulings; opening one rendered the arguments and the
+three opinions through the live renderers. Both `/api/runs` paths therefore work
+against real PostgREST, which closes the gap turn 009 left open about
+`readDeliberations()` and never closed.
+
+The list also made a boundary visible that no test would have: **it holds
+sixteen runs, not twenty-six.** Everything before turn 006 exists only as a local
+file, and the archive reads the database. That is correct — a run nobody but the
+person at the terminal ever had is not retrievable by a stranger, which is what
+item 3 asks about — but it means the repository's record and the app's archive
+are different sets, and `tools/compare.js` is the only thing that sees both. Not
+a defect; worth writing down before someone reads the archive as complete.
+
 ### What I did not verify
 
-- **The read path against the real database.** Every test here runs against a
-  fake PostgREST. The queries are plausible and the shapes are asserted, but no
-  row has actually come back from Supabase through this code. Turn 009 recorded
-  the same gap about `readDeliberations()` and it has still never been closed by
-  anything but use. `netlify dev` and one click closes it.
-- **The page.** No browser has rendered the archive section. The renderers are
-  the ones already exercised in turn 009, but the list markup, the CSS and the
-  click handler are unexercised.
-- **Behaviour at volume.** 26 runs, `limit=50`. What a hundred runs look like on
+- **A failed judge's column, in a browser.** The rebuild is tested against a
+  fake database, but every run in the archive is 7 of 7. The three partial runs
+  the project has all predate Supabase, so they are not in the archive and the
+  path cannot be exercised there without deliberately breaking a run. This is
+  the same class of gap as G3: written, tested from the failing side, never
+  fired on real data.
+- **Behaviour at volume.** 16 runs, `limit=50`. What a hundred runs look like on
   the page is not designed for, and there is no pagination.
 - **That the archive is genuinely readable by a stranger.** It will be when the
   site is public. Until it is deployed, item 3 is met on a machine, which is the
@@ -135,8 +150,8 @@ The grading map's model-progression row is DONE, and its DoD 3 row names an
 artifact instead of a dash.
 
 **Open:** deployment, which is now the only thing between this repository and
-every remaining item. G3 still unproven. The read path unexercised against the
-real database.
+every remaining item. G3 still unproven; the failed-judge column in the archive
+likewise written and untested on real data.
 
 **Next turn:** deploy, then verify items 1 and 3 at the public address rather
 than on a laptop.

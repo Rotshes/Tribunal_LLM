@@ -40,13 +40,13 @@ choices.
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| The panel | Four advocates (`cases/T-001…json`), three judges (`panel/judges.json`); `src/deliberate.js` runs all seven, advocates concurrent, judges after | DONE (against a stub) / OPEN (against real models) |
+| The panel | Four advocates (`cases/T-001…json`), three judges (`panel/judges.json`); `src/deliberate.js` runs all seven — four advocates concurrently, then three judges concurrently (turn 008 §6b) | DONE — exercised against real models across eleven deliberations |
 | **Protocol refuses to combine verdicts** — three reported side by side | `docs/decisions/0002`; `schemas/opinion.schema.json` forbids nine field names and has nowhere to hold a combined result; G5 scans the whole repo including `src/` with per-line pragmas; `src/render.js` shows three peers with no headline; a test greps the result object | DONE |
 | **Charge sheet written precisely as a specification, not free text** | `docs/02-charge-sheet-spec.md` (meaning) + `schemas/charge-sheet.schema.json` (enforceable) + `cases/T-001-realm-v-jon-snow.json` (first instance) + G1 in `src/gates.js`, running before any model call | DONE |
-| **Seven agent prompts written and versioned** | `prompts/` — stable paths, `version` headers, changelogs; loaded and SHA-256'd at call time, with version and hash on every log row so an opinion traces to the exact text that made it | DONE (v1.0, executed against a stub) / OPEN (never yet against a model) |
+| **Seven agent prompts written and versioned** | `prompts/` — stable paths, `version` headers, changelogs; loaded and SHA-256'd at call time, with version and hash on every log row so an opinion traces to the exact text that made it. Advocates at **v1.2**, judges at **v1.1**; every bump is an in-place edit with a dated changelog row, so `git diff` shows the text that changed | DONE — executed against real models, and the versions moved for measured reasons (turns 004, 005) |
 | The cases | `T-001` supplied by the instructor 24.08, encoded as a repository fixture, validated by G1; `docs/decisions/0003` | DONE |
-| Models reached through OpenRouter | `src/providers/openrouter.js`, exercised for real 31.08: two full deliberations, `google/gemini-3.5-flash-lite`, seven calls each, logged in `logs/model-calls.jsonl`. Key read from the environment, never leaves the module. `require_parameters` added after a routing downgrade was caught by G2 | DONE |
-| **Progression from one model toward several is visible** | `modelMap()` in `src/config.js`, seven entries all equal, so the progression is a diff to one object plus a decision record. **The reason to move now exists and is documented**: turn 003 §6b found all three judges converging on identical fact citations and near-identical grounds. Turn 004 re-runs on a stronger model with nothing else changed, and the two logs are the evidence | STARTED — the case for the change is now measured, not assumed |
+| Models reached through OpenRouter | `src/providers/openrouter.js`, exercised for real 31.08: eleven deliberations logged, `require_parameters` added after a routing downgrade was caught by G2, `--json-mode` added after the parameter turned out to be deciding which models could be tested at all. Key read from the environment, never leaves the module, never reaches the browser | DONE |
+| **Progression from one model toward several is visible** | `modelMap()` in `src/config.js` still holds the committed allocation, seven entries equal, so the project's own progression remains a diff plus a decision record. **The architecture now supports and displays a mixed panel**: `panel/models.json` allowlist, per-role picker in `web/`, `resolveModelMap()` validating overrides, and `deliberations.model_map` recording all seven role→model pairs (turn 008). The measured case for moving is in turn 004 §6c and turn 005 §6a | STARTED — supported and visible; the committed move itself not yet made |
 
 ## Third 3 — Your own project (33%)
 
@@ -59,16 +59,32 @@ Specification is yours. Domain does not affect the grade; neither does polish.
 | **Commit history across at least three full turns of the spiral** | At least three complete turns, each with intent → spec → context → plan → execution → verification → record | OPEN |
 | **Runs in parallel on the same module beats** | Timestamps in both repos advancing together, week by week | OPEN — see the schedule note below |
 
+## The application itself
+
+Not a fixed requirement of the running project — Gorsky's specification names
+the panel, the protocol, the charge sheet, the cases, OpenRouter, the prompts
+and the model progression, none of which require deployment. It is required by
+`docs/00-framing.md` §3, which is ours.
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Persistence | `db/schema.sql`, `src/sinks/supabase.js`; a real run written to Postgres 31.08 (turn 006) | DONE |
+| HTTP wrapper | `netlify/functions/` — thin by design; every rejection path verified with real `Request` objects (turn 007 §6) | STARTED |
+| Interface | `web/index.html`, no build step (decision 0008): three judge columns in fixed order, a failed judge shown as a failure, per-role model picker | STARTED |
+| **DoD 1 — a stranger can submit and read the opinions** | — | **OPEN. The app has never completed a single run.** Every verified path is a rejection path; the success path has not rendered once (turn 008 §6b) |
+| DoD 3 — a case is retrievable by someone who did not submit it | — | OPEN — nothing reads the database back, and RLS has no read policy |
+| Deployed at a public address | — | OPEN — no Netlify site exists |
+
 ## Graded across both projects
 
 | Requirement | Evidence | Status |
 |---|---|---|
 | **Kept on schedule** — module beats, checkpoints on time | Commit timestamps | OPEN — behind; see below |
 | **Documented as you go, not retrofitted** | Doc commits interleaved with code commits, not clustered at the end | OPEN — starts with your first commit |
-| Context files kept **and maintained** across sessions | `CLAUDE.md` with a history of edits, not one initial commit — second edit 24.08 adding three standing rules and the first two entries in the pitfalls list | STARTED |
-| **Commits made before agent invocations** | Clean tree before each turn; the diff attributable to that turn | OPEN — habit starts now |
-| Honest atomic commit messages | One change per commit; messages that do not overstate | OPEN |
-| **Verification gates that catch real failure modes** | Eight gates specified in `docs/01-spec.md` §4, each with a written answer to "will this actually fire?"; two properties deliberately reported rather than gated, with the reason | **DONE.** Eight gates in `src/gates.js` and `tools/repo-checks.js`; 27 tests, most written from the failing side. **G2 has now fired on live model output** (turn 003 §6a): a prose response caused by a provider routing downgrade, diagnosed, fixed, and confirmed by a clean re-run. G8 fired on a test fixture and was answered by renaming the fixture rather than weakening the scan. **Honest gap: G3 has never fired on real output** — every judge cites every fact — so it is written and unproven, not passing (turn 003 §6b) |
+| Context files kept **and maintained** across sessions | `CLAUDE.md` edited across every turn, and **pruned twice against Module 11's 200-line limit** (198→178, 194→178). Both prunes found stale statements no one was looking for: two pre-decision-0002 claims that the app shows a headline verdict, and decision 0007 missing from the settled list. The pitfalls section was restructured from one line per incident to six groups by lesson, so it stops growing linearly | DONE — maintained, with the maintenance itself producing findings |
+| **Commits made before agent invocations** | Clean tree before each turn, stated in every turn record's header | DONE — held across eight turns |
+| Honest atomic commit messages | One change per commit; messages naming the intent | DONE — including messages that record a mistake rather than hide it ("Remove an invented function timeout and report the real HTTP status") |
+| **Verification gates that catch real failure modes** | Eight gates specified in `docs/01-spec.md` §4, each with a written answer to "will this actually fire?"; two properties deliberately reported rather than gated, with the reason | **DONE.** Eight gates in `src/gates.js` and `tools/repo-checks.js`; 42 tests, most written from the failing side. **G2 has now fired on live model output** (turn 003 §6a): a prose response caused by a provider routing downgrade, diagnosed, fixed, and confirmed by a clean re-run. G8 fired on a test fixture and was answered by renaming the fixture rather than weakening the scan. G5 was found exempting all of `src/` — the only place the defect could appear — and rewritten to scan everything with visible per-line pragmas. **Honest gaps: G3 has never fired on real output** (28 of 29 judge opinions cite every fact), and the copied-case gate added in turn 005 fires only in tests. Both are recorded as written-and-unproven, not passing |
 | Final state left merge-ready | No broken build, no stranded branch, no uncommitted work at the deadline | OPEN |
 
 ---

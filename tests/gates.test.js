@@ -918,31 +918,18 @@ test('a cut-off call fails with a reason that names the timeout', async () => {
   }
 });
 
-test('the deployed budget fits inside the platform limit', () => {
-  // The numbers in netlify/functions/deliberate.js, asserted rather than
-  // trusted. Two earlier versions of this arithmetic shipped and both lost
-  // whole runs to a 504.
-  // 30_000, not 60_000: the documented limit and this deployment's actual limit
-  // are different numbers, and the log is the one that counts.
-  const PLATFORM_LIMIT_MS = 30_000;
-  const RESERVED_MS = 9_000;
-  const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
-  const CALL_TIMEOUT_MS = Math.min(10_000, Math.floor(MODEL_BUDGET_MS / 2));
-
-  assert.ok(MODEL_BUDGET_MS > 0);
-  assert.ok(
-    CALL_TIMEOUT_MS * 2 + RESERVED_MS <= PLATFORM_LIMIT_MS,
-    'both stages at their cap, plus overhead, must finish before the platform stops',
-  );
-
-  const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
-  assert.match(src, /deadlineAt,/, 'the function must pass a deadline, not only a per-call cap');
-  assert.match(src, /timeoutMs: CALL_TIMEOUT_MS/);
-  // The measured limit, guarded. Three budgets were shipped against 60_000 and
-  // all three lost whole runs; if this constant drifts back, so does the bug.
-  assert.match(src, /FUNCTION_LIMIT_MS \?\? 30_000/,
-    'the budget must default to the MEASURED 30s limit, not the documented 60s');
-});
+// The budget test that stood here is deleted, not adjusted.
+//
+// It asserted that seven model calls fit inside a 30-second platform limit.
+// Turn 013 stopped trying to make them fit: the function is a background one
+// now and has fifteen minutes. A test that guards an abandoned constraint is
+// worse than no test, because it keeps the constraint alive in the reader's
+// head. The replacement is `the deliberate function is a background function
+// with no time budget`, below.
+//
+// The deadline mechanism itself is kept and still tested — it is how a call
+// that hangs is stopped, which is a real bug at fifteen minutes as much as at
+// thirty seconds.
 
 test('the deadline shrinks: a later call gets only what is left', async () => {
   // The defect the deadline exists for. With two independent per-call timeouts,
@@ -1054,4 +1041,48 @@ test('the last-resort handler reports the failure instead of throwing', async ()
     'the exported handler must delegate through a try/catch');
   assert.match(src, /The tribunal failed unexpectedly/);
   assert.equal(typeof mod.default, 'function');
+});
+
+// ------------------------------------------- the background run (turn 013)
+
+test('a caller may supply the deliberation id, and a malformed one is refused', async () => {
+  // The background function answers 202 with an empty body, so the browser has
+  // to know the id before the run starts or it has nothing to poll for. A
+  // supplied id is untrusted: it becomes a primary key.
+  const good = '11111111-2222-3333-4444-555555555555';
+  const r1 = await deliberate({
+    caseObj: CASE,
+    provider: makeStubProvider('good'),
+    deliberationId: good,
+  });
+  assert.equal(r1.deliberation_id, good);
+
+  for (const bad of ["'; drop table deliberations; --", '', 'x'.repeat(200), null, 42]) {
+    const r = await deliberate({
+      caseObj: CASE,
+      provider: makeStubProvider('good'),
+      deliberationId: bad,
+    });
+    assert.notEqual(r.deliberation_id, bad);
+    assert.match(r.deliberation_id, /^[0-9a-f-]{36}$/i, 'a refused id must be replaced, not used');
+  }
+});
+
+test('the deliberate function is a background function with no time budget', () => {
+  // Turn 012 spent three deploys fitting seven calls into 30 seconds and still
+  // cut a judge off at 7. The fix was to stop fitting.
+  const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
+  assert.match(src, /background: true/);
+  assert.ok(!/deadlineAt/.test(src), 'the synchronous deadline must be gone');
+  assert.ok(!/PLATFORM_LIMIT_MS/.test(src), 'no platform budget should remain');
+  assert.match(src, /deliberationId: body\.deliberation_id/,
+    'the supplied id must be passed through, or the page cannot poll');
+});
+
+test('the page polls the archive rather than reading a response body', () => {
+  const page = fs.readFileSync('web/index.html', 'utf8');
+  assert.match(page, /res\.status !== 202/, 'a background invocation answers 202');
+  assert.match(page, /awaitResult\(id\)/);
+  assert.match(page, /api\/runs\?id=/, 'the archive endpoint is the polling endpoint');
+  assert.match(page, /POLL_GIVE_UP_MS/, 'polling must be bounded, or a dead run hangs the page');
 });

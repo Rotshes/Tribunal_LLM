@@ -51,11 +51,20 @@ export default async function handler(req) {
   try {
     return await runDeliberation(req);
   } catch (err) {
+    // A COST OF GOING BACKGROUND, stated rather than hidden: nobody reads this
+    // response. A background invocation answers 202 before any of this runs, so
+    // the status and body below reach no browser and no log line the page can
+    // show. The function log is the only channel left, which is why the error
+    // is printed as well as returned.
+    //
+    // What the visitor sees instead is the page's poll timing out with a
+    // message saying no result was recorded. That is worse than turn 012's
+    // last-resort handler was for a synchronous function, and it is the price
+    // of not being cut off at 30 seconds. Recorded in turn 013 §6b.
+    console.error('[deliberate] unhandled failure:', err?.stack ?? err);
     return json(500, {
       error: 'The tribunal failed unexpectedly.',
       detail: err?.message ?? String(err),
-      // The first frame, which is usually the only one that identifies where.
-      // Not the whole stack: this response is public.
       where: String(err?.stack ?? '').split('\n')[1]?.trim() ?? null,
     });
   }
@@ -81,6 +90,7 @@ async function runDeliberation(req) {
 
   const problems = g1ChargeSheet(caseObj);
   if (problems.length) {
+    console.error('[deliberate] charge sheet rejected:', problems);
     return json(422, {
       error: 'The charge sheet was rejected before any model was called.',
       problems,
@@ -88,56 +98,22 @@ async function runDeliberation(req) {
     });
   }
 
-  // The time budget.
+  // No time budget any more, and that is the point of this turn.
   //
-  // THE LIMIT IS 30 SECONDS, MEASURED. Netlify's documentation says the
-  // synchronous execution limit is 60 seconds and not configurable; this
-  // deployment's own function log says `Duration: 30000 ms` and stops there.
-  // The documentation is not describing this site.
+  // This is a BACKGROUND function (see `config` at the foot of the file), so it
+  // has 15 minutes rather than the 30 seconds a synchronous one gets on this
+  // site. Turn 012 spent three deploys fitting seven model calls into 30
+  // seconds and the last one still cut a judge off after 7 — the panel was
+  // being shaped by the platform rather than by the case.
   //
-  // That number is the whole story of turn 012. Three budgets were computed
-  // against 60 and all three shipped and failed:
-  //
-  //   1. 90s per call — larger than the invocation itself, so no call could
-  //      ever fail on our side. 504, seven results lost.
-  //   2. 24s per call, (60 − 8) ÷ 2 stages. Two independent timeouts are not a
-  //      budget; they are two chances to spend the maximum. 504.
-  //   3. A shrinking 45s deadline with a 20s cap. Correct shape, right
-  //      arithmetic, wrong constant — 45s of model time inside a 30s limit
-  //      cannot work, and the deadline could not save a run that had already
-  //      been given more time than existed. 504.
-  //
-  // The standing rule in CLAUDE.md is to check a fact about an external service
-  // rather than recall it. I did check, twice — and both times I checked the
-  // documentation, which is a different thing from checking the deployment.
-  // The log was the only source that could settle it and it was available all
-  // along.
-  //
-  //   30s measured platform limit
-  //  − 9s cold start, prompt hashing, four sequential Supabase inserts, response
-  //  = 21s of model time for all seven calls, together
-  //   10s cap on any single call, so one slow model cannot take the budget
-  //
-  // Worst case: advocates run to 10s, judges start with 11s left and are capped
-  // at 10, so models stop by 20s and 10s remain. The committed allocation uses
-  // about 21s of wall clock from a terminal, most of it in the two stages, so
-  // it fits — but not with much to spare, which is itself worth knowing.
-  //
-  // If this ever needs raising, raise it because the log says a longer duration
-  // is allowed, not because the documentation does.
-  const PLATFORM_LIMIT_MS = Number(process.env.FUNCTION_LIMIT_MS ?? 30_000);
-  const RESERVED_MS = 9_000;          // everything that is not a model call
-  const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
-  const CALL_TIMEOUT_MS = Math.min(10_000, Math.floor(MODEL_BUDGET_MS / 2));
-  const deadlineAt = Date.now() + MODEL_BUDGET_MS;
+  // The per-call timeout stays, generously, because a call that hangs forever
+  // is still a bug: it would hold a background invocation open for a quarter of
+  // an hour and produce nothing.
+  const CALL_TIMEOUT_MS = 120_000;
 
   let provider;
   try {
-    provider = makeOpenRouterProvider({
-      jsonMode: 'object',
-      timeoutMs: CALL_TIMEOUT_MS,
-      deadlineAt,
-    });
+    provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: CALL_TIMEOUT_MS });
   } catch (err) {
     // Missing configuration is an operator error, not a user error, and it must
     // not read as a failed deliberation.
@@ -154,9 +130,12 @@ async function runDeliberation(req) {
     provider,
     modelOverrides: body.models ?? {},
     allowedIds: allowedIds(),
+    // The browser generated this and is already polling for it.
+    deliberationId: body.deliberation_id ?? null,
   });
 
   if (result.failed_gate === 'G0') {
+    console.error('[deliberate] model selection refused:', result.problems);
     return json(422, {
       error: 'That model selection was refused.',
       problems: result.problems,
@@ -207,4 +186,11 @@ async function runDeliberation(req) {
   return json(200, doc);
 }
 
-export const config = { path: '/api/deliberate' };
+export const config = {
+  path: '/api/deliberate',
+  // 15 minutes instead of 30 seconds. The caller receives 202 and an empty
+  // body immediately; the result reaches the page through the archive
+  // (`GET /api/runs?id=`), which turn 011 built for a different reason and
+  // which turns out to be exactly the polling endpoint this needs.
+  background: true,
+};

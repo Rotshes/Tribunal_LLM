@@ -71,6 +71,8 @@ lines are the rule, not the argument.
 - **Validation runs the schema files directly**, never restates them. (0006)
 - **Runs cited by a record are copied to `docs/evidence/` by hand**, never
   reconstructed. (0007)
+- **The deliberation runs in the background** and the page polls the archive.
+  No constant decides how many judges sit. (0011)
 
 ## How to work here
 
@@ -154,19 +156,17 @@ kept as evidence; a new one joins its group rather than starting a new line.
   support on OpenRouter is per *endpoint*, not per model: without
   `require_parameters` a call is routed to one that ignores it, the request
   succeeds, prose comes back, and you pay (31.08).
-- **Checking the documentation is not checking the deployment.** Netlify's docs
-  say the function limit is 60s, not configurable. This site's function log says
-  `Duration: 30000 ms`. Three time budgets were computed against 60, shipped,
-  and lost whole runs to a 504 before the log was read (31.08). When a number
-  decides whether the thing works, the system's own output outranks its vendor's
-  page — and outranks a fetched docs page too, which is the version of "check,
-  do not recall" I thought I was obeying.
-- **A bound is only real if it is smaller than every limit above it — and
-  bounds that run in sequence must share one budget, not hold one each.** A 90s
-  per-call timeout inside the platform limit meant no call could ever fail on
-  our side (31.08). Replacing it with a per-call timeout sized to half the limit
-  failed the same way: two sequential stages spent it twice and neither knew
-  about the other (31.08). Deadlines survive both; per-call timeouts do not.
+- **Four time budgets, one lesson each, all on 31.08.** (a) A 90s per-call
+  timeout inside a smaller platform limit meant no call could ever fail on our
+  side. (b) Sizing it to half the limit failed too: two sequential stages spent
+  it twice and neither knew about the other — sequential bounds must share one
+  shrinking deadline, not hold one each. (c) Three budgets were computed against
+  the documented 60s while this site's log said `Duration: 30000 ms`; **checking
+  the documentation is not checking the deployment**, and a fetched docs page is
+  not the "check, don't recall" the rule means. (d) The fourth budget worked by
+  cutting a judge off at 7s so the panel would fit — **when the fourth attempt
+  at a constant is due, the constant is not the problem.** The run is a
+  background one now (0011).
 
 ## Conventions
 

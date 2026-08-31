@@ -24,8 +24,26 @@ import { judgeMethod, judgeDisclaimer } from './panel.js';
 
 class CapExceeded extends Error {}
 
-export async function deliberate({ caseObj, provider, modelOverrides = {}, allowedIds = null }) {
-  const deliberation_id = crypto.randomUUID();
+export async function deliberate({
+  caseObj,
+  provider,
+  modelOverrides = {},
+  allowedIds = null,
+  // The caller may supply the id. The background function needs this: the
+  // browser is told the id BEFORE the run starts, because a background
+  // invocation answers 202 with an empty body and the page has nothing else to
+  // poll for. Generated here when nobody supplies one, which is every other
+  // caller.
+  //
+  // A supplied id is not trusted to be well-formed — a bad one would poison a
+  // primary key — so it is checked against the uuid shape and otherwise
+  // replaced rather than used.
+  deliberationId = null,
+}) {
+  const deliberation_id =
+    typeof deliberationId === 'string' && /^[0-9a-f-]{36}$/i.test(deliberationId)
+      ? deliberationId
+      : crypto.randomUUID();
   const log = makeCallLog();
   const began = Date.now();
 

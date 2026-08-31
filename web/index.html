@@ -369,72 +369,74 @@ function describeModels(doc) {
     .join(', ')}`;
 }
 
+// The run is now ASYNCHRONOUS, and the shape of this function changed with it.
+//
+// /api/deliberate is a Netlify background function: it answers 202 with an
+// empty body the moment it is invoked, and keeps working for up to 15 minutes.
+// So there is no response to read. The browser mints the deliberation id,
+// sends it, and then watches the archive for it to appear — the same
+// `GET /api/runs?id=` the "Past proceedings" section uses, which turn 011
+// built for retrieval and which turns out to be the polling endpoint this
+// needs.
+//
+// Why: the synchronous limit on this site is 30 seconds, measured. Seven calls
+// on the committed allocation take about 21, and turn 012 watched a judge get
+// cut off at 7 seconds so the panel would fit. A tribunal whose third opinion
+// depends on how fast a platform is willing to wait is not the thing this
+// project set out to build.
+const POLL_EVERY_MS = 2_000;
+const POLL_GIVE_UP_MS = 240_000;   // four minutes; the run itself may take 15
+
 async function run() {
   $('run').disabled = true;
+  $('error').hidden = true;
   startWaiting();
+
+  // Minted here, on purpose. A background invocation cannot tell us what id it
+  // chose, so the only id both sides can agree on is one the caller supplies.
+  // The backend re-checks its shape and replaces anything malformed.
+  const id = crypto.randomUUID();
 
   try {
     const res = await fetch('/api/deliberate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ case_id: CASE.case_id, models: chosenModels() }),
+      body: JSON.stringify({
+        case_id: CASE.case_id,
+        models: chosenModels(),
+        deliberation_id: id,
+      }),
     });
-    // Read the body as TEXT first. A platform error — a timeout, a crash, a
-    // 502 — comes back as an HTML page, and calling res.json() on it throws a
-    // parse error that replaces the real status with "unexpected character".
-    // That is exactly what happened on the first browser run: a function
-    // timeout was reported as malformed JSON, and the message named neither.
-    const raw = await res.text();
+
+    // 202 is the success case and carries nothing. Anything else means the
+    // invocation itself was refused — the run never started.
+    if (res.status !== 202 && !res.ok) {
+      const raw = await res.text();
+      stopWaiting();
+      showError(
+        `The tribunal could not be convened (HTTP ${res.status}).`,
+        ['The run was refused before it began.',
+         raw.slice(0, 200).replace(/\s+/g, ' ').trim() || '(empty response)'],
+      );
+      return;
+    }
+
+    const doc = await awaitResult(id);
     stopWaiting();
 
-    let doc = null;
-    try { doc = JSON.parse(raw); } catch { /* not JSON; handled below */ }
-
-    // A platform failure is diagnosed by STATUS, before the body is consulted.
-    //
-    // This function never returns 502 or 504 — every path in it returns 200,
-    // 400, 404, 405, 422 or 503 with an `error` field. So either of these came
-    // from Netlify, and the only thing that produces them here is a run that
-    // crashed or exceeded the 60-second synchronous limit.
-    //
-    // Checking the body first was wrong: Netlify's timeout response is itself
-    // JSON, with `errorType`/`errorMessage` and no `error`, so it parsed
-    // cleanly and fell through to the generic branch — which printed "The
-    // tribunal could not sit (502)" and dropped the one sentence that explains
-    // what actually happened. Same shape as the original defect this whole
-    // block exists for: a platform error wearing the costume of an app error.
-    if (res.status === 502 || res.status === 504) {
-      showError(
-        `The run did not finish (HTTP ${res.status}).`,
-        [
-          'This is the platform, not the tribunal: the run either crashed or exceeded the 30-second function limit.',
-          'Seven calls on the committed allocation take about 21 seconds, against a 30-second limit. There is not much room: a slow model on several roles is what uses it up. Try fewer changed roles, or Reset to the committed defaults.',
-          (raw.slice(0, 160).replace(/\s+/g, ' ').trim()) || '(empty response)',
-        ],
-      );
-      return;
-    }
-
     if (!doc) {
+      // Nothing was recorded. The run either crashed before writing or is
+      // still going. Said as two possibilities rather than one guess, because
+      // the page genuinely cannot tell them apart — the cost of a background
+      // run is that its errors do not come back here. Turn 013 §6b.
       showError(
-        `The tribunal did not answer properly (HTTP ${res.status}).`,
+        'No result was recorded.',
         [
-          'The response was not JSON. The first part of it is below.',
-          raw.slice(0, 200).replace(/\s+/g, ' ').trim() || '(empty response)',
+          `Nothing has appeared for run ${id} after four minutes.`,
+          'The deliberation may still be running — it has up to fifteen minutes — so reload the page and look in Past proceedings before assuming it failed.',
+          'If it never appears, the run failed before it could be written, and the reason is in the Netlify function log for `deliberate`.',
         ],
       );
-      return;
-    }
-
-    if (res.status === 422) {
-      showError(doc.error, doc.problems);
-      return;
-    }
-    if (!res.ok) {
-      // `where` comes from the function's last-resort handler: the first stack
-      // frame, which is usually the only thing that says where it broke.
-      showError(doc.error ?? `The tribunal could not sit (${res.status}).`,
-        [doc.detail, doc.where].filter(Boolean));
       return;
     }
 
@@ -445,15 +447,14 @@ async function run() {
     const u = doc.usage ?? {};
     $('runline').textContent =
       `run ${doc.deliberation_id} · ${doc.status} · ${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ` +
-      `${u.tokens_in ?? 0} in / ${u.tokens_out ?? 0} out · ${describeModels(doc)}` +
-      (doc.storage_warning ? ` · ${doc.storage_warning}` : '');
+      `${u.tokens_in ?? 0} in / ${u.tokens_out ?? 0} out · ${describeModels(doc)}`;
 
     if (doc.status !== 'complete') {
       showError('Some of the tribunal did not sit.',
         [`${u.failed} of ${u.attempted} calls failed. What is shown below is incomplete.`]);
     }
     $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    loadArchive(); // the run just held is now a past proceeding
+    loadArchive();
   } catch (err) {
     stopWaiting();
     showError('The request failed before a result came back.', [err.message]);
@@ -462,101 +463,34 @@ async function run() {
   }
 }
 
-// ------------------------------------------------------- past proceedings
-//
-// Definition of done item 3. The list shows all three rulings per run, never a
-// tally and never a "2 of 3" — the same rule that governs a live result governs
-// its record. (decision 0002)
+/**
+ * Watch the archive until this run appears, or until we give up.
+ *
+ * Returns the stored deliberation, or null if it never arrived. A 404 is the
+ * ordinary case here and not an error: it means the run has not finished
+ * writing yet.
+ */
+async function awaitResult(id) {
+  const startedAt = Date.now();
 
-const SHORT = { barak_model: 'Barak', elon_model: 'Elon', shamgar_model: 'Shamgar' };
+  while (Date.now() - startedAt < POLL_GIVE_UP_MS) {
+    await new Promise((r) => setTimeout(r, POLL_EVERY_MS));
 
-function renderArchive(runs) {
-  if (runs.length === 0) {
-    $('archive').innerHTML =
-      '<p class="note">No proceedings have been held yet. The first one convened above will appear here.</p>';
-    return;
-  }
+    // The elapsed counter belongs to startWaiting()'s interval. Writing it
+    // here too would have the two fight over the same element every second.
 
-  $('archive').innerHTML = runs.map((r) => {
-    const when = String(r.ran_at ?? '').slice(0, 16).replace('T', ' ');
-    const rulings = JUDGES.map((j) => {
-      const v = r.rulings?.[j];
-      return `<span>${esc(SHORT[j])} <b>${v ? esc(RULING[v] ?? v) : '—'}</b></span>`;
-    }).join('');
-
-    // A run where fewer than seven calls landed says so here, so nobody opens
-    // an incomplete panel expecting a complete one.
-    const short = r.calls_succeeded != null && r.calls_attempted != null
-      && r.calls_succeeded < r.calls_attempted;
-
-    return `<div class="run-row">
-      <div class="run-when">${esc(when)} · ${esc(r.case_id ?? '')}</div>
-      <div class="run-rulings">${rulings}${
-        short ? `<span class="run-incomplete">${r.calls_succeeded}/${r.calls_attempted} calls — incomplete</span>` : ''
-      }</div>
-      <div><button class="run-open" type="button" data-id="${esc(r.deliberation_id)}">Read it</button>
-        <div class="run-meta">${esc(String(r.deliberation_id).slice(0, 8))}</div></div>
-    </div>`;
-  }).join('');
-
-  $('archive').querySelectorAll('.run-open').forEach((b) =>
-    b.addEventListener('click', () => openRun(b.dataset.id, b)));
-}
-
-async function openRun(id, button) {
-  button.setAttribute('aria-busy', 'true');
-  button.textContent = 'Opening…';
-  try {
-    const res = await fetch(`/api/runs?id=${encodeURIComponent(id)}`);
-    const doc = await res.json().catch(() => null);
-    if (!res.ok || !doc) {
-      showError(doc?.error ?? `That proceeding could not be opened (HTTP ${res.status}).`);
-      return;
+    try {
+      const res = await fetch(`/api/runs?id=${encodeURIComponent(id)}`);
+      if (res.status === 404) continue;      // not written yet
+      if (!res.ok) continue;                 // transient; keep watching
+      const doc = await res.json();
+      if (doc && doc.deliberation_id) return doc;
+    } catch {
+      // A dropped request while polling is not a failed deliberation.
+      // Keep watching; the give-up clock is the only thing that ends this.
     }
-
-    // Rendered by the same two functions as a live run. A retrieved
-    // deliberation that looked different from a fresh one would invite the
-    // reader to treat it as a lesser record, and it is the same record.
-    renderAdvocates(doc);
-    renderRulings(doc);
-    $('results').hidden = false;
-
-    const u = doc.usage ?? {};
-    $('runline').textContent =
-      `retrieved · run ${doc.deliberation_id} · ${doc.status} · ` +
-      `${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ${describeModels(doc)} · held ${String(doc.ran_at ?? '').slice(0, 16).replace('T', ' ')}`;
-
-    if (doc.status !== 'complete') {
-      showError('This proceeding was incomplete when it was held.',
-        [`${u.failed} of ${u.attempted} calls failed. What is shown is what there was.`]);
-    }
-    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (err) {
-    showError('That proceeding could not be opened.', [err.message]);
-  } finally {
-    button.removeAttribute('aria-busy');
-    button.textContent = 'Read it';
   }
-}
-
-async function loadArchive() {
-  try {
-    const res = await fetch('/api/runs');
-    const body = await res.json().catch(() => null);
-    if (!res.ok) {
-      // Shown, not swallowed. An archive that is silently empty because the
-      // database is unreachable reads as "nothing has ever run here".
-      $('archive-error').hidden = false;
-      $('archive-error').innerHTML =
-        `<h3>The archive could not be read</h3><p>${esc(body?.error ?? `HTTP ${res.status}`)}</p>`;
-      return;
-    }
-    renderArchive(body.runs ?? []);
-  } catch (err) {
-    $('archive-error').hidden = false;
-    $('archive-error').innerHTML =
-      `<h3>The archive could not be reached</h3><p>${esc(err.message)}</p>`;
-  }
+  return null;
 }
 
 $('run').addEventListener('click', run);

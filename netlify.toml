@@ -14,43 +14,43 @@
   # to the wrong text.
   included_files = ["cases/**", "prompts/**", "panel/**", "schemas/**"]
 
-# NO TIMEOUT SETTING HERE, DELIBERATELY.
+# NO TIMEOUT SETTING HERE, DELIBERATELY — AND NO LONGER ANY NEED FOR ONE.
 #
-# THE LIMIT ON THIS SITE IS 30 SECONDS, MEASURED FROM THE FUNCTION LOG:
+# `netlify/functions/deliberate.js` sets `background: true`, which gives it
+# FIFTEEN MINUTES instead of the synchronous limit. The browser receives 202
+# immediately and polls `GET /api/runs?id=` — the archive endpoint from turn
+# 011 — until the run appears. Turn 013.
 #
-#   Aug 31, 03:28:13 PM  04e3f0da  Duration: 30000 ms  Memory Usage: 145 MB
+# The history is worth keeping, because it is the reason the app is shaped this
+# way and because the same mistake is easy to repeat:
 #
-# Netlify's documentation says the synchronous execution limit is 60 seconds and
-# is not configurable. It is not describing this deployment. Where the two
-# disagree, the log wins — it is the only source that observed this site.
+#   * An earlier version of this file invented `timeout = 26` from a
+#     half-remembered figure and killed every browser run.
+#   * Netlify's documentation says the synchronous limit is 60 seconds and is
+#     not configurable. THIS SITE'S FUNCTION LOG SAYS OTHERWISE:
 #
-# An earlier version of this file invented `timeout = 26` from a half-remembered
-# figure and killed every browser run. The lesson was written down as "check,
-# do not recall". Turn 012 then checked the documentation twice and shipped
-# three broken budgets anyway, because checking the docs is not the same as
-# checking the deployment. Both readings are now recorded above so the next
-# person does not have to rediscover the discrepancy.
+#       Aug 31, 03:28:13 PM  04e3f0da  Duration: 30000 ms  Memory Usage: 145 MB
 #
-# The budget derived from 30s lives in netlify/functions/deliberate.js, with the
-# arithmetic in the file. `FUNCTION_LIMIT_MS` overrides it — set that only when
-# a function log shows a longer duration is actually allowed.
+#     30 seconds. Where the documentation and the deployment disagree, the log
+#     is the one that observed this site.
+#   * Three time budgets were then computed against 60 and all three lost whole
+#     runs to a 504. The fourth, built on the measured 30, worked — and cut a
+#     judge off after 7 seconds so the rest of the panel would fit.
+#
+# That last one is why this is a background function now. A tribunal whose
+# third opinion depends on how long a platform is willing to wait is not the
+# thing this project set out to build. The synchronous limit cannot be raised;
+# the run does not have to be synchronous.
 #
 # MEASURED, 31.08.2026, the committed allocation (3.7-flash advocates,
-# flash-lite judges), from a terminal where no platform limit applies:
+# flash-lite judges), from a terminal:
 #   waited 20.8s  ·  model time (sum of 7 calls) 66.1s  ·  concurrency gain 3.18x
 #
-# 20.8s against a 30s limit is not much room, and a mixed panel of slower models
-# has repeatedly exceeded it. Calls are now cut off individually so the run
-# returns rulings and failed columns instead of a platform error page.
-#
-# `netlify dev` runs functions through lambda-local with a 30-second cap, which
-# turns out to match production here rather than being stricter than it.
+# A per-call timeout of 120s remains in the function. A call that hangs forever
+# is still a bug: it would hold a background invocation open for a quarter of an
+# hour and produce nothing.
 #
 # Shape: four advocate calls concurrently, then three judge calls concurrently.
-#
-# If the panel outgrows 30 seconds, the remaining answer is a background
-# function with the page polling for the result — 15 minutes, and it costs the
-# page its single synchronous request.
 
 [dev]
   publish = "web"

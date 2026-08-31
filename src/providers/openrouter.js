@@ -3,7 +3,7 @@
 // The key is read from the environment and never leaves this module. Nothing
 // here is imported by anything that runs in a browser.
 
-import { modelMap, REQUIRES_MODEL_ENV } from '../config.js';
+import { REQUIRES_MODEL_ENV } from '../config.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -59,12 +59,14 @@ export function makeOpenRouterProvider({
 
   return {
     name: `openrouter(json:${jsonMode})`,
-    async call({ role, roleId, system, user }) {
-      const model = modelMap()[`${role}.${roleId}`];
+    async call({ role, roleId, model, system, user }) {
+      // The model is decided by the caller (src/config.js resolveModelMap) and
+      // handed in. This module does not look one up: a provider that chooses
+      // its own model would make a mixed-model run untraceable.
       if (!model) {
         throw new Error(
-          `No model mapped for ${role}.${roleId}. ${REQUIRES_MODEL_ENV} is empty — ` +
-            'check .env has a model slug and that it is being read.',
+          `No model for ${role}.${roleId}. ${REQUIRES_MODEL_ENV} is empty and no ` +
+            'override was given — check .env has a model slug and that it is read.',
         );
       }
 

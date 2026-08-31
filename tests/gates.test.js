@@ -285,6 +285,66 @@ test('.env parsing survives Windows line endings, comments and quotes', () => {
   }
 });
 
+// ------------------------------------------- the model picker (turn 008)
+
+test('an override must name a real role and an allowed model', async () => {
+  const { resolveModelMap } = await import('../src/config.js');
+  const { allowedIds } = await import('../src/models.js');
+  const ids = allowedIds();
+  const before = process.env.TRIBUNAL_MODEL;
+  process.env.TRIBUNAL_MODEL = 'google/gemini-3.5-flash-lite';
+  try {
+    const ok = resolveModelMap({ 'judge.barak_model': 'qwen/qwen3.7-flash' }, ids);
+    assert.deepEqual(ok.problems, []);
+    assert.equal(ok.map['judge.barak_model'], 'qwen/qwen3.7-flash');
+    assert.equal(ok.map['judge.elon_model'], 'google/gemini-3.5-flash-lite',
+      'an override must not leak onto other roles');
+
+    // The whole point: a model id from a request never reaches the provider.
+    const evil = resolveModelMap({ 'judge.barak_model': 'anthropic/claude-opus-5' }, ids);
+    assert.ok(evil.problems.some((p) => p.includes('not an allowed model')));
+    assert.equal(evil.map['judge.barak_model'], 'google/gemini-3.5-flash-lite');
+
+    const nobody = resolveModelMap({ 'judge.nobody': 'qwen/qwen3.7-flash' }, ids);
+    assert.ok(nobody.problems.some((p) => p.includes('not a role')));
+
+    // An empty string means "use the default", not "use nothing".
+    assert.deepEqual(resolveModelMap({ 'judge.elon_model': '' }, ids).problems, []);
+  } finally {
+    if (before === undefined) delete process.env.TRIBUNAL_MODEL;
+    else process.env.TRIBUNAL_MODEL = before;
+  }
+});
+
+test('a refused override costs no model calls', async () => {
+  const { allowedIds } = await import('../src/models.js');
+  const r = await deliberate({
+    caseObj: CASE,
+    provider: makeStubProvider('good'),
+    modelOverrides: { 'judge.barak_model': 'evil/expensive' },
+    allowedIds: allowedIds(),
+  });
+  assert.equal(r.status, 'failed');
+  assert.equal(r.failed_gate, 'G0');
+  assert.equal(r.log.rows.length, 0, 'a rejected selection must not spend anything');
+});
+
+test('every allowlisted model is cheap and is not a free tier', async () => {
+  const { allowedModels } = await import('../src/models.js');
+  const list = allowedModels();
+  assert.ok(list.length >= 3);
+  for (const m of list) {
+    assert.ok(m.price_per_m_in <= 1, `${m.id} is not cheap enough for a public URL`);
+    assert.ok(!m.id.includes(':free'), `${m.id} is a free tier and will rate-limit`);
+    assert.ok(m.label && m.note, `${m.id} needs a label and a note`);
+  }
+});
+
+test('a run records the per-role allocation, not one model string', async () => {
+  const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+  assert.equal(Object.keys(r.model_map).length, 7);
+});
+
 // ------------------------------------------------- the Supabase sink (turn 006)
 
 test('the Supabase sink posts four tables in dependency order, and no combined result', async () => {

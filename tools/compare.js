@@ -40,6 +40,21 @@ const pad = (s, n) => String(s ?? '').padEnd(n).slice(0, n);
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 
+// A run's identity for comparison is its whole per-role allocation. Grouping
+// mixed-model runs under one model string would put unlike things in one
+// bucket and call the result variance.
+const describeModels = (d) => {
+  const m = d.model_map;
+  if (!m) return d.model ?? d.provider;
+  const distinct = [...new Set(Object.values(m).filter(Boolean))];
+  if (distinct.length === 0) return d.model ?? d.provider;
+  if (distinct.length === 1) return distinct[0];
+  return `mixed: ${Object.entries(m)
+    .map(([role, model]) => `${role.split('.')[1]}=${model}`)
+    .join(', ')}`;
+};
+
+
 // ---------------------------------------------------------------- per run
 
 console.log('');
@@ -70,7 +85,7 @@ for (const d of runs) {
 
   console.log(
     pad(d.ran_at.slice(5, 16).replace('T', ' '), 17) +
-      pad(d.model ?? d.provider, 30) +
+      pad(describeModels(d), 30) +
       pad(d.json_mode ?? '—', 7) +
       pad(d.status, 9) +
       // How many of the seven landed. The most informative column on the row:
@@ -96,7 +111,7 @@ console.log('');
 
 const groups = new Map();
 for (const d of runs) {
-  const key = `${d.model ?? d.provider} · json:${d.json_mode ?? '—'}`;
+  const key = `${describeModels(d)} · json:${d.json_mode ?? '—'}`;
   if (!groups.has(key)) groups.set(key, []);
   groups.get(key).push(d);
 }

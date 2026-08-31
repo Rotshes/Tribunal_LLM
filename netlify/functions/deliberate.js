@@ -14,6 +14,7 @@ import { deliberate } from '../../src/deliberate.js';
 import { makeOpenRouterProvider } from '../../src/providers/openrouter.js';
 import { g1ChargeSheet } from '../../src/gates.js';
 import { supabaseConfigured, writeDeliberation } from '../../src/sinks/supabase.js';
+import { allowedIds } from '../../src/models.js';
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), {
@@ -67,7 +68,25 @@ export default async function handler(req) {
     return json(503, { error: 'The tribunal is not configured.', detail: err.message });
   }
 
-  const result = await deliberate({ caseObj, provider });
+  // Per-role model overrides from the picker. Untrusted: deliberate() checks
+  // each key is a real role and each value is on the allowlist, and refuses the
+  // whole run if any is not. A model id from a request never reaches OpenRouter
+  // without passing that check — otherwise a public URL is an invitation to
+  // spend this project's credit on whatever the visitor names.
+  const result = await deliberate({
+    caseObj,
+    provider,
+    modelOverrides: body.models ?? {},
+    allowedIds: allowedIds(),
+  });
+
+  if (result.failed_gate === 'G0') {
+    return json(422, {
+      error: 'That model selection was refused.',
+      problems: result.problems,
+      spent: 'nothing',
+    });
+  }
 
   const doc = {
     deliberation_id: result.deliberation_id,
@@ -77,6 +96,7 @@ export default async function handler(req) {
     provider: provider.name,
     json_mode: 'object',
     model: process.env.TRIBUNAL_MODEL ?? null,
+    model_map: result.model_map ?? null,
     temperature: 0.7,
     gate_problems: result.gate_problems ?? [],
     cap_error: result.cap_error ?? null,

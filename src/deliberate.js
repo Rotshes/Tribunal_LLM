@@ -10,8 +10,7 @@ import {
   JUDGE_ORDER,
   EXPECTED_CALLS,
   callCap,
-  modelMap,
-  REQUIRES_MODEL_ENV,
+  resolveModelMap,
 } from './config.js';
 import { loadPrompt, advocateUserMessage, judgeUserMessage } from './prompts.js';
 import {
@@ -25,13 +24,33 @@ import { judgeMethod, judgeDisclaimer } from './panel.js';
 
 class CapExceeded extends Error {}
 
-export async function deliberate({ caseObj, provider }) {
+export async function deliberate({ caseObj, provider, modelOverrides = {}, allowedIds = null }) {
   const deliberation_id = crypto.randomUUID();
   const log = makeCallLog();
 
   // Read once per deliberation, after the caller has loaded the environment.
-  const MODELS = modelMap();
+  // Overrides are untrusted (a visitor's dropdown); resolveModelMap checks the
+  // role exists and the model is on the allowlist, and reports rather than
+  // silently ignoring anything it rejects.
+  const { map: MODELS, problems: modelProblems } = resolveModelMap(
+    modelOverrides,
+    allowedIds,
+  );
   const CAP = callCap();
+
+  if (modelProblems.length) {
+    return {
+      deliberation_id,
+      case_id: caseObj?.case_id ?? null,
+      status: 'failed',
+      failed_gate: 'G0',
+      problems: modelProblems,
+      advocate_opinions: [],
+      judge_opinions: [],
+      model_map: MODELS,
+      log,
+    };
+  }
 
   // G1 — before anything is spent.
   const g1 = g1ChargeSheet(caseObj);
@@ -44,6 +63,7 @@ export async function deliberate({ caseObj, provider }) {
       problems: g1,
       advocate_opinions: [],
       judge_opinions: [],
+      model_map: MODELS,
       log,
     };
   }
@@ -73,6 +93,7 @@ export async function deliberate({ caseObj, provider }) {
       const res = await provider.call({
         role,
         roleId,
+        model: MODELS[`${role}.${roleId}`],
         system: prompt.system,
         user,
         caseObj,
@@ -210,6 +231,9 @@ export async function deliberate({ caseObj, provider }) {
     deliberation_id,
     case_id: caseObj.case_id,
     status,
+    // The actual per-role allocation for THIS run. A single `model` string is
+    // wrong the moment two roles differ, and compare would group by it.
+    model_map: MODELS,
     cap_error: capError?.message ?? null,
     gate_problems: gateProblems,
     advocate_opinions,

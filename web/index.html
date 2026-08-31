@@ -92,6 +92,18 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .judge summary:hover{color:var(--accent)}
 .disclaimer{margin-top:auto;padding-top:.9rem;border-top:1px solid var(--hair);font-size:.76rem;line-height:1.5;color:var(--faint)}
 
+.panel{background:var(--raise);border:1px solid var(--line);padding:1.2rem 1.4rem;margin-bottom:1.5rem}
+.panel-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline;justify-content:space-between;margin-bottom:.9rem}
+.panel h3{font-family:var(--f-head);font-size:1rem;margin:0}
+.linkish{font-family:var(--f-head);font-size:.78rem;background:none;border:0;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+.linkish:hover{opacity:.75}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem 1.4rem}
+.role{display:flex;flex-direction:column;gap:.25rem}
+.role label{font-family:var(--f-head);font-size:.82rem;font-weight:600}
+.role .who{font-family:var(--f-head);font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.role select{font-family:var(--f-head);font-size:.85rem;padding:.4rem .5rem;background:var(--ground);color:var(--ink);border:1px solid var(--line);width:100%}
+.role select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel-note{font-size:.85rem;color:var(--faint);margin:.9rem 0 0}
 .protocol{margin:2rem 0 0;padding:1rem 1.2rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.9rem;color:var(--soft)}
 .runline{font-family:var(--f-head);font-size:.78rem;color:var(--faint);margin-top:1.25rem;font-variant-numeric:tabular-nums}
 [hidden]{display:none!important}
@@ -114,6 +126,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     <h2>The charge sheet</h2>
     <p class="note">A case is a specification, not free text. It is validated before any model is called.</p>
     <div class="case" id="case"></div>
+    <div class="panel" id="panel" hidden>
+      <div class="panel-head">
+        <h3>The panel</h3>
+        <button class="linkish" id="reset" type="button">Reset to the committed defaults</button>
+      </div>
+      <div class="roles" id="roles"></div>
+      <p class="panel-note" id="panel-note"></p>
+    </div>
+
     <button id="run">Convene the tribunal</button>
     <span class="cost">Seven model calls · about 35 seconds</span>
 
@@ -150,6 +171,7 @@ const JUDGES = ['barak_model', 'elon_model', 'shamgar_model'];
 const LABEL = { barak_model: 'The Barak model', elon_model: 'The Elon model', shamgar_model: 'The Shamgar model' };
 
 let CASE = null;
+let MODELS = null;   // { models, roles, defaults }
 
 // ---- the charge sheet, loaded from the same fixture the backend uses
 async function loadCase() {
@@ -164,6 +186,57 @@ async function loadCase() {
     <ul class="facts">${CASE.agreed_facts.map((f) => `<li><span>${esc(f)}</span></li>`).join('')}</ul>
     <p class="scope">${esc(CASE.scope.note)}</p>`;
 }
+
+// ---- the picker. The list comes from the server and is the same list the
+// server validates against, so the browser cannot name a model it would be
+// allowed to run. Choosing nothing means the committed default.
+async function loadModels() {
+  const res = await fetch('/api/models');
+  if (!res.ok) throw new Error('Could not load the model list.');
+  MODELS = await res.json();
+
+  const advName = (id) =>
+    CASE.representatives.find((r) => r.id === id)?.name ?? id;
+  const seatOf = (id) => CASE.representatives.find((r) => r.id === id)?.seat ?? '';
+
+  const options = (selected) =>
+    MODELS.models
+      .map((m) => `<option value="${esc(m.id)}"${m.id === selected ? ' selected' : ''}>` +
+        `${esc(m.label)} — $${m.price_per_m_in}/M in</option>`)
+      .join('');
+
+  $('roles').innerHTML = MODELS.roles.map((key) => {
+    const [kind, id] = key.split('.');
+    const who = kind === 'advocate' ? `${esc(seatOf(id))} advocate` : 'judge';
+    const name = kind === 'advocate' ? advName(id) : (LABEL[id] ?? id);
+    return `<div class="role">
+      <span class="who">${who}</span>
+      <label for="m-${esc(key)}">${esc(name)}</label>
+      <select id="m-${esc(key)}" data-role="${esc(key)}">${options(MODELS.defaults[key])}</select>
+    </div>`;
+  }).join('');
+
+  $('panel-note').textContent =
+    'Each role can use a different model. The defaults are the allocation committed ' +
+    'in the repository; anything you change here applies to this run only. ' +
+    'Seven calls, so the cost is roughly seven times one call.';
+
+  $('panel').hidden = false;
+}
+
+function chosenModels() {
+  const out = {};
+  for (const sel of document.querySelectorAll('#roles select')) {
+    out[sel.dataset.role] = sel.value;
+  }
+  return out;
+}
+
+$('reset').addEventListener('click', () => {
+  for (const sel of document.querySelectorAll('#roles select')) {
+    sel.value = MODELS.defaults[sel.dataset.role] ?? sel.value;
+  }
+});
 
 // ---- the wait. Seven calls take ~35s and nothing streams, so the honest
 // thing is to show which stage is running and how long it has taken. No fake
@@ -258,6 +331,18 @@ function renderRulings(doc) {
   }).join('');
 }
 
+// What the run actually used. One model name is a lie the moment two roles
+// differ, and this line is the only place a reader sees the allocation.
+function describeModels(doc) {
+  const m = doc.model_map;
+  if (!m) return doc.model ?? '';
+  const distinct = [...new Set(Object.values(m).filter(Boolean))];
+  if (distinct.length === 1) return distinct[0];
+  return `mixed panel: ${Object.entries(m)
+    .map(([role, model]) => `${role.split('.')[1]}=${model}`)
+    .join(', ')}`;
+}
+
 async function run() {
   $('run').disabled = true;
   startWaiting();
@@ -266,7 +351,7 @@ async function run() {
     const res = await fetch('/api/deliberate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ case_id: CASE.case_id }),
+      body: JSON.stringify({ case_id: CASE.case_id, models: chosenModels() }),
     });
     const doc = await res.json();
     stopWaiting();
@@ -288,7 +373,7 @@ async function run() {
     const u = doc.usage ?? {};
     $('runline').textContent =
       `run ${doc.deliberation_id} · ${doc.status} · ${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ` +
-      `${u.tokens_in ?? 0} in / ${u.tokens_out ?? 0} out · ${doc.model ?? ''}` +
+      `${u.tokens_in ?? 0} in / ${u.tokens_out ?? 0} out · ${describeModels(doc)}` +
       (doc.storage_warning ? ` · ${doc.storage_warning}` : '');
 
     if (doc.status !== 'complete') {
@@ -305,7 +390,9 @@ async function run() {
 }
 
 $('run').addEventListener('click', run);
-loadCase().catch((e) => showError(e.message));
+loadCase()
+  .then(loadModels)
+  .catch((e) => showError(e.message));
 </script>
 </body>
 </html>

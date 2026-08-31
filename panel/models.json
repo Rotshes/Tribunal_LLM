@@ -1,0 +1,42 @@
+{
+  "$comment": "The models a visitor may choose from, per role. THIS IS AN ALLOWLIST AND IT IS THE ONLY LIST THAT COUNTS. The browser sends a model id; the backend rejects anything not named here. Without that, a public URL is an invitation to spend the project's OpenRouter credit on the most expensive model available, seven calls at a time.",
+
+  "$verification": "Every entry must (a) appear under openrouter.ai/models?supported_parameters=response_format, because the runner sends response_format json_object with require_parameters and a model without it 404s, and (b) be cheap. Prices move and catalogues change: check before adding, and do not add a model on the strength of a summary. That mistake cost two runs in turn 004.",
+
+  "default": "google/gemini-3.5-flash-lite",
+
+  "$default_note": "This is the fallback only. The committed per-role allocation lives in modelMap() in src/config.js and remains the artifact the model-progression argument rests on. A visitor's choice is an override on that default for one run; it is not the project's model decision.",
+
+  "models": [
+    {
+      "id": "google/gemini-3.5-flash-lite",
+      "label": "Gemini 3.5 Flash Lite",
+      "price_per_m_in": 0.30,
+      "note": "The baseline. Every measurement in docs/turns/004 was made on this."
+    },
+    {
+      "id": "google/gemini-3.7-flash",
+      "label": "Gemini 3.7 Flash",
+      "price_per_m_in": 0.75,
+      "note": "Same family, more capable. The natural first comparison."
+    },
+    {
+      "id": "openai/gpt-5.6-luna",
+      "label": "GPT-5.6 Luna",
+      "price_per_m_in": 0.10,
+      "note": "A different provider, which is the point of having more than one."
+    },
+    {
+      "id": "qwen/qwen3.7-flash",
+      "label": "Qwen 3.7 Flash",
+      "price_per_m_in": 0.03,
+      "note": "The cheapest credible option here."
+    },
+    {
+      "id": "upstage/solar-pro4",
+      "label": "Solar Pro 4",
+      "price_per_m_in": 0.03,
+      "note": "A fourth provider, for a genuinely mixed panel."
+    }
+  ]
+}

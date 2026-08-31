@@ -117,6 +117,7 @@ export async function writeDeliberation(doc, caseObj, opts = {}) {
     provider: doc.provider,
     json_mode: doc.json_mode,
     model: doc.model,
+    model_map: doc.model_map ?? null,
     temperature: doc.temperature,
     gate_problems: doc.gate_problems ?? [],
     cap_error: doc.cap_error ?? null,

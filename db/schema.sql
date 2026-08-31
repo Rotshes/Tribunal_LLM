@@ -51,6 +51,7 @@ create table if not exists deliberations (
   provider        text,
   json_mode       text,
   model           text,
+  model_map       jsonb,   -- per-role allocation; `model` alone lies on a mixed run
   temperature     real,
   gate_problems   jsonb       not null default '[]'::jsonb,
   cap_error       text,
@@ -59,6 +60,14 @@ create table if not exists deliberations (
 
   constraint deliberations_status check (status in ('complete', 'partial', 'failed'))
 );
+
+-- For a database created before turn 008, when the picker was added:
+alter table deliberations add column if not exists model_map jsonb;
+
+comment on column deliberations.model_map is
+  'The model used for each of the seven roles. A single `model` column is wrong '
+  'the moment two roles differ, and anything grouping runs by it would compare '
+  'things that are not comparable.';
 
 comment on table deliberations is
   'A run. NOTE: there is deliberately no column for a combined result. The three '

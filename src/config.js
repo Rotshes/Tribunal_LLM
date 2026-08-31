@@ -26,6 +26,40 @@ export function modelMap() {
   };
 }
 
+export const ROLE_KEYS = Object.keys(modelMap());
+
+/**
+ * The committed map above, with per-role overrides applied.
+ *
+ * Overrides come from a visitor choosing a model in the browser, so every one
+ * of them is untrusted input and is checked twice: the key must be a role this
+ * tribunal actually has, and the value must be a model on the allowlist in
+ * panel/models.json. A model id is never taken from a request and used.
+ *
+ * The committed default is unchanged by any of this. The progression from one
+ * model toward several is a diff to modelMap() plus a decision record citing
+ * the logs; a visitor's choice is one run, not a project decision.
+ */
+export function resolveModelMap(overrides = {}, allowedIds = null) {
+  const base = modelMap();
+  const problems = [];
+
+  for (const [key, value] of Object.entries(overrides ?? {})) {
+    if (!Object.prototype.hasOwnProperty.call(base, key)) {
+      problems.push(`"${key}" is not a role in this tribunal`);
+      continue;
+    }
+    if (typeof value !== 'string' || value === '') continue; // "use the default"
+    if (allowedIds && !allowedIds.has(value)) {
+      problems.push(`"${value}" is not an allowed model`);
+      continue;
+    }
+    base[key] = value;
+  }
+
+  return { map: base, problems };
+}
+
 // There is deliberately no default model. Naming one here would make an
 // unreviewed choice permanent by accident, and model ids go stale. The
 // openrouter provider fails loudly if TRIBUNAL_MODEL is unset.

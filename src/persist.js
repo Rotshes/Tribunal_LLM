@@ -38,6 +38,9 @@ export function persistDeliberation(result, caseObj, meta = {}) {
     provider: meta.provider ?? null,
     json_mode: meta.json_mode ?? null,
     model: meta.model ?? null,
+    // The per-role allocation actually used. `model` above is the default and
+    // is only the whole truth when every role used it; this is authoritative.
+    model_map: result.model_map ?? null,
     temperature: meta.temperature ?? null,
 
     usage: result.log.summary(),

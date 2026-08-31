@@ -1,4 +1,4 @@
-# Turn 012 — A timeout that could never fire
+# Turn 012 — Three budgets against the wrong number
 
 Date: 31 August 2026
 Branch / commit: `main`. The site is live at `subtle-axolotl-3f3681.netlify.app`.
@@ -88,6 +88,7 @@ paragraph that said a mixed panel exceeding the limit was hypothetical.
 | No error escapes the function as a platform 502 | Tests against the exported handler | Pass |
 | The budget fits the documented platform limit | Test recomputes it; limit re-checked against Netlify's docs | Pass |
 | A call with no budget left is never paid for | Test with an expired deadline asserts zero fetches | Pass |
+| The budget defaults to the measured limit, not the documented one | Test asserts the constant is 30_000 | Pass |
 | Suite and repo checks | `npm test`, `npm run check` | Pass — 60 tests, 79 files |
 
 ### 6b. The fix worked, and revealed the next thing
@@ -151,6 +152,44 @@ claimed since turn 002 and has never once achieved in production.
 The reserve went from 8 seconds to 15 for the same reason the shape changed: 8
 was a guess that the evidence disagreed with.
 
+### 6d. The limit was 30 seconds, and one log line said so
+
+The third budget failed like the first two. So I stopped changing the code and
+read the function log:
+
+```
+Aug 31, 03:28:13 PM  04e3f0da  Duration: 30000 ms  Memory Usage: 145 MB
+```
+
+**30000 ms exactly.** The synchronous limit on this deployment is 30 seconds,
+not 60. Netlify's documentation says 60 seconds, not configurable, not
+plan-dependent — I fetched that page during this turn specifically to avoid
+recalling it, and the number it gave does not describe this site.
+
+Every budget in this turn was computed against 60. A 45-second model deadline
+inside a 30-second limit is not a budget that needs tuning; it is a budget that
+cannot be met. The deadline mechanism was right and could not save a run that
+had been handed more time than existed.
+
+The rule in `CLAUDE.md` is **check a fact about an external service, do not
+recall it**, and it now has a sharper edge: *checking the documentation is not
+checking the deployment.* I followed the rule as written, twice, and stayed
+wrong, because the authority I consulted was not the one that governs this site.
+The log was available from the first failure and I asked for it fourth.
+
+Three deploys and three of Roy's runs bought what one log line would have given
+immediately.
+
+The budget is now `30_000 − 9_000 reserve = 21s` of model time, `10s` per call,
+overridable by `FUNCTION_LIMIT_MS` — and the override exists so the next person
+raises it because a log shows a longer duration, not because a docs page does.
+Both readings are recorded in `netlify.toml`.
+
+Worth stating without softening: the committed allocation takes about 21 seconds
+from a terminal. Against a 30-second limit that fits, but barely. This app is
+closer to its ceiling than any document in this repository has said, and a
+slower model on several roles will exceed it by design rather than by accident.
+
 ### 6a. G8 fired on this turn's own test, and this time renaming would not do
 
 Constructing the real provider requires reading the real environment variable,
@@ -184,12 +223,16 @@ disagree with if you are going to.**
   routinely need more than 20s, the picker will now produce failed columns where
   it used to produce a 504 — better, and still not a working panel. Measuring
   them is a separate turn.
-- **The deadline in production.** Third attempt at this number. The first two
-  passed their tests and failed on the deployed site, so the tests are not the
-  thing that settles it — one run of the mixed panel on the live site is.
-- **The 15-second reserve.** Better founded than the 8 it replaces, in that 8
-  demonstrably was not enough. Still not measured. Cold start and the four
-  Supabase inserts have never been timed separately.
+- **The 30-second budget in production.** Fourth attempt at this number, and
+  the first one built on a measurement instead of a document. Three previous
+  versions passed their tests and failed live, so nothing here settles it except
+  a run on the deployed site.
+- **The 9-second reserve.** Still a guess, and now a guess inside a much smaller
+  limit, which makes it matter more. Cold start and the four Supabase inserts
+  have never been timed separately.
+- **Whether the committed defaults fit reliably.** 21s of model time against a
+  30s limit leaves 9s for everything else. It has not been run on the deployed
+  site even once.
 - **The 8-second reserve.** A guess with margin in it, not a measurement. Cold
   start plus a Supabase write has never been timed.
 
@@ -198,18 +241,23 @@ disagree with if you are going to.**
 **Locked:** a slow model can no longer destroy a whole deliberation. The
 project's failure paths are reachable in production for the first time.
 
-**Open:** whether the deadline holds on the deployed site — untested there, and
-the two previous versions of this number both passed tests and failed live.
-Whether 20s suits the non-Gemini models. G3, still.
+**Open:** whether 21 seconds of model time is enough for the committed panel on
+the deployed site, let alone a mixed one. Whether 10s per call suits the
+non-Gemini models at all. If not, the honest answer is a background function,
+not a smaller number. G3, still.
 
-**Next turn:** confirm the mixed panel returns rulings and failures rather than
-a platform error, then close the project out.
+**Next turn:** run the defaults on the live site first, then the mixed panel.
 
 ### Correction issued this turn
 
-**A bound must be shorter than every limit above it — and bounds that run in
-sequence have to share one budget, not hold one each.** The 90-second timeout
-was inert because it was larger than the platform's 60. The 24-second timeout
-was correct per call and wrong in aggregate, because two of them ran back to
-back and neither knew about the other. A deadline is the form that survives
-both mistakes.
+**Checking the documentation is not checking the deployment.** The standing rule
+was already "check, do not recall", and I obeyed it — I fetched Netlify's docs
+mid-turn rather than trusting my note. The docs say 60 seconds. This site stops
+at 30, and its own log said so from the first failure. When a number governs
+whether the thing works, the source of truth is the system's own output, not its
+vendor's page.
+
+Secondary, and still true: a bound must be shorter than every limit above it,
+and bounds that run in sequence must share one budget rather than hold one each.
+Those two fixes were correct and neither of them mattered while the constant was
+double the real value.

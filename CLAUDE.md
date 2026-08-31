@@ -154,13 +154,19 @@ kept as evidence; a new one joins its group rather than starting a new line.
   support on OpenRouter is per *endpoint*, not per model: without
   `require_parameters` a call is routed to one that ignores it, the request
   succeeds, prose comes back, and you pay (31.08).
+- **Checking the documentation is not checking the deployment.** Netlify's docs
+  say the function limit is 60s, not configurable. This site's function log says
+  `Duration: 30000 ms`. Three time budgets were computed against 60, shipped,
+  and lost whole runs to a 504 before the log was read (31.08). When a number
+  decides whether the thing works, the system's own output outranks its vendor's
+  page — and outranks a fetched docs page too, which is the version of "check,
+  do not recall" I thought I was obeying.
 - **A bound is only real if it is smaller than every limit above it — and
   bounds that run in sequence must share one budget, not hold one each.** A 90s
-  per-call timeout inside a 60s platform limit meant no call could ever fail on
-  our side, so a slow panel lost all seven results to a 504 (31.08). Replacing
-  it with 24s per call failed the same way: two sequential stages spent it
-  twice, and neither knew about the other (31.08). Deadlines survive both;
-  per-call timeouts do not.
+  per-call timeout inside the platform limit meant no call could ever fail on
+  our side (31.08). Replacing it with a per-call timeout sized to half the limit
+  failed the same way: two sequential stages spent it twice and neither knew
+  about the other (31.08). Deadlines survive both; per-call timeouts do not.
 
 ## Conventions
 

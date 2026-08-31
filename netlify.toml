@@ -16,53 +16,41 @@
 
 # NO TIMEOUT SETTING HERE, DELIBERATELY.
 #
-# Netlify's synchronous function limit is 60 seconds and is NOT configurable.
-# An earlier version of this file set `timeout = 26` for the deliberate
-# function, invented from a half-remembered figure. A deliberation takes about
-# 35 seconds, so every run through the browser was killed — and the page
-# reported it as a JSON parse error, because it was parsing Netlify's HTML
-# error page.
+# THE LIMIT ON THIS SITE IS 30 SECONDS, MEASURED FROM THE FUNCTION LOG:
 #
-# `netlify dev` is stricter than production: it runs functions through
-# lambda-local with a 30-SECOND cap, observed twice. The browser could not
-# complete a deliberation locally even though production would have allowed it.
+#   Aug 31, 03:28:13 PM  04e3f0da  Duration: 30000 ms  Memory Usage: 145 MB
 #
-# The three judges now run concurrently (src/deliberate.js) — they are
-# independent by construction and sequencing bought nothing.
+# Netlify's documentation says the synchronous execution limit is 60 seconds and
+# is not configurable. It is not describing this deployment. Where the two
+# disagree, the log wins — it is the only source that observed this site.
 #
-# MEASURED, 31.08.2026, gemini-3.5-flash-lite on all seven roles:
-#   waited 13.6s  ·  model time (sum of 7 calls) 36.2s  ·  concurrency gain 2.67x
+# An earlier version of this file invented `timeout = 26` from a half-remembered
+# figure and killed every browser run. The lesson was written down as "check,
+# do not recall". Turn 012 then checked the documentation twice and shipped
+# three broken budgets anyway, because checking the docs is not the same as
+# checking the deployment. Both readings are now recorded above so the next
+# person does not have to rediscover the discrepancy.
 #
-# The earlier numbers in this file ("~35s", "roughly 20s") were the SUMMED
-# per-call latency read as though it were elapsed time. Concurrency does not
-# change a sum, so that figure never moved and made the fix look ineffective
-# when it had been working from the moment it was written. Elapsed time is now
-# measured separately and reported as `waited`.
-#
-# 13.6s against a 30s local cap and a 60s production one. A mixed panel of
-# slower models will be slower — that is the headroom to watch.
-#
-# Shape: four advocate calls concurrently, then three judge calls concurrently,
-# against a 30s local cap and a 60s production one.
+# The budget derived from 30s lives in netlify/functions/deliberate.js, with the
+# arithmetic in the file. `FUNCTION_LIMIT_MS` overrides it — set that only when
+# a function log shows a longer duration is actually allowed.
 #
 # MEASURED, 31.08.2026, the committed allocation (3.7-flash advocates,
-# flash-lite judges):
+# flash-lite judges), from a terminal where no platform limit applies:
 #   waited 20.8s  ·  model time (sum of 7 calls) 66.1s  ·  concurrency gain 3.18x
 #
-# A MIXED PANEL DID EXCEED IT. On the deployed site, a panel spanning four
-# providers returned Netlify's own "Inactivity Timeout" 504 and lost all seven
-# results. The cause was not the models being slow in itself: the per-call
-# timeout was 90 SECONDS, longer than the platform's 60, so no call could ever
-# fail on our side and the platform killed the whole invocation instead.
+# 20.8s against a 30s limit is not much room, and a mixed panel of slower models
+# has repeatedly exceeded it. Calls are now cut off individually so the run
+# returns rulings and failed columns instead of a platform error page.
 #
-# The function now computes a per-call timeout that fits — see the arithmetic in
-# netlify/functions/deliberate.js. A model that cannot answer in time fails as
-# one call, which is what the project's rules say should happen: six rulings and
-# a failed column is a result, a 504 is not.
+# `netlify dev` runs functions through lambda-local with a 30-second cap, which
+# turns out to match production here rather than being stricter than it.
 #
-# If even that stops fitting, the remaining answer is a background function with
-# the page polling for the result. Not needed yet, and it would cost the page
-# its single synchronous request.
+# Shape: four advocate calls concurrently, then three judge calls concurrently.
+#
+# If the panel outgrows 30 seconds, the remaining answer is a background
+# function with the page polling for the result — 15 minutes, and it costs the
+# page its single synchronous request.
 
 [dev]
   publish = "web"

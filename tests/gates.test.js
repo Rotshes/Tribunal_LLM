@@ -922,21 +922,26 @@ test('the deployed budget fits inside the platform limit', () => {
   // The numbers in netlify/functions/deliberate.js, asserted rather than
   // trusted. Two earlier versions of this arithmetic shipped and both lost
   // whole runs to a 504.
-  const PLATFORM_LIMIT_MS = 60_000;
-  const RESERVED_MS = 15_000;
+  // 30_000, not 60_000: the documented limit and this deployment's actual limit
+  // are different numbers, and the log is the one that counts.
+  const PLATFORM_LIMIT_MS = 30_000;
+  const RESERVED_MS = 9_000;
   const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
-  const CALL_TIMEOUT_MS = 20_000;
+  const CALL_TIMEOUT_MS = Math.min(10_000, Math.floor(MODEL_BUDGET_MS / 2));
 
   assert.ok(MODEL_BUDGET_MS > 0);
-  assert.ok(MODEL_BUDGET_MS + RESERVED_MS <= PLATFORM_LIMIT_MS);
   assert.ok(
-    CALL_TIMEOUT_MS * 2 < MODEL_BUDGET_MS,
-    'both sequential stages must be able to run to their cap inside the budget',
+    CALL_TIMEOUT_MS * 2 + RESERVED_MS <= PLATFORM_LIMIT_MS,
+    'both stages at their cap, plus overhead, must finish before the platform stops',
   );
 
   const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
   assert.match(src, /deadlineAt,/, 'the function must pass a deadline, not only a per-call cap');
   assert.match(src, /timeoutMs: CALL_TIMEOUT_MS/);
+  // The measured limit, guarded. Three budgets were shipped against 60_000 and
+  // all three lost whole runs; if this constant drifts back, so does the bug.
+  assert.match(src, /FUNCTION_LIMIT_MS \?\? 30_000/,
+    'the budget must default to the MEASURED 30s limit, not the documented 60s');
 });
 
 test('the deadline shrinks: a later call gets only what is left', async () => {

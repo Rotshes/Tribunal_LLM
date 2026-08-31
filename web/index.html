@@ -152,7 +152,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
     </div>
 
     <button id="run">Convene the tribunal</button>
-    <span class="cost">Seven model calls · about 21 seconds on the defaults · 45-second budget, then a call fails rather than the run</span>
+    <span class="cost">Seven model calls · about 21 seconds on the defaults · 21-second model budget, then a call fails rather than the whole run</span>
 
     <div id="status" hidden>
       <div class="stage" data-state="todo" id="s1"><span><b>Four advocates</b> argue, in parallel</span></div>
@@ -407,8 +407,8 @@ async function run() {
       showError(
         `The run did not finish (HTTP ${res.status}).`,
         [
-          'This is the platform, not the tribunal: the run either crashed or exceeded the 60-second function limit.',
-          'Seven calls on the committed allocation take about 21 seconds. A slow model chosen for several roles is what pushes it over — try fewer changed roles, or Reset to the committed defaults.',
+          'This is the platform, not the tribunal: the run either crashed or exceeded the 30-second function limit.',
+          'Seven calls on the committed allocation take about 21 seconds, against a 30-second limit. There is not much room: a slow model on several roles is what uses it up. Try fewer changed roles, or Reset to the committed defaults.',
           (raw.slice(0, 160).replace(/\s+/g, ' ').trim()) || '(empty response)',
         ],
       );

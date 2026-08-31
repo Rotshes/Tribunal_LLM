@@ -90,40 +90,45 @@ async function runDeliberation(req) {
 
   // The time budget.
   //
-  // Netlify's synchronous limit is 60 seconds and is not configurable. Checked
-  // against the documentation on 31.08.2026 rather than recalled — the figure
-  // in this file was once invented from memory and killed every browser run.
+  // THE LIMIT IS 30 SECONDS, MEASURED. Netlify's documentation says the
+  // synchronous execution limit is 60 seconds and not configurable; this
+  // deployment's own function log says `Duration: 30000 ms` and stops there.
+  // The documentation is not describing this site.
   //
-  // TWO ATTEMPTS AT THIS FAILED, and the second is the instructive one:
+  // That number is the whole story of turn 012. Three budgets were computed
+  // against 60 and all three shipped and failed:
   //
-  //   1. 90s per call. Longer than the whole invocation was allowed to live, so
-  //      no call could ever time out on our side and the platform killed the
-  //      run instead. 504, seven results lost.
-  //   2. 24s per call, derived as (60 − 8) ÷ 2 stages. Still 504. The
-  //      arithmetic was right and the shape was wrong: two independent
-  //      timeouts are not a budget, they are two chances to spend the maximum.
-  //      48s of models plus a cold start plus four sequential Supabase inserts
-  //      does not fit in 60, and nothing in the code knew how much had already
-  //      been spent.
+  //   1. 90s per call — larger than the invocation itself, so no call could
+  //      ever fail on our side. 504, seven results lost.
+  //   2. 24s per call, (60 − 8) ÷ 2 stages. Two independent timeouts are not a
+  //      budget; they are two chances to spend the maximum. 504.
+  //   3. A shrinking 45s deadline with a 20s cap. Correct shape, right
+  //      arithmetic, wrong constant — 45s of model time inside a 30s limit
+  //      cannot work, and the deadline could not save a run that had already
+  //      been given more time than existed. 504.
   //
-  // So: an absolute DEADLINE, computed once, passed down, and shrinking. Each
-  // call gets whatever is left, capped. A run that overspends early fails its
-  // later calls immediately — cheaply, visibly, and as failed columns beside
-  // whatever did land, which is what this project says a failure should look
-  // like.
+  // The standing rule in CLAUDE.md is to check a fact about an external service
+  // rather than recall it. I did check, twice — and both times I checked the
+  // documentation, which is a different thing from checking the deployment.
+  // The log was the only source that could settle it and it was available all
+  // along.
   //
-  //   60s platform limit
-  //  −15s cold start, seven prompt hashes, four Supabase inserts, the response,
-  //      and margin — the last time this reserve was 8s it was not enough
-  //  = 45s of model time, total, for all seven calls
-  //   20s cap on any single call, so one slow model cannot eat the whole budget
+  //   30s measured platform limit
+  //  − 9s cold start, prompt hashing, four sequential Supabase inserts, response
+  //  = 21s of model time for all seven calls, together
+  //   10s cap on any single call, so one slow model cannot take the budget
   //
-  // Worst case now: advocates run to 20s, judges start with 25s left and are
-  // capped at 20, so the models stop by 40s and 20s remain for everything else.
-  const PLATFORM_LIMIT_MS = 60_000;   // Netlify, documented, not configurable.
-  const RESERVED_MS = 15_000;         // everything that is not a model call
+  // Worst case: advocates run to 10s, judges start with 11s left and are capped
+  // at 10, so models stop by 20s and 10s remain. The committed allocation uses
+  // about 21s of wall clock from a terminal, most of it in the two stages, so
+  // it fits — but not with much to spare, which is itself worth knowing.
+  //
+  // If this ever needs raising, raise it because the log says a longer duration
+  // is allowed, not because the documentation does.
+  const PLATFORM_LIMIT_MS = Number(process.env.FUNCTION_LIMIT_MS ?? 30_000);
+  const RESERVED_MS = 9_000;          // everything that is not a model call
   const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
-  const CALL_TIMEOUT_MS = 20_000;     // cap on one call, inside that budget
+  const CALL_TIMEOUT_MS = Math.min(10_000, Math.floor(MODEL_BUDGET_MS / 2));
   const deadlineAt = Date.now() + MODEL_BUDGET_MS;
 
   let provider;

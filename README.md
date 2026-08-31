@@ -59,7 +59,23 @@ npm run deliberate -- T-001 --provider openrouter
 
 ## Status
 
-**Runs end to end against a fake model. Never yet against a real one.**
+**Runs end to end against real models.** Two full deliberations on T-001,
+31.08.2026, seven calls each.
+
+The first real run found what it was built to find: the three judges converge.
+All six judge opinions across both runs cite every agreed fact, and the three
+judicial methods survive as vocabulary rather than as structure. The cause looks
+to be the opinion schema, which gives all three methods the same container.
+Written up in `docs/turns/003-first-real-deliberation.md`; the experiment that
+separates model capability from prompt design is turn 004.
+
+Also from the first run: `response_format` support on OpenRouter is per
+endpoint, not per model, so a call was silently routed to one that ignored it.
+G2 caught the prose it produced.
+
+---
+
+*Previous status, kept for the record:*
 
 As of 24.08.2026: the case domain is fixed (`T-001 — The Realm v. Jon Snow`),
 the five-part specification is written, the charge sheet is a schema plus its

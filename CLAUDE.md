@@ -109,9 +109,13 @@ These are settled. Do not reopen them without asking.
   per-line pragma and a reason. A whole file quietly excluded is a hole nobody
   can see.
 - **When a rule is stated in two places, add a check that they agree — or delete
-  one of the statements.** Two prompt-versus-schema disagreements in two turns,
-  both silent, both found only by running the thing. This is why validation runs
-  the schema files directly rather than restating them in code (decision 0006).
+  one of the statements.** Three prompt-versus-schema disagreements in three
+  turns, all silent. This is why validation runs the schema files directly
+  rather than restating them in code (decision 0006).
+- **Where the prompt and the schema describe different shapes, the schema wins
+  and the prompt is decoration.** A prompt asking for ordered tests, against a
+  schema offering `string[]`, produces bullet points. If behaviour must differ,
+  the *contract* has to differ — not just the instructions.
 - When I correct you, do not just fix the instance. Ask whether the correction
   belongs in this file as a standing rule. A correction that lives only in the
   chat is gone next session.
@@ -149,6 +153,22 @@ Add to this list. One line per failure actually observed, written once, permanen
   provenance before validating. Second instance of the same class in two turns.
 - 24.08 — The first version of G5 skipped all of `src/`, which is the only place
   a combined result could be introduced. The gate would have passed forever.
+- 31.08 — `config.js` read `TRIBUNAL_MODEL` at import time. Imports evaluate
+  before the importing module's body, so the map was built before `.env` was
+  read and all seven calls failed. Read configuration when it is needed, never
+  at module scope.
+- 31.08 — The `.env` parser split on `\n`, leaving a carriage return on every
+  value on Windows. Would have produced a 401 and an invalid model slug with
+  nothing pointing at the parser. Anything that reads a file must assume CRLF.
+- 31.08 — `response_format` support on OpenRouter is per **endpoint**, not per
+  model. Without `provider: { require_parameters: true }` a call can be routed
+  to an endpoint that ignores it: the request succeeds, prose comes back, and
+  you pay for it. Intermittent, and invisible without G2.
+- 31.08 — A judge paraphrased its own disclaimer. Anything whose exact wording
+  matters must be attached by the runner and compared, never requested from the
+  model. Same shape as the provenance defect on 24.08.
+- 31.08 — Every judge cites every fact, in every run. G3 has therefore never
+  fired on real output. Written and unproven is not the same as passing.
 
 ## Conventions
 

@@ -2,8 +2,8 @@
 role: advocate
 representative_id: tyrion_lannister
 seat: defense
-version: "1.0"
-updated: 2026-08-24
+version: "1.1"
+updated: 2026-08-31
 ---
 
 # Advocate — Tyrion Lannister · defense seat
@@ -13,6 +13,7 @@ updated: 2026-08-24
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 24.08.2026 | First version, from the character brief in the instructor's case design dossier |
+| 1.1 | 31.08.2026 | Stopped requesting fields the system already holds — identity, method and the disclaimer are attached by the runner. See turn 004. |
 
 > Path is stable. A new version bumps the `version` header in place so that
 > `git diff` shows what changed in the text. A prompt change is a behaviour
@@ -84,8 +85,6 @@ code fence.
 {
   "case_id":            "<the case_id given below>",
   "role":               "advocate",
-  "representative_id":  "tyrion_lannister",
-  "seat":               "defense",
   "position":           "justified" | "not_justified" | "mixed",
   "relies_on_facts":    [<zero-based indices into agreed_facts>],
   "key_points":         ["<1-8 points, each one sentence>"],
@@ -97,8 +96,9 @@ code fence.
 `position` is **your** conclusion. It may differ from what your seat would
 prefer. Say what you actually think the record supports.
 
-`model_id`, `prompt_version`, and `prompt_sha256` are added by the system. Do
-not include them.
+`representative_id`, `seat`, `model_id`, `prompt_version` and
+`prompt_sha256` are attached by the system. Do not include them — it already
+knows who you are, and a value it holds is not yours to restate.
 
 ---
 

@@ -40,6 +40,7 @@ before running anything else. See `docs/turns/004-…`.
 | `003-run-b-routing-fixed.txt` | `8cf460ba` | same, after `require_parameters` | Turn 003 §6a — seven for seven, confirming the diagnosis |
 | `004-run-c-no-endpoints-404.txt` | `286986f6` | `anthropic/claude-sonnet-5`, json object | Turn 004 — `require_parameters` failing free instead of billing for prose |
 | `004-run-d-judges-split.txt` | `8596428b` | `google/gemini-3.5-flash-lite`, json off | Turn 004 — the 2–1 split correcting turn 003's convergence claim |
+| `004-baseline-compare.txt` | 8 runs | `google/gemini-3.5-flash-lite`, json off ×3 and object ×5 | Turn 004 §6c — the baseline: 3% vs 29% failure, Barak the only judge that flips, no defense case in 3 of 5 runs |
 
 ## Adding to this folder
 

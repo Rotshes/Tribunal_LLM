@@ -1,0 +1,93 @@
+TERMINAL TRANSCRIPT — `npm run compare`, captured at the time, pasted verbatim.
+Not a machine-written artifact. See docs/evidence/README.md.
+
+Date:     31 August 2026
+Cited by: docs/turns/004-a-turn-that-did-too-much.md §6c
+
+WHY THIS IS EVIDENCE
+The baseline. Five runs of google/gemini-3.5-flash-lite at --json-mode object,
+nothing else changed, alongside the three earlier --json-mode off runs.
+
+Three findings rest on this table:
+  1. Failure rate 1/35 (3%) at json:object against 6/21 (29%) at json:off.
+  2. Barak is the only judge that has ever flipped. Elon and Shamgar are
+     invariant across five runs at temperature 0.7.
+  3. Tyrion is the only advocate who ever argues `justified`, and did so in two
+     runs of five — so three of five runs put NO defense case at all. The one
+     run where Barak ruled `justified` was a contested run.
+
+--------------------------------------------------------------------------------
+
+8 stored deliberations
+
+when             model                         json   status   calls   barak  elon   shamgar differ  tok in/out
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+08-31 02:49      google/gemini-3.5-flash-lite  off    partial  5/7     NOT    —      NOT     no      13473/5545
+08-31 02:51      google/gemini-3.5-flash-lite  off    partial  5/7     —      NOT    —       —       11328/4431
+08-31 02:55      google/gemini-3.5-flash-lite  off    partial  5/7     NOT    NOT    NOT     no      13093/5479
+08-31 03:11      google/gemini-3.5-flash-lite  object partial  6/7     NOT    NOT    —       no      16086/5382
+08-31 03:12      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      20234/6255
+08-31 03:14      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     20504/6846
+08-31 03:14      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      20834/6056
+08-31 03:15      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      20828/6195
+
+Variance — one judge across repetitions of the same config
+Never across the three judges within a run. See the header of this file.
+
+google/gemini-3.5-flash-lite · json:off  3 runs
+  calls     6 of 21 failed (29%)  ← a panel this incomplete cannot support a comparison
+  barak     not_justified ×2, failed/absent ×1
+  elon      failed/absent ×1, not_justified ×2
+  shamgar   not_justified ×2, failed/absent ×1
+
+google/gemini-3.5-flash-lite · json:object  5 runs
+  calls     1 of 35 failed (3%)
+  barak     not_justified ×4, justified ×1
+  elon      not_justified ×5
+  shamgar   failed/absent ×1, not_justified ×4
+
+Why calls failed
+A failure rate is a number; the reason is what tells you what to change.
+
+  ×3  response was not JSON (model returned prose)
+        roles: elon_model, shamgar_model, tyrion_lannister
+  ×1  failed G2/G3: /representative_id "daenerys_targator" is not a representative in this case
+        roles: daenerys_targaryen
+  ×1  failed G2/G3: /responds_to/0/answer must NOT have more than N characters; / must match "th
+        roles: barak_model
+  ×1  failed G2/G3: /representative_id "daenerys_targatorn" is not a representative in this case
+        roles: daenerys_targaryen
+  ×1  failed G2/G3: /responds_to/1/representative_id must match pattern "^[a-z][a-z0-9_]{1,40}$"
+        roles: shamgar_model
+
+  failures by role:
+    daenerys_targaryen     ×2
+    shamgar_model          ×2
+    elon_model             ×1
+    barak_model            ×1
+    tyrion_lannister       ×1
+
+Fact citations — are the judges selecting, or filling the array?
+G3 can only fire if an opinion cites an index that does not exist.
+
+  [0,1,2,3,4]              19 of 20 judge opinions       every fact in the case
+  [4]                      1 of 20 judge opinions
+
+Advocates — is there an adversarial process at all?
+An advocate concluding against its own seat is permitted (decision 0004).
+All four concluding the same way means the judges heard no argument.
+
+  08-31 02:49    contested   jon_snow:not_justified  tyrion_lannister:justified  grey_worm:not_justified
+  08-31 02:51    contested   jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 02:55    one-sided   jon_snow:not_justified  grey_worm:not_justified
+  08-31 03:11    contested   jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:12    one-sided   jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:14    contested   jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:14    one-sided   jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:15    one-sided   jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+
+--------------------------------------------------------------------------------
+
+NOTE, ADDED WHEN FILED
+The three json:off runs each lost exactly two of seven calls, which is more
+regular than an independent per-call failure rate would produce. Not explained.

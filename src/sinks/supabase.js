@@ -139,6 +139,113 @@ export async function readDeliberations({ limit = 200, fetchImpl = fetch } = {})
 }
 
 /**
+ * The index: enough of every stored run to list it and to see how the panel
+ * came out, and nothing more. Two requests, not one per run.
+ *
+ * Deliberately not `readDeliberations()` with the rows thrown away — that pulls
+ * every opinion body for every run to render a list of one-line summaries, and
+ * would get slower with each deliberation the project makes.
+ *
+ * The three rulings travel as three named fields. There is no field here for a
+ * summary of them, and `differ` is not computed either: the list shows the
+ * three, the way every other surface in this project does. (0002)
+ */
+export async function readDeliberationIndex({ limit = 50, fetchImpl = fetch } = {}) {
+  const { url, key } = requireConfig();
+  // Not HEADERS(): that carries Prefer: return=minimal, which exists for the
+  // inserts and has no business on a read.
+  const get = async (p) => {
+    const res = await fetchImpl(`${url}/rest/v1/${p}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Supabase read of ${p} failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  };
+
+  const runs = await get(
+    'deliberations?select=deliberation_id,case_id,ran_at,status,model_map,model,' +
+      `calls_attempted,calls_succeeded,wall_ms&order=ran_at.desc&limit=${Number(limit)}`,
+  );
+  if (runs.length === 0) return [];
+
+  const ids = runs.map((r) => `"${r.deliberation_id}"`).join(',');
+  const rulings = await get(
+    `opinions?select=deliberation_id,judge_id,ruling&role=eq.judge&deliberation_id=in.(${ids})`,
+  );
+
+  const byRun = new Map(runs.map((r) => [r.deliberation_id, {}]));
+  for (const o of rulings) {
+    if (o.judge_id) byRun.get(o.deliberation_id)[o.judge_id] = o.ruling;
+  }
+
+  return runs.map((r) => ({ ...r, rulings: byRun.get(r.deliberation_id) ?? {} }));
+}
+
+/**
+ * One stored run, in the shape `web/index.html` already renders — the same
+ * shape `src/persist.js` writes, so the page has one renderer and not two.
+ *
+ * Failures are rebuilt from `model_calls`, because a judge that failed has no
+ * row in `opinions` and the page must still show its column as a failure. A
+ * retrieved run that quietly displayed two rulings would be the exact defect
+ * decision 0002 and the "failure is shown as failure" rule exist to prevent —
+ * and it would be worse here than live, because nothing on screen would suggest
+ * anything was missing.
+ */
+export async function readDeliberation(id, { fetchImpl = fetch } = {}) {
+  const { url, key } = requireConfig();
+  if (!/^[0-9a-f-]{36}$/i.test(String(id))) throw new Error('Not a deliberation id.');
+
+  // Not HEADERS(): that carries Prefer: return=minimal, which exists for the
+  // inserts and has no business on a read.
+  const get = async (p) => {
+    const res = await fetchImpl(`${url}/rest/v1/${p}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Supabase read of ${p} failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  };
+
+  const [run] = await get(`deliberations?select=*&deliberation_id=eq.${id}&limit=1`);
+  if (!run) return null;
+
+  const opinions = await get(`opinions?select=*&deliberation_id=eq.${id}`);
+  const calls = await get(
+    `model_calls?select=role,role_id,failure_reason,succeeded&deliberation_id=eq.${id}`,
+  );
+
+  const failures = (role) =>
+    calls
+      .filter((c) => c.role === role && c.succeeded === false)
+      .map((c) => ({ roleId: c.role_id, reason: c.failure_reason ?? 'The call failed.' }));
+
+  return {
+    ...run,
+    usage: {
+      attempted: run.calls_attempted,
+      succeeded: run.calls_succeeded,
+      failed:
+        run.calls_attempted != null && run.calls_succeeded != null
+          ? run.calls_attempted - run.calls_succeeded
+          : null,
+      tokens_in: run.tokens_in,
+      tokens_out: run.tokens_out,
+      wall_ms: run.wall_ms,
+      model_time_ms: run.model_time_ms,
+    },
+    advocate_opinions: opinions.filter((o) => o.role === 'advocate'),
+    judge_opinions: opinions.filter((o) => o.role === 'judge'),
+    advocate_failures: failures('advocate'),
+    judge_failures: failures('judge'),
+    source: 'supabase',
+  };
+}
+
+/**
  * Writes the case, the run, its opinions and every model call.
  *
  * Order matters: charge sheet, then deliberation, then the rest — the foreign

@@ -32,7 +32,7 @@ It is not on slide 7 because slide 7 lists *accounts*. It still blocks all of th
 
    ```
    npm install
-   npm test        # expect 24 passing
+   npm test        # expect 54 passing
    npm run check   # G5 and G8 over the repo
    npm run deliberate -- T-001 --stub good
    ```
@@ -97,12 +97,14 @@ changing a string.
    might do that nobody predicted. It is the only spend control that holds when
    the bug is in the control flow.
 3. Copy the key immediately — it is shown once, and begins `sk-or-v1-`.
-4. **Choose a model, and record the choice.** Copy an exact slug from
-   openrouter.ai/models into `TRIBUNAL_MODEL`. It must support **structured /
-   JSON output**: every prompt demands one JSON object and the provider sends
-   `response_format: { type: "json_object" }`, so a model without it returns
-   prose and fails all seven calls at gate G2 — after charging for them.
-   There is deliberately no default in the code; see `src/config.js`.
+4. **You do not choose a model here.** The per-role allocation is committed in
+   `modelMap()` in `src/config.js` and argued in decision 0009 — 3.7-flash on the
+   four advocates, flash-lite on the three judges. Any model added to
+   `panel/models.json` must support **structured / JSON output**: every prompt
+   demands one JSON object and the provider sends
+   `response_format: { type: "json_object" }` with `require_parameters`, so a
+   model without it 404s, and one routed to an endpoint without it returns prose
+   and fails at gate G2 — after charging for them.
 5. **Put both in `.env`, never in the repo.** If a key ever lands in a commit it
    is public forever — bots scrape for key patterns within minutes. Rotate it;
    do not try to rewrite history, which costs you the commit trail as well.
@@ -154,6 +156,63 @@ Remember what Module 7 says about why this layer earns respect: on your laptop
 a mistake harms one person who can undo it; deployed, the same mistake reaches
 everyone at once and keeps being served until someone notices.
 
+### The actual steps
+
+Nothing needs to be built or configured in the repository first — `netlify.toml`
+is committed and complete, the frontend has no build step (decision 0008), and
+the four functions are picked up from `netlify/functions/` automatically.
+
+1. **Push everything first.** Netlify deploys what is on GitHub, not what is on
+   your disk. `git status` should say up to date with origin.
+2. netlify.com → **Add new site → Import an existing project** → GitHub → the
+   `tribunal` repository.
+3. When it asks for build settings, **accept what it reads from
+   `netlify.toml`**: no build command, publish directory `web`, functions
+   directory `netlify/functions`. If it offers to guess instead, decline.
+4. **Site configuration → Environment variables.** Add exactly three:
+
+   | Key | Value |
+   |---|---|
+   | `OPENROUTER_API_KEY` | the `sk-or-v1-…` key |
+   | `SUPABASE_URL` | `https://<project>.supabase.co` |
+   | `SUPABASE_SECRET_KEY` | the `sb_secret_…` key |
+
+   **Not** `TRIBUNAL_UNIFORM_MODEL` — the per-role allocation is committed in
+   `src/config.js` (decision 0009), and setting that variable in production
+   would silently flatten the panel onto one model. It is a control-run switch,
+   not a deployment setting.
+
+   These are the same values as your `.env`, which is gitignored and never
+   travels with the code. Nothing else in the file is needed in production.
+5. **Deploy.** Then open the site and check four things, in this order:
+
+   - the charge sheet renders (`/api/case` works — no secrets involved, so this
+     failing means the functions did not deploy at all);
+   - **Past proceedings** lists your existing runs (`/api/runs` works, so
+     `SUPABASE_URL` and `SUPABASE_SECRET_KEY` are right);
+   - "Read it" on any past run opens three rulings;
+   - **Convene the tribunal** completes (`OPENROUTER_API_KEY` is right, and the
+     run fits inside Netlify's 60-second function limit).
+
+   Do them in that order because each one that passes narrows what a later
+   failure can mean.
+
+### If the deliberation times out in production
+
+Netlify's synchronous limit is **60 seconds and is not configurable** — see the
+long comment in `netlify.toml`, which exists because a made-up `timeout = 26`
+once killed every browser run. A deliberation on the committed allocation takes
+about 21 seconds wall clock, so there is room; a slow model chosen for all seven
+roles in the picker is what would eat it. The page reports the status rather
+than a parse error, so a timeout will say so.
+
+### After it is live
+
+- Put the URL in `README.md`.
+- Re-check definition of done items 1 and 3 **at the public address**, not on
+  localhost. That is what those items actually say.
+- Add the instructor as a collaborator on the repository if that is still open.
+
 ---
 
 ## Checklist
@@ -164,9 +223,9 @@ Blocking now:
 - [x] `tribunal` repository created
 - [ ] Instructor added as a collaborator
 - [ ] **Node LTS installed**, `node -v` works in a fresh terminal
-- [ ] `npm install` run; `npm test` shows 24 passing; `package-lock.json` committed
+- [ ] `npm install` run; `npm test` passes (54 tests); `package-lock.json` committed
 - [ ] OpenRouter account, credit added, **key created with a spend limit**
-- [ ] `TRIBUNAL_MODEL` chosen — a model that supports structured JSON output
+- [x] Models chosen — the per-role allocation is committed in `src/config.js` (decision 0009); `TRIBUNAL_UNIFORM_MODEL` is for control runs only
 - [ ] `.env` created; `git check-ignore -v .env` names `.gitignore`
 - [ ] First real deliberation run: `npm run deliberate -- T-001 --provider openrouter`
 
@@ -176,5 +235,6 @@ Soon:
 
 Later:
 
-- [ ] Netlify connected to the repository
+- [ ] Netlify connected to the repository, three environment variables set, site live
+- [ ] DoD items 1 and 3 re-checked at the public address
 - [ ] Claude Code installed, runs from inside the project folder

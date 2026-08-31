@@ -106,6 +106,22 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .panel-note{font-size:.85rem;color:var(--faint);margin:.9rem 0 0}
 .protocol{margin:2rem 0 0;padding:1rem 1.2rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.9rem;color:var(--soft)}
 .runline{font-family:var(--f-head);font-size:.78rem;color:var(--faint);margin-top:1.25rem;font-variant-numeric:tabular-nums}
+
+/* Past proceedings. A row per run, the three rulings shown as three, never
+   reduced to a count or a headline. */
+#archive-section{margin-top:3.5rem;border-top:1px solid var(--line);padding-top:2rem}
+.run-row{display:grid;grid-template-columns:11rem 1fr auto;gap:1rem;align-items:baseline;padding:.7rem 0;border-bottom:1px solid var(--line)}
+.run-when{font-family:var(--f-head);font-size:.78rem;color:var(--faint);font-variant-numeric:tabular-nums}
+.run-rulings{display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-size:.82rem}
+.run-rulings span{white-space:nowrap;color:var(--soft)}
+.run-rulings b{font-weight:600;color:var(--ink)}
+.run-meta{font-family:var(--f-head);font-size:.72rem;color:var(--faint);text-align:right}
+.run-open{background:none;border:1px solid var(--line);padding:.3rem .7rem;font:inherit;font-size:.78rem;cursor:pointer;color:var(--ink)}
+.run-open:hover{border-color:var(--ink)}
+.run-open[aria-busy="true"]{opacity:.5;cursor:progress}
+.run-incomplete{color:var(--fail)}
+@media (max-width:640px){.run-row{grid-template-columns:1fr;gap:.35rem}.run-meta{text-align:left}}
+
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -158,6 +174,16 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
     <p class="protocol">These opinions are reported separately. The Tribunal produces no majority, headline, score or single result — the disagreement is the output.</p>
     <p class="runline" id="runline"></p>
+  </section>
+
+  <!-- Definition of done item 3: a proceeding is retrievable afterwards by
+       someone who did not convene it. Anyone opening this page sees every
+       past deliberation and can read any of them in full. -->
+  <section id="archive-section">
+    <h2>Past proceedings</h2>
+    <p class="note">Every deliberation this Tribunal has held, most recent first. Open any of them to read the arguments and the three rulings as they were given. Nothing here is a summary.</p>
+    <div class="banner" id="archive-error" hidden></div>
+    <div id="archive"></div>
   </section>
 
 </main>
@@ -402,6 +428,7 @@ async function run() {
         [`${u.failed} of ${u.attempted} calls failed. What is shown below is incomplete.`]);
     }
     $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadArchive(); // the run just held is now a past proceeding
   } catch (err) {
     stopWaiting();
     showError('The request failed before a result came back.', [err.message]);
@@ -410,10 +437,108 @@ async function run() {
   }
 }
 
+// ------------------------------------------------------- past proceedings
+//
+// Definition of done item 3. The list shows all three rulings per run, never a
+// tally and never a "2 of 3" — the same rule that governs a live result governs
+// its record. (decision 0002)
+
+const SHORT = { barak_model: 'Barak', elon_model: 'Elon', shamgar_model: 'Shamgar' };
+
+function renderArchive(runs) {
+  if (runs.length === 0) {
+    $('archive').innerHTML =
+      '<p class="note">No proceedings have been held yet. The first one convened above will appear here.</p>';
+    return;
+  }
+
+  $('archive').innerHTML = runs.map((r) => {
+    const when = String(r.ran_at ?? '').slice(0, 16).replace('T', ' ');
+    const rulings = JUDGES.map((j) => {
+      const v = r.rulings?.[j];
+      return `<span>${esc(SHORT[j])} <b>${v ? esc(RULING[v] ?? v) : '—'}</b></span>`;
+    }).join('');
+
+    // A run where fewer than seven calls landed says so here, so nobody opens
+    // an incomplete panel expecting a complete one.
+    const short = r.calls_succeeded != null && r.calls_attempted != null
+      && r.calls_succeeded < r.calls_attempted;
+
+    return `<div class="run-row">
+      <div class="run-when">${esc(when)} · ${esc(r.case_id ?? '')}</div>
+      <div class="run-rulings">${rulings}${
+        short ? `<span class="run-incomplete">${r.calls_succeeded}/${r.calls_attempted} calls — incomplete</span>` : ''
+      }</div>
+      <div><button class="run-open" type="button" data-id="${esc(r.deliberation_id)}">Read it</button>
+        <div class="run-meta">${esc(String(r.deliberation_id).slice(0, 8))}</div></div>
+    </div>`;
+  }).join('');
+
+  $('archive').querySelectorAll('.run-open').forEach((b) =>
+    b.addEventListener('click', () => openRun(b.dataset.id, b)));
+}
+
+async function openRun(id, button) {
+  button.setAttribute('aria-busy', 'true');
+  button.textContent = 'Opening…';
+  try {
+    const res = await fetch(`/api/runs?id=${encodeURIComponent(id)}`);
+    const doc = await res.json().catch(() => null);
+    if (!res.ok || !doc) {
+      showError(doc?.error ?? `That proceeding could not be opened (HTTP ${res.status}).`);
+      return;
+    }
+
+    // Rendered by the same two functions as a live run. A retrieved
+    // deliberation that looked different from a fresh one would invite the
+    // reader to treat it as a lesser record, and it is the same record.
+    renderAdvocates(doc);
+    renderRulings(doc);
+    $('results').hidden = false;
+
+    const u = doc.usage ?? {};
+    $('runline').textContent =
+      `retrieved · run ${doc.deliberation_id} · ${doc.status} · ` +
+      `${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ${describeModels(doc)} · held ${String(doc.ran_at ?? '').slice(0, 16).replace('T', ' ')}`;
+
+    if (doc.status !== 'complete') {
+      showError('This proceeding was incomplete when it was held.',
+        [`${u.failed} of ${u.attempted} calls failed. What is shown is what there was.`]);
+    }
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showError('That proceeding could not be opened.', [err.message]);
+  } finally {
+    button.removeAttribute('aria-busy');
+    button.textContent = 'Read it';
+  }
+}
+
+async function loadArchive() {
+  try {
+    const res = await fetch('/api/runs');
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      // Shown, not swallowed. An archive that is silently empty because the
+      // database is unreachable reads as "nothing has ever run here".
+      $('archive-error').hidden = false;
+      $('archive-error').innerHTML =
+        `<h3>The archive could not be read</h3><p>${esc(body?.error ?? `HTTP ${res.status}`)}</p>`;
+      return;
+    }
+    renderArchive(body.runs ?? []);
+  } catch (err) {
+    $('archive-error').hidden = false;
+    $('archive-error').innerHTML =
+      `<h3>The archive could not be reached</h3><p>${esc(err.message)}</p>`;
+  }
+}
+
 $('run').addEventListener('click', run);
 loadCase()
   .then(loadModels)
   .catch((e) => showError(e.message));
+loadArchive();
 </script>
 </body>
 </html>

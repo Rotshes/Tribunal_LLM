@@ -738,3 +738,134 @@ test('stripAnsi leaves ordinary text alone', () => {
   assert.equal(stripAnsi('\x1b[31mred\x1b[0m'), 'red');
   assert.equal(stripAnsi('90% [not a colour]'), '90% [not a colour]');
 });
+
+// ------------------------------------------- the read path (turn 011, DoD 3)
+
+// A fake PostgREST. Returns a canned body per table, and records what was asked
+// for, so a test can assert the query as well as the result.
+function fakeSupabase(tables) {
+  const asked = [];
+  const impl = async (url) => {
+    asked.push(String(url));
+    const table = String(url).split('/rest/v1/')[1].split('?')[0];
+    const body = tables[table];
+    if (body === undefined) {
+      return { ok: false, status: 404, text: async () => `no table ${table}` };
+    }
+    return { ok: true, status: 200, json: async () => body };
+  };
+  return { impl, asked };
+}
+
+const withSupabaseEnv = async (fn) => {
+  const u = process.env.SUPABASE_URL;
+  const k = process.env.SUPABASE_SECRET_KEY;
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_test';
+  try {
+    return await fn();
+  } finally {
+    if (u === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = u;
+    if (k === undefined) delete process.env.SUPABASE_SECRET_KEY; else process.env.SUPABASE_SECRET_KEY = k;
+  }
+};
+
+test('the index carries three rulings per run and no summary of them', async () => {
+  const { readDeliberationIndex } = await import('../src/sinks/supabase.js');
+  const { impl } = fakeSupabase({
+    deliberations: [
+      { deliberation_id: 'a', case_id: 'T-001', ran_at: '2026-08-31T11:00:00Z',
+        status: 'complete', calls_attempted: 7, calls_succeeded: 7 },
+    ],
+    opinions: [
+      { deliberation_id: 'a', judge_id: 'barak_model', ruling: 'justified' },
+      { deliberation_id: 'a', judge_id: 'elon_model', ruling: 'justified' },
+      { deliberation_id: 'a', judge_id: 'shamgar_model', ruling: 'not_justified' },
+    ],
+  });
+
+  const runs = await withSupabaseEnv(() => readDeliberationIndex({ fetchImpl: impl }));
+  assert.equal(runs.length, 1);
+  assert.deepEqual(runs[0].rulings, {
+    barak_model: 'justified',
+    elon_model: 'justified',
+    shamgar_model: 'not_justified',
+  });
+
+  // The list is a place a majority would be tempting. There must be nothing
+  // shaped like one anywhere in what the endpoint hands the browser.
+  const json = JSON.stringify(runs);
+  for (const forbidden of ['verdict', 'majority', 'consensus', 'score', 'differ']) {
+    assert.ok(!json.includes(forbidden), `${forbidden} appeared in the index`);
+  }
+});
+
+test('a retrieved run shows a failed judge as a failure, not as two rulings', async () => {
+  // The defect this guards: opinions has no row for a judge that failed, so a
+  // naive read returns two rulings and the page renders two columns as though
+  // that were the panel. Failures are rebuilt from model_calls for this reason.
+  const { readDeliberation } = await import('../src/sinks/supabase.js');
+  const id = '11111111-2222-3333-4444-555555555555';
+  const { impl } = fakeSupabase({
+    deliberations: [{ deliberation_id: id, case_id: 'T-001', status: 'partial',
+      calls_attempted: 7, calls_succeeded: 6, tokens_in: 10, tokens_out: 20 }],
+    opinions: [
+      { deliberation_id: id, role: 'judge', judge_id: 'barak_model', ruling: 'justified' },
+      { deliberation_id: id, role: 'judge', judge_id: 'elon_model', ruling: 'not_justified' },
+      { deliberation_id: id, role: 'advocate', representative_id: 'jon_snow' },
+    ],
+    model_calls: [
+      { role: 'judge', role_id: 'shamgar_model', succeeded: false,
+        failure_reason: 'response was not JSON' },
+      { role: 'judge', role_id: 'barak_model', succeeded: true },
+    ],
+  });
+
+  const doc = await withSupabaseEnv(() => readDeliberation(id, { fetchImpl: impl }));
+  assert.equal(doc.judge_opinions.length, 2);
+  assert.deepEqual(doc.judge_failures, [
+    { roleId: 'shamgar_model', reason: 'response was not JSON' },
+  ]);
+  assert.equal(doc.usage.failed, 1, 'the shortfall must be visible in usage too');
+  assert.equal(doc.advocate_opinions.length, 1);
+});
+
+test('a missing run reads as missing, not as an empty deliberation', async () => {
+  const { readDeliberation } = await import('../src/sinks/supabase.js');
+  const { impl } = fakeSupabase({ deliberations: [] });
+  const doc = await withSupabaseEnv(() =>
+    readDeliberation('11111111-2222-3333-4444-555555555555', { fetchImpl: impl }));
+  assert.equal(doc, null);
+});
+
+test('the read path refuses an id that is not one', async () => {
+  const { readDeliberation } = await import('../src/sinks/supabase.js');
+  const { impl, asked } = fakeSupabase({ deliberations: [] });
+  await assert.rejects(
+    withSupabaseEnv(() => readDeliberation('a&select=*', { fetchImpl: impl })),
+    /Not a deliberation id/,
+  );
+  assert.equal(asked.length, 0, 'a rejected id must not reach the database');
+});
+
+test('the runs endpoint says the archive is absent rather than empty', async () => {
+  // "No runs yet" and "the database is not connected" are different facts and
+  // an empty list conflates them.
+  const handler = (await import('../netlify/functions/runs.js')).default;
+  const u = process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_URL;
+  try {
+    const res = await handler(new Request('https://x/api/runs'));
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.match(body.error, /not configured/);
+  } finally {
+    if (u !== undefined) process.env.SUPABASE_URL = u;
+  }
+});
+
+test('the runs endpoint rejects anything but GET', async () => {
+  const handler = (await import('../netlify/functions/runs.js')).default;
+  const res = await handler(new Request('https://x/api/runs', { method: 'POST' }));
+  assert.equal(res.status, 405);
+});

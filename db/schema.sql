@@ -184,8 +184,15 @@ create index if not exists model_calls_failures on model_calls (succeeded) where
 
 -- RLS on, no policies. Nothing reaches these tables except through the backend
 -- using the SECRET key, which bypasses RLS. The browser never holds a key that
--- can read or write here. When the read-only public view is built, it gets its
--- own explicit policies — added deliberately, not by leaving RLS off.
+-- can read or write here.
+--
+-- The public read-only view now exists — GET /api/runs, turn 011 — and it
+-- still has no policies, deliberately. A policy grants a whole table including
+-- columns added to it later; the function grants the projection it selects.
+-- The reasoning, and what it was chosen over, is in
+-- docs/decisions/0010-reads-go-through-the-backend-and-rls-stays-closed.md.
+--
+-- So: adding a policy here is not a small convenience. It is reopening 0010.
 
 alter table charge_sheets enable row level security;
 alter table deliberations enable row level security;

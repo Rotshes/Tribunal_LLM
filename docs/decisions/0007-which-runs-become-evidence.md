@@ -1,7 +1,10 @@
 # 0007 — Which runs become evidence, and which stay in logs
 
-Status: **DRAFT — drafted by the agent at Roy's request, awaiting his decision**
+Status: accepted (Roy, 31 August 2026)
 Date: 31 August 2026
+
+Drafted by the agent at Roy's request and operated under for turns 007–011
+before being accepted; `docs/evidence/` was built to it throughout.
 
 ## The decision
 

@@ -80,6 +80,7 @@ Then `src/config.js`: advocates on `google/gemini-3.7-flash`, judges on
 | Suite and repo checks | `npm test`, `npm run check` | Pass — 48 tests, 74 files, G5 and G8 clean |
 | The evidence file is readable by anyone cloning the repo | `file` on the committed artifact | Pass after §7a — UTF-8, LF, no escape codes |
 | A run records the allocation it used | Stub run, `model_map` read back from the persisted document | Pass — four advocates 3.7-flash, three judges flash-lite, `model: null` |
+| The committed allocation works against real models | Live run `cbdf1b97`, no overrides | Pass — 7 of 7, no gate problems, `model_map` and all seven per-call `model` fields carry the two models |
 
 ### 6a. The second condition produced the one result the design has no use for
 
@@ -137,6 +138,33 @@ which is exactly why it is stated plainly: the alternative is an app whose three
 columns are a formality, and either way the reader is entitled to know which
 trade was made and on what evidence.
 
+### 6d. The committed allocation, on real models
+
+Run `cbdf1b97`, no flags, no overrides — the first deliberation the committed
+map has produced. Evidence: `docs/evidence/010-run-e-committed-allocation.json`.
+
+- **7 of 7 calls, no gate problems.** 3.7-flash routes cleanly on the advocate
+  roles as a default, not only as an override. The `require_parameters` concern
+  was unfounded, but it was worth one run to know rather than assume.
+- **The allocation is legible in the record.** `model_map` holds both models and
+  each of the seven call rows carries its own `model`; `model` at the top of the
+  document is `null`, which is correct — there is no single model for this run
+  and a field that pretended otherwise would be the lie this change was designed
+  to avoid.
+- **The panel divided.** barak `justified`, elon `justified`, shamgar
+  `not_justified`. This is the outcome the allocation exists to make possible
+  and the uniform 3.7-flash condition could not produce in five attempts.
+- **20.8s wall against 66.1s of model time — a 3.18× concurrency gain**, and
+  faster than every uniform 3.7-flash run (26.9–34.5s), which was the incidental
+  argument for the mix.
+
+One thing in it is not what the earlier conditions would predict: **elon ruled
+`justified`.** Across the nineteen runs with flash-lite judges before this one,
+elon returned `not_justified` sixteen times. It is now three of twenty. That is
+not a contradiction — it is the variance decision 0009 says the sample cannot
+call — but it is a reminder that "elon rules not_justified" was never a finding,
+only a frequency.
+
 ### What I did not verify
 
 - **That flash-lite's judges divide for good reasons.** Nothing here inspects
@@ -149,14 +177,13 @@ trade was made and on what evidence.
   risk, not a demonstration.
 - **Stability of any of it.** 5 runs per condition at temperature 0.7.
   Condition 3's barak split 3–2, which this sample cannot call.
-- **The allocation against real models.** The change is verified against the
-  stub and the tests; no paid run has been made on the committed allocation yet.
+- ~~**The allocation against real models.**~~ Closed by run `cbdf1b97`; see §6d.
 
 ## 7. Outcome
 
 **Locked:** the per-role allocation, committed in code with decision 0009 behind
-it. The last open running-project requirement is met. The layer flags make the
-experiment repeatable.
+it and verified on real models. The last open running-project requirement is
+met. The layer flags make the experiment repeatable.
 
 **Open:** decision 0007 is still marked DRAFT. G3 has still never fired — 73 of
 74 judge opinions cite all five facts and the seventy-fourth cites one, so the

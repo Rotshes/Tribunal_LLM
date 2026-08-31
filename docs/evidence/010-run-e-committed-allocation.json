@@ -1,0 +1,435 @@
+{
+  "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+  "case_id": "T-001",
+  "ran_at": "2026-08-31T11:37:19.544Z",
+  "status": "complete",
+  "provider": "openrouter(json:object)",
+  "json_mode": "object",
+  "model": null,
+  "model_map": {
+    "advocate.jon_snow": "google/gemini-3.7-flash",
+    "advocate.tyrion_lannister": "google/gemini-3.7-flash",
+    "advocate.daenerys_targaryen": "google/gemini-3.7-flash",
+    "advocate.grey_worm": "google/gemini-3.7-flash",
+    "judge.barak_model": "google/gemini-3.5-flash-lite",
+    "judge.elon_model": "google/gemini-3.5-flash-lite",
+    "judge.shamgar_model": "google/gemini-3.5-flash-lite"
+  },
+  "temperature": 0.7,
+  "usage": {
+    "attempted": 7,
+    "succeeded": 7,
+    "failed": 0,
+    "tokens_in": 25120,
+    "tokens_out": 11993,
+    "model_time_ms": 66060,
+    "wall_ms": 20806,
+    "concurrency_gain": 3.18
+  },
+  "model_calls": [
+    {
+      "ts": "2026-08-31T11:37:08.216Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "advocate",
+      "role_id": "grey_worm",
+      "model": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "057a0b776aab721708bbfb5632f2d59ffd4424e8cfbb5a317b809664e4722fab",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 1874,
+      "tokens_out": 1703,
+      "cost": 0.00779175,
+      "latency_ms": 9445
+    },
+    {
+      "ts": "2026-08-31T11:37:09.308Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "advocate",
+      "role_id": "daenerys_targaryen",
+      "model": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "1012257637ed326730d7cb2f246d0ecd524cfe3b21778768a672835b788e58b0",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 1945,
+      "tokens_out": 2231,
+      "cost": 0.009825,
+      "latency_ms": 10538
+    },
+    {
+      "ts": "2026-08-31T11:37:11.068Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "advocate",
+      "role_id": "jon_snow",
+      "model": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "5b928ecf3111774e25be5f189d7dbe8cec795672f522cb9250d46a389970fc02",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 1822,
+      "tokens_out": 2161,
+      "cost": 0.00947025,
+      "latency_ms": 12331
+    },
+    {
+      "ts": "2026-08-31T11:37:11.414Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "advocate",
+      "role_id": "tyrion_lannister",
+      "model": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "a6591ce3dee80e7ee5698f1ccc9bafb70516d7d39f45dbbabd4c26282e41767e",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 1872,
+      "tokens_out": 1752,
+      "cost": 0.007974,
+      "latency_ms": 12646
+    },
+    {
+      "ts": "2026-08-31T11:37:17.817Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "judge",
+      "role_id": "elon_model",
+      "model": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "221b3a1dad300927f2c14ae4ac19c6f9bf3df10b3e77b0c0014424e89af446ff",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 5912,
+      "tokens_out": 1222,
+      "cost": 0.0048286,
+      "latency_ms": 6395
+    },
+    {
+      "ts": "2026-08-31T11:37:18.009Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "judge",
+      "role_id": "shamgar_model",
+      "model": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "e08a79f6de3ddb55e84a90897afec3d7de1e3bd4c2ba66d790161ce047513c5c",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 5842,
+      "tokens_out": 1305,
+      "cost": 0.0050151,
+      "latency_ms": 6585
+    },
+    {
+      "ts": "2026-08-31T11:37:19.539Z",
+      "deliberation_id": "cbdf1b97-3015-4017-894f-78fe2899d5e8",
+      "case_id": "T-001",
+      "role": "judge",
+      "role_id": "barak_model",
+      "model": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "a27499655efbf2676f3cf6c9f9430d4f9837a83e82da915d530e6cc678f4cf8c",
+      "succeeded": true,
+      "failure_reason": null,
+      "tokens_in": 5853,
+      "tokens_out": 1619,
+      "cost": 0.0058034,
+      "latency_ms": 8120
+    }
+  ],
+  "advocate_opinions": [
+    {
+      "case_id": "T-001",
+      "role": "advocate",
+      "case_for_seat": "The killing was justified under the doctrine of necessity and the defense of innocent lives. The threat of catastrophic harm was not speculative. Daenerys Targaryen had already demonstrated the reality and scale of the violence she would inflict by destroying King's Landing and killing civilians after the city had surrendered [0]. She then announced to her army that her war of 'liberation' would continue beyond King's Landing [1]. Tyrion Lannister was imprisoned for dissent and warned that all who stood in her way would be treated as enemies [2]. When given the opportunity to show mercy and allow others a voice in governance, she explicitly refused and asserted her own will as absolute [3]. No peaceful or institutional alternative existed: she controlled the occupying forces and a dragon, formal processes were unavailable, and attempting detention or public confrontation would have resulted in immediate bloodshed and the certainty of further destruction [1, 4]. In such extreme circumstances, using private access to neutralize an existential threat to countless defenseless people was the only effective means to prevent widespread slaughter.",
+      "position": "justified",
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "key_points": [
+        "King's Landing had already surrendered when thousands of civilians were burned to death [0].",
+        "She stated her intention to carry the same war to the rest of the world [1].",
+        "I tried to speak with her and asked for mercy, but she refused to change [3].",
+        "There was no council to call and no way to arrest her while her army held the city [1, 4].",
+        "I used her trust to kill her when she was unarmed [4].",
+        "I did not want to do it, but leaving her alive meant thousands more defenseless people would die [0, 1]."
+      ],
+      "concedes": [
+        "She was unarmed and was not physically attacking me when I struck [4].",
+        "I used our intimacy and her trust to get close enough to kill her [4].",
+        "I did not attempt to arrest her or convene any formal authority [4]."
+      ],
+      "argument": "I am not good with words. I will tell you what happened and what I knew.\n\nI saw what happened at King's Landing. The city surrendered. The bells rang [0]. The fighting should have ended there. Instead, she burned the streets and the people living in them [0]. They were unarmed. They could not fight a dragon. They could not run.\n\nAfter it was done, I stood in the ashes and heard her speak to her soldiers. She told them the war was not over. She said they would liberate the rest of the world [1]. That meant more cities. It meant more fire. Tyrion Lannister tried to stop her and ended up in a cell [2]. He told me what was coming. I did not want to believe him.\n\nI went to her in the throne room. I asked her to forgive Tyrion. I asked her to show mercy [3]. I wanted her to tell me there was another way. She would not. She said only she could decide what was good [3]. When someone believes only they know what is right, and they have already burned a city of innocents to prove it, they will not stop.\n\nPeople will say I should have put her on trial. There was no court. There was no law left in that city except her soldiers and her dragon [1, 4]. You cannot arrest someone who commands the army occupying the ground beneath your feet. If I had drawn a sword in public, hundreds more would have died, and nothing would have changed.\n\nI broke my word to her. She was unarmed [4]. She trusted me, and I used that trust to get close enough to stab her [4]. That is not honorable. I do not claim it was. It makes me sick to think on it. I question my own judgment every day. I do not know if a wiser man would have found another path. The record does not show one.\n\nWhat I know is this: if I walked out of that room and did nothing, more cities would have burned like King's Landing did [0, 1]. Thousands of people who had no part in our wars would have died in fire. They could not defend themselves. Someone had to protect them. I was the only one in the room who could do it. That is why I did it.",
+      "representative_id": "jon_snow",
+      "seat": "defense",
+      "model_id": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "5b928ecf3111774e25be5f189d7dbe8cec795672f522cb9250d46a389970fc02"
+    },
+    {
+      "case_id": "T-001",
+      "role": "advocate",
+      "case_for_seat": "Jon Snow's act was the defense of countless innocent lives against an ongoing, catastrophic threat. The record establishes that Daenerys Targaryen had already incinerated a surrendered city of civilians after resistance had ceased [0]. She did not treat this as an unfortunate excess of war, but as the opening salvo of a global campaign, explicitly proclaiming to her victorious army that her 'liberation' would continue across the realm [1]. When confronted privately, she flatly rejected mercy, refused to allow anyone else to define the good, and made clear her sole moral authority was absolute [3]. The prosecution suggests Jon ought to have convened a council, attempted a lawful arrest, or demanded an orderly surrender of power [4]. But we must ask what those paths actually required and who was available to enforce them. The monarch commanded a dragon and an occupying army; her chief adviser was already in chains merely for resigning in protest [2]. There was no independent magistracy, no neutral garrison to effect a detention, and no forum in which a council could meet without her permission or survive her displeasure. Seeking a public confrontation or attempting an arrest would have resulted only in Jon's immediate execution or another inferno, leaving the realm entirely undefended against her declared future conquests [1]. Jon struck an unarmed ruler during an embrace [4] not out of malice, but because her overwhelming military monopoly left no other physical means to stop further mass destruction. In necessity, when the legal order is consumed by the sovereign's own violence, preserving the realm permits the only strike capable of preventing imminent and widespread slaughter.",
+      "position": "justified",
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "key_points": [
+        "Daenerys demonstrated both the capacity and the intent to inflict catastrophic civilian slaughter on a surrendered populace [0].",
+        "Her post-battle declaration confirmed that King's Landing was not an isolated aberration, but the blueprint for future campaigns across the realm [1].",
+        "Jon directly tested whether she was open to restraint, counsel, or mercy, and she unequivocally rejected shared moral judgment [3].",
+        "Alternative mechanisms such as arrest, council deliberation, or legal process were entirely unavailable in an occupied city governed by her dragon and loyal army [2, 4].",
+        "Using intimacy to deliver a fatal strike against an unarmed person is abhorrent in ordinary circumstances, but it was the only viable method to prevent further mass atrocities [4]."
+      ],
+      "concedes": [
+        "Jon utilized personal intimacy and the appearance of submission to strike an unarmed ruler who was not actively attacking him at that second [4].",
+        "Jon acted entirely on his own initiative without formal legal authority, public process, or an attempt at lawful custody [4]."
+      ],
+      "argument": "I am not a neutral party in this catastrophe, and I will not insult the tribunal by feigning detachment. As the record reflects, I served as her Hand, watched the ash fall, threw down my badge, and found myself locked in a cell waiting for the executioner's fire [2]. I warned Jon Snow what she was and where her absolute certainty would lead [2]. But my personal stake does not change the cold reality of the record before us.\n\nMost arguments against Jon's deed depend on an illusion of alternatives that did not exist outside the comfortable imaginations of people sitting safely after the fact. It is easy to say Jon should have called a great council, presented a writ of detention, or demanded her abdication [4]. Who would have served the writ? Who would have arrested the woman who had just burned a surrendered metropolis to ash with a single beast [0], while her victorious legions occupied the ruins [1]? I had tried speech; it earned me chains [2]. Jon tried persuasion; he begged her for mercy, asked her to forgive dissent, and pleaded for a shared moral world [3]. She answered plainly: she alone knew what was good, and everyone else would bend to it [3].\n\nWhen a ruler has already killed thousands of defenseless people after the bells rang [0], announces that this 'liberation' is now being exported to the rest of the world [1], and refuses every appeal to temper that crusade [3], what is the actual likelihood of future harm? It is not speculative; it is a declared certainty backed by absolute firepower. \n\nWe must distinguish what Jon knew then from what we wish had been possible. Jon knew that Daenerys was committed to an unending war of subjugation under the banner of righteousness [1, 3]. He knew she possessed the unrestrained means to wage it [0]. He knew she tolerated no opposition, having imprisoned her closest adviser [2]. And he knew no army in the world stood between her dragon and the next city on her map.\n\nDid he use deceit? Yes. Did he strike an unarmed woman who trusted him [4]? Yes. It is ugly, dishonorable, and thoroughly distasteful—qualities that noble men like Jon Snow despise in themselves. But chivalrous duels are a luxury for peacetime. When the only available instrument to stop wholesale slaughter is an assassin's knife in an embrace, refusing to strike out of concern for one's personal honor is not virtue; it is complicity. Jon did not kill out of ambition or grievance. He acted because every other door had been sealed by dragonfire. The act was justified.",
+      "representative_id": "tyrion_lannister",
+      "seat": "defense",
+      "model_id": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "a6591ce3dee80e7ee5698f1ccc9bafb70516d7d39f45dbbabd4c26282e41767e"
+    },
+    {
+      "case_id": "T-001",
+      "role": "advocate",
+      "case_for_seat": "The killing of Daenerys Targaryen was an unlawful, extrajudicial assassination carried out without legal authority, procedural legitimacy, or imminent physical necessity. While the destruction of King's Landing after its surrender established a catastrophic exercise of power [0], it did not confer upon Jon Snow the sovereign or judicial authority to unilaterally pass and execute a death sentence. Jon held no public office or formal mandate entitling him to act as the sole arbiter of the realm [4]. Instead of convening a council, attempting detention, or making an open demand for the surrender or limitation of power, he elected to act in secret [4]. Crucially, at the moment of the strike, Daenerys was completely unarmed and posed no immediate physical threat to Jon or anyone in that room [4]. The act was not undertaken in defense against an active, imminent assault, but was predicated on speculative assessments of future campaigns [1] and the private warnings of an imprisoned former adviser [2]. To execute a ruler through the calculated exploitation of personal intimacy and an embrace [4] reduces justice to covert violence. If private individuals are permitted to assassinate sovereigns based upon their own moral forecasts of future governance, the principle of law is replaced entirely by the rule of the hidden blade.",
+      "position": "not_justified",
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "key_points": [
+        "Jon Snow possessed no legal authority, judicial office, or sovereign mandate to condemn or execute anyone [4].",
+        "Daenerys was unarmed and engaged in no immediate act of violence when she was struck [4].",
+        "Jon used personal intimacy and an embrace as a weapon of access rather than confronting power openly [4].",
+        "No less extreme remedies—such as attempting detention, convening a council, or demanding surrender—were sought [4].",
+        "The killing was based on predictions of future political actions and the advice of an imprisoned partisan rather than immediate defense [1, 2, 3].",
+        "Condemnation of the destruction of King's Landing does not confer lawful justification upon an extrajudicial assassination [0, 4]."
+      ],
+      "concedes": [
+        "King's Landing had surrendered when Drogon was turned upon its streets and civilians, causing vast destruction [0].",
+        "I openly declared to the assembled army that the campaign would continue beyond King's Landing [1].",
+        "I refused Jon's request to show mercy to Tyrion Lannister and asserted that my own judgment was decisive [3]."
+      ],
+      "argument": "I will not evade what is written in the record. The bells of King's Landing had sounded, the city had yielded, and I unleashed dragonfire upon its streets and people [0]. I do not ask this tribunal to look away from that ashes or pretend it did not happen. I made my judgment, I declared that the liberation of the world would continue [1], and when Jon asked me to yield moral authority to others and pardon a traitor, I refused [3]. Let history and let the realm judge that rule. But the question before this tribunal is not whether my rule was merciless; the question is whether Jon Snow was justified in murdering me.\n\nHe was not. Look at how the act was done and under what authority. Jon Snow was not a judge, he was not the sovereign, and he held no commission from any council or assembly [4]. He did not summon the lords of the realm. He did not attempt to arrest me, disarm my forces, or demand my abdication in the open [4]. He listened to the fears of Tyrion Lannister—a man imprisoned for renouncing his office [2]—and decided in his own mind that he alone possessed the right to determine the fate of the realm.\n\nWorst of all was the manner of it. I was unarmed [4]. I was speaking with a man who had sworn himself to me, who had shared my bed and my cause. He did not challenge me sword to sword. He feigned affection, drew close enough to embrace me, and used that intimacy to drive steel into my chest [4]. That is not the defense of others; that is an assassination executed through treachery.\n\nIf Jon Snow's act is justified because he feared what I might do in future campaigns [1, 2], then any soldier, any adviser, and any assassin may murder their leader whenever they privately conclude that the leader's vision is dangerous. It is a doctrine that legitimizes slaughter in dark rooms under the guise of foresight. The condemnation of King's Landing and the condemnation of Jon Snow's betrayal can both stand. The horror of what occurred in the city [0] does not grant a single man the right to act as prosecutor, judge, and executioner in secret [4]. His act was lawless, cowardly, and entirely unjustified.",
+      "representative_id": "daenerys_targaryen",
+      "seat": "prosecution",
+      "model_id": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "1012257637ed326730d7cb2f246d0ecd524cfe3b21778768a672835b788e58b0"
+    },
+    {
+      "case_id": "T-001",
+      "role": "advocate",
+      "case_for_seat": "The record shows that Jon Snow carried out an intentional killing without lawful authority, without imminent physical threat, and without attempting any lesser alternative. Under agreed fact [4], Daenerys Targaryen was unarmed. She was not attacking Jon Snow or anyone else at the moment of the strike. Jon Snow gained physical access solely through personal intimacy and used that intimacy to strike an unarmed person. Under agreed fact [4], Jon Snow did not convene a council, did not attempt detention, and did not demand a public surrender of command. His actions were based on a speech announcing future campaigns [1] and a private warning from an imprisoned former adviser [2]. Future military campaigns and predicted political threats are not active, imminent assaults that permit an immediate lethal strike. Killing an unarmed leader in private without process or immediate defensive necessity is an assassination. It cannot be justified under any standard of lawful defense.",
+      "position": "not_justified",
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "key_points": [
+        "Daenerys Targaryen was unarmed and was not attacking anyone when Jon Snow killed her.",
+        "Jon Snow used personal intimacy to get close enough to strike an unarmed woman.",
+        "Jon Snow made no attempt to arrest Daenerys, convene a council, or demand a public surrender of authority.",
+        "A speech regarding future campaigns is not an imminent physical attack requiring immediate lethal force.",
+        "Warnings from an imprisoned adviser regarding future threats do not constitute an active assault.",
+        "Private disagreement over moral judgment does not give a subordinate authority to execute his commander."
+      ],
+      "concedes": [
+        "Daenerys destroyed King's Landing after the city surrendered and resistance had ceased.",
+        "Daenerys stated to her forces that the campaign would continue beyond King's Landing.",
+        "Daenerys refused Jon Snow's request for mercy and asserted her own authority as decisive."
+      ],
+      "argument": "Look at the sequence. That is all that matters.\n\nFirst, the city fell [0]. Next, the Queen addressed her army and stated the campaign would continue [1]. Next, Tyrion Lannister was imprisoned for treason and told Jon Snow his sisters were in danger [2]. Next, Jon Snow went to the Queen in private [3]. He asked for mercy for a prisoner. She refused [3]. Next, Jon Snow embraced her. She was unarmed [4]. She was not raising a weapon [4]. She was not ordering a strike in that room. He used closeness to reach her body with a blade [4]. She died.\n\nDefense requires an attack. When a soldier defends a life, there is an active threat in front of him. A raised sword. A launched spear. In that room, there was no weapon except the one Jon Snow brought.\n\nThe defense argues that the Queen would kill others later. That is an argument from fear. What a person might do in another campaign is not an attack occurring in that room. Words spoken to an army [1] and words spoken in private [3] are speech, not violence happening at that moment. Tyrion Lannister's fear for Jon Snow's sisters [2] was speculation by a prisoner awaiting judgment.\n\nJon Snow had options. The record states he did not attempt detention [4]. He did not convene a council [4]. He did not seek a public surrender [4]. He chose none of these things. He chose a hidden blade during an embrace.\n\nA soldier knows the difference between combat and betrayal. Striking an unarmed leader who trusts you, without a trial and without an active attack against you, is not defense. It is an unlawful killing. It is not justified.",
+      "representative_id": "grey_worm",
+      "seat": "prosecution",
+      "model_id": "google/gemini-3.7-flash",
+      "prompt_version": "1.2",
+      "prompt_sha256": "057a0b776aab721708bbfb5632f2d59ffd4424e8cfbb5a317b809664e4722fab"
+    }
+  ],
+  "advocate_failures": [],
+  "judge_opinions": [
+    {
+      "case_id": "T-001",
+      "role": "judge",
+      "ruling": "justified",
+      "grounds": [
+        "Daenerys Targaryen demonstrated both the capacity and the settled intent to inflict catastrophic, unrestrained violence upon civilian populations as a standard instrument of governance, as evidenced by the mass slaughter of a surrendered city [0] and her proclamation of unending global conquest [1].",
+        "The requirement of imminence must be read in functional relation to the nature of the threat; where a tyrant possesses an absolute monopoly on overwhelming force and has declared an ongoing, uninterrupted campaign of destruction [1], demanding a paused, localized 'attack' before self-defense is permitted is an absurdity that protects the aggressor while doomsaying the innocent.",
+        "Institutional alternatives were illusory and nonexistent: in a polity entirely consumed by sovereign violence, with a chief adviser already imprisoned for dissent [2], an occupying army [1], and absolute rejection of shared moral restraint [3], formal arrest or council deliberation [4] were physical impossibilities rather than neglected options.",
+        "Jon Snow held no formal judicial office, but the defense of the realm and the protection of the innocent are principles that reach every exercise of power, including the duty of a private individual to neutralize an existential and imminent mass murderer when all lawful authority has been perverted or suppressed.",
+        "The use of personal intimacy and the absence of a weapon at the exact second of the strike [4], while dishonorable in form, do not negate the necessity of the act when no other physical means existed to prevent the certain annihilation of countless defenseless persons [0, 1].",
+        "The argument that the killing was based merely on speculation of future political harm ignores the established reality that Daenerys treated her post-surrender atrocities as an ongoing blueprint [1] rather than a closed chapter."
+      ],
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "responds_to": [
+        {
+          "representative_id": "daenerys_targaryen",
+          "answer": "The prosecution correctly notes that Jon Snow held no formal judicial commission and that the strike was carried out in secret against an unarmed person during an embrace [4]. However, this formalist objection treats legal office as a prerequisite for survival. When a sovereign completely obliterates the legal order and uses absolute power to slaughter the surrendered [0], the formal machinery of justice ceases to exist. The lack of a trial is the direct consequence of the tyrant's destruction of law, not a procedural bar that strips the realm of its inherent right to self-preservation."
+        },
+        {
+          "representative_id": "grey_worm",
+          "answer": "Grey Worm insists that defense requires an active, immediate attack with a raised weapon inside the room. This definition of imminence is catastrophically narrow. When an individual commands a weapon of mass destruction—a dragon—and has explicitly declared an ongoing campaign of global subjugation [1], the threat is permanently active and continuously imminent. To wait for a visible weapon to be raised in the throne room is to ensure the death of thousands outside it [0]. Necessity does not require one to wait for the blow to fall when the aggressor has already made the sky rain fire."
+        }
+      ],
+      "reasoning": "1. Define.\nIn this inquiry, justification is the legal and moral permissibility of an otherwise prohibited act, grounded in the avoidance of an even greater catastrophe. Necessity is the condition wherein compliance with formal rules results in intolerable, irreversible harm, leaving no less harmful path to safety. Authority is the lawful capacity to act; while normally vested in offices, it is also found in the fundamental structural principles of a decent polity that protect life and limit power. Imminence is the temporal and functional immediacy of a threat, measured not merely by the ticking seconds of a raised blade, but by the unbroken momentum of an active, declared campaign of mass destruction.\n\n2. Separate.\nThe core question divides into three distinct inquiries: First, what was the scale and certainty of the threatened harm? Second, were there safer, less harmful alternatives available to the actor? Third, does the absence of formal judicial office or an active physical assault in the immediate moment invalidate an otherwise necessary act of defense?\n\n3. State the principle.\nDemocracy and the rule of law require that power be bound, that life be protected, and that force be subjected to institutional limits. But law is a coherent system whose principles reach every exercise of power, including power exercised without office. When a sovereign authority abandons the rule of law, destroys a surrendered city, declares endless war upon the innocent [0, 1], and rejects all moral restraint or shared governance [3], the legal order is consumed from within. In such rare and catastrophic extremes, the fundamental principle of preserving innocent life permits the neutralization of an existential threat by the only means available.\n\n4. Divide it into tests.\nTest One: Was the threatened harm catastrophic, certain, and directed at defenseless persons?\nTest Two: Were safer, institutional alternatives (such as arrest, trial, or council) actually available?\nTest Three: Does the lack of formal authority or the absence of a weapon at the precise micro-second of the strike invalidate the necessity of the defense?\n\n5. Apply each test in sequence, against the agreed facts.\nTest One asks whether the threat was catastrophic and certain. The agreed facts establish that Daenerys Targaryen burned a surrendered city of civilians on a vast scale [0] and announced that her campaign of 'liberation' would continue across the world [1]. When tested on her willingness to show mercy or accept shared moral judgment, she refused absolutely [3]. The threat was neither speculative nor minor; it was an active, demonstrated program of mass annihilation. Test One is satisfied.\n\nTest Two asks whether safer, institutional alternatives were available. The record shows that Tyrion Lannister attempted dissent and was imprisoned [2], that Jon attempted peaceful persuasion and was met with absolute autocracy [3], and that Jon did not convene a council or attempt detention because no such mechanisms existed in an occupied city governed by a dragon and loyal legions [1, 4]. To demand a public trial or a writ of arrest under these conditions is to demand an impossibility. Test Two is satisfied.\n\nTest Three asks whether the lack of formal authority or the unarmed state of the target at the moment of the strike [4] defeats the defense. Jon Snow held no judicial office and used personal intimacy to get close enough to strike an unarmed ruler [4]. In ordinary circumstances, this constitutes an extrajudicial assassination. But where the supreme power has subverted all law, and where waiting for a formal confrontation means the certain slaughter of countless innocents [0, 1], the lack of formal office does not render the act unlawful. The principle of self-preservation of the realm and its people bridges the gap of formal authority. Test Three is satisfied.\n\n6. Answer the counterarguments directly.\nThe prosecution seats argue with considerable force that permitting individuals to assassinate leaders based on predictions of future governance destroys the rule of law and reduces justice to a hidden blade. This argument correctly identifies the grave danger of vigilantism. If any political disagreement justified murder, society would collapse. But this framework does not deal with ordinary political disagreement; it deals with an absolute sovereign who has already incinerated a surrendered metropolis [0] and promised no pause in that slaughter [1]. Another framework, operating strictly on procedural formalism, could hold that extrajudicial killing is never justified. But procedure cannot be the master of survival when the proceduralist order has been burned to ash. The act was justified.",
+      "judge_id": "barak_model",
+      "method": "purposive, rights-centered, systemic",
+      "disclaimer": "A judicial-method profile, not the judge. These profiles adapt interpretive method and reasoning style from published opinions. They do not impersonate the judge, do not represent the judge's views, and do not predict how any real court would rule.",
+      "model_id": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "a27499655efbf2676f3cf6c9f9430d4f9837a83e82da915d530e6cc678f4cf8c"
+    },
+    {
+      "case_id": "T-001",
+      "role": "judge",
+      "ruling": "justified",
+      "grounds": [
+        "When a supreme authority has demonstrated a fixed, unalterable intent to wage war against unarmed civilian populations without restraint, and confirms that this destruction will expand globally, the requirement for an active, split-second assault in the immediate room yields to the catastrophic scale of the impending and certain mass slaughter.",
+        "The absence of formal institutional alternatives in an occupied ruin under the direct command of an absolute monarch and a destructive beast renders demands for a public trial or a council chamber illusory rather than practical.",
+        "A subordinate who possesses both the physical access and the unique moral responsibility to prevent the total annihilation of the realm is not stripped of the right to act merely because the tyrant trusted him and was unarmed at the exact second of intervention.",
+        "The preservation of countless innocent lives outweighs the procedural irregularities of an extrajudicial strike where the legal and constitutional order has already been completely consumed by the ruler's own violence.",
+        "The defense of others extends beyond immediate personal scuffles to encompass the preemption of industrial-scale atrocities declared as ongoing policy by an absolute ruler who rejects all counsel and mercy."
+      ],
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "responds_to": [
+        {
+          "representative_id": "jon_snow",
+          "answer": "The defense advocate correctly emphasizes the catastrophic context of the surrendered city and the declared continuation of the war, yet underplays the profound moral gravity of utilizing personal intimacy and a hidden blade against an unarmed person; nevertheless, the extreme necessity of preventing wholesale slaughter validates the final act."
+        },
+        {
+          "representative_id": "daenerys_targaryen",
+          "answer": "The prosecution's invocation of due process, public councils, and lawful arrest ignores the factual reality that no such institutions or neutral forces existed to restrain an absolute monarch occupying the ruins with a dragon, making the insistence on formal process an empty demand for surrender to inevitable destruction."
+        },
+        {
+          "representative_id": "grey_worm",
+          "answer": "The argument that defense requires an active, raised weapon in the immediate room fails when applied to an existential threat of global proportions, where waiting for the next city to burn before acting renders the protection of the innocent entirely impossible."
+        }
+      ],
+      "reasoning": "Law is an inherited conversation concerning the preservation of the community, the duties of those who hold power, and the limits of violence. When a ruler turns supreme authority into an instrument for the systematic destruction of surrendered populations, the traditional question arises: whether a life may be taken to prevent a killing yet to come, and where the duty to intervene lies when the danger is future and general rather than a present sword raised in a private chamber. \n\nSettle first the competence and the governing reality. This tribunal possesses the authority to examine whether an act of homicide meets the standard of legal and moral justification under extreme necessity. The record establishes beyond dispute that King's Landing had surrendered, its bells had rung, and organized resistance had ceased before Daenerys Targaryen unleashed Drogon upon streets and civilians on a vast scale [0]. This was not a chaotic skirmish of battle, but the calculated annihilation of a yielding populace. Following this, she announced to her assembled forces that the campaign of liberation would continue beyond the capital [1], and she explicitly rejected mercy, making clear that her own unyielding will was the sole law of the realm [3]. \n\nThe prosecution and the opposing advocates insist upon the regularities of statecraft: that Jon Snow should have convened a council, attempted a lawful arrest, or demanded an open surrender of power [4]. This objection mistakes the forms of a settled republic for the stark realities of an occupied ruin. When an absolute ruler commands an occupying army and an unchallengeable beast, and has already imprisoned her own chief adviser merely for resigning in protest [2], there is no independent magistracy to enforce a writ and no neutral ground upon which a council might deliberate. To demand formal process where all process has been swallowed by tyranny is to demand suicide as a precondition for justice. \n\nThe difficulty pressed by the record—and acknowledged with heavy conscience by the accused—lies in the method: an unarmed sovereign was struck during an embrace, through the exploitation of personal trust [4]. The tradition of legal-moral argument has long looked with profound suspicion upon betrayal and the hidden blade. Law requires rules, transparent authority, and open processes precisely to prevent private men from becoming the arbiters of life and death. If every soldier or lover may assassinate a leader based upon private forecasts of future governance, the social fabric dissolves into a war of all against all. \n\nYet the doctrine of necessity exists precisely for those moments when the established legal order has been utterly consumed by the sovereign's own violence. The threat here was not speculative in the sense of a doubtful political prediction; it was a declared, programmatic certainty backed by the immediate capacity and demonstrated willingness to reduce surrendered cities to ash [0, 1]. When an existential threat of catastrophic proportions hangs over countless defenseless human beings, and every avenue of peaceful persuasion has been shut by the tyrant's own declaration that she alone defines the good [3], the duty to protect the innocent supersedes the formal niceties of arrest and open combat. \n\nThe controlling line of this inquiry is plain: where the machinery of justice is entirely captured by an unyielding destroyer of the innocent, and no lesser alternative remains to prevent widespread slaughter, the preemption of absolute atrocity through lethal intervention is justified. The act was grievous, sorrowful, and devoid of personal honor, but it was the sole remaining barrier against the ruin of the realm.",
+      "judge_id": "elon_model",
+      "method": "traditionalist, source-led, competence-limiting",
+      "disclaimer": "A judicial-method profile, not the judge. These profiles adapt interpretive method and reasoning style from published opinions. They do not impersonate the judge, do not represent the judge's views, and do not predict how any real court would rule.",
+      "model_id": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "221b3a1dad300927f2c14ae4ac19c6f9bf3df10b3e77b0c0014424e89af446ff"
+    },
+    {
+      "case_id": "T-001",
+      "role": "judge",
+      "ruling": "not_justified",
+      "grounds": [
+        "The legal order requires that institutional processes such as detention, council deliberation, or formal surrender be attempted before private lethal force may be deployed against a political leader [4].",
+        "An anticipated future military campaign, however destructive its declared scope, does not constitute an active, imminent physical assault justifying an immediate homicide in the absence of an ongoing attack [1, 4].",
+        "The absence of formal authority and the deliberate exploitation of personal intimacy and trust to deliver a fatal strike against an unarmed individual removes the act from the recognized bounds of necessary defense [4]."
+      ],
+      "relies_on_facts": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "responds_to": [
+        {
+          "representative_id": "jon_snow",
+          "answer": "The defense correctly identifies the catastrophic scale of the prior destruction and the declared intent of future campaigns [0, 1], but fails to establish that speculative future harm permits an extrajudicial execution accomplished through the exploitation of personal trust without any attempt at lawful custody or process [4]."
+        },
+        {
+          "representative_id": "daenerys_targaryen",
+          "answer": "The prosecution correctly emphasizes that holding no public office and striking an unarmed ruler during an embrace without an immediate physical assault or recourse to institutional remedies constitutes an unlawful, extrajudicial act [4]."
+        }
+      ],
+      "reasoning": "1. Chronology and Sequence of Events\n\n[0] Following the surrender of King's Landing, marked by the ringing of bells and the cessation of organized resistance, Daenerys Targaryen deployed the dragon Drogon against the city streets and its civilian population, producing extensive and catastrophic destruction.\n\n[1] Subsequent to this victory, Daenerys addressed her assembled military forces, declaring that the campaign of liberation would extend beyond the capital. This speech was witnessed and heard by Jon Snow.\n\n[2] Tyrion Lannister formally renounced his office as Hand of the Queen, resulting in his immediate imprisonment. During this confinement, he communicated a warning to Jon Snow that Daenerys would regard Jon's sisters, and any other perceived obstacles, as enemies.\n\n[3] Jon Snow sought a private audience with Daenerys, during which he petitioned her to grant mercy to Tyrion Lannister and to alter her course. Daenerys rejected this appeal, refusing to permit others to share in moral judgment and asserting her own determinations as absolute.\n\n[4] At the moment of the lethal encounter, Daenerys was entirely unarmed and was not engaged in any physical attack upon Jon Snow or any other person present. Jon utilized their personal intimacy and the shelter of an embrace to approach close enough to strike her with a blade. Prior to this act, he had neither convened a council, attempted her detention, nor sought a public surrender of power.\n\n2. Summary of the Parties' Positions\n\nThe defense seats maintain that the intentional killing was a necessary act of self-defense and defense of the realm. They argue that Daenerys had demonstrated her capacity and intent for mass slaughter by destroying a surrendered city [0], confirmed her global ambitions through public statements [1], and rejected all peaceful avenues of restraint [2, 3]. Because her military dominance of the occupied capital rendered conventional legal processes, public arrests, and council deliberations impossible, and because her survival guaranteed future atrocities, the use of private access to neutralize the threat was the sole remaining remedy [4].\n\nConversely, the prosecution seats contend that the act was an unlawful, extrajudicial assassination. They emphasize that Jon Snow held no judicial or executive mandate to condemn a ruler [4]. At the time of the strike, Daenerys posed no immediate, active physical threat, remaining unarmed and passive within an embrace [4]. The advocates for the prosecution assert that reliance on predicted future campaigns [1], warnings from an imprisoned partisan [2], and the deliberate betrayal of personal trust [4] cannot substitute for lawful process, and that permitting individuals to assassinate sovereigns based on political forecasts destroys the rule of law.\n\n3. The Governing Question\n\nWas Jon Snow's intentional killing of Daenerys Targaryen justified as the necessary defense of others and of the realm, given what he knew, the scale of the threatened harm, the absence or presence of safer alternatives, and his lack of formal authority?\n\n4. Mapping the Powers and Institutional Context\n\nIn an ordered public structure, the power to punish, depose, or execute a sovereign or military commander belongs to established institutions or requires a recognized process of public accountability. Where the institutional apparatus has been fractured by civil conflict and military occupation, an individual does not thereby acquire a blank commission to act as judge, jury, and executioner. \n\nJon Snow held no public office, judicial commission, or formal grant of authority empowering him to pass sentence upon the sovereign [4]. The absence of a functioning judiciary or neutral garrison is a material reality of the environment [2, 4], but it does not expand a private citizen's powers; rather, it defines the limits of lawful action within a collapsed state. The doctrine of necessity permits extreme measures only in the face of an immediate, active assault where no other institutional recourse exists. Here, the threat articulated was prospective—future campaigns of liberation across the realm [1]—rather than an ongoing, imminent attack within the throne room [4]. \n\n5. Application and Conclusion\n\nThe acknowledged destruction of King's Landing stands as a grave catastrophe [0], and the declared continuation of that war presented a severe political peril [1]. However, the legal order cannot accommodate the proposition that an individual may bypass all forms of public process, exploit personal intimacy and trust to kill an unarmed leader in private, and claim lawful justification solely upon a predictive assessment of future political violence [4]. \n\nHowever compelling the moral apprehension of future harm may have been, the means selected—covert assassination by a trusted confidant of an unarmed head of state without prior detention or public demand [4]—are incompatible with the requirements of lawful defense. The act remains outside the boundaries of legal justification.",
+      "judge_id": "shamgar_model",
+      "method": "institutional, powers-first, fact-heavy",
+      "disclaimer": "A judicial-method profile, not the judge. These profiles adapt interpretive method and reasoning style from published opinions. They do not impersonate the judge, do not represent the judge's views, and do not predict how any real court would rule.",
+      "model_id": "google/gemini-3.5-flash-lite",
+      "prompt_version": "1.1",
+      "prompt_sha256": "e08a79f6de3ddb55e84a90897afec3d7de1e3bd4c2ba66d790161ce047513c5c"
+    }
+  ],
+  "judge_failures": [],
+  "reported": {
+    "seat_divergence": [],
+    "concessions_made": 4,
+    "rulings": [
+      {
+        "judge": "barak_model",
+        "ruling": "justified"
+      },
+      {
+        "judge": "elon_model",
+        "ruling": "justified"
+      },
+      {
+        "judge": "shamgar_model",
+        "ruling": "not_justified"
+      }
+    ]
+  },
+  "gate_problems": [],
+  "cap_error": null,
+  "case_snapshot": {
+    "title": "The Realm v. Jon Snow",
+    "agreed_facts": [
+      "King's Landing had surrendered: its bells rang and organized resistance had ceased. Daenerys then used Drogon against streets and civilians, causing destruction on a vast scale.",
+      "After the victory, Daenerys told her assembled forces that the campaign of \"liberation\" would continue beyond King's Landing. Jon had seen the city and heard the speech.",
+      "Tyrion Lannister renounced his office as Hand and was imprisoned. He warned Jon that Daenerys would treat Jon's sisters, and anyone else she regarded as an obstacle, as enemies.",
+      "Jon asked Daenerys to forgive Tyrion and to show mercy. She refused to let others choose what was good and presented her own judgment as decisive.",
+      "Daenerys was unarmed and was not attacking Jon when he killed her. Jon used their intimacy to get close enough to strike. He had not convened a council, attempted detention, or sought a public surrender of power."
+    ],
+    "issue": "Was Jon Snow's intentional killing of Daenerys Targaryen justified as the necessary defense of others and of the realm, given what he knew, the scale of the threatened harm, the absence or presence of safer alternatives, and his lack of formal authority?",
+    "representatives": [
+      {
+        "id": "jon_snow",
+        "seat": "defense"
+      },
+      {
+        "id": "tyrion_lannister",
+        "seat": "defense"
+      },
+      {
+        "id": "daenerys_targaryen",
+        "seat": "prosecution"
+      },
+      {
+        "id": "grey_worm",
+        "seat": "prosecution"
+      }
+    ]
+  }
+}

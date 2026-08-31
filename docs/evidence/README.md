@@ -42,6 +42,7 @@ before running anything else. See `docs/turns/004-…`.
 | `004-run-d-judges-split.txt` | `8596428b` | `google/gemini-3.5-flash-lite`, json off | Turn 004 — the 2–1 split correcting turn 003's convergence claim |
 | `004-baseline-compare.txt` | 8 runs | `google/gemini-3.5-flash-lite`, json off ×3 and object ×5 | Turn 004 §6c — the baseline: 3% vs 29% failure, Barak the only judge that flips, no defense case in 3 of 5 runs |
 | `010-compare-three-conditions.txt` | 26 runs | flash-lite ×13, 3.7-flash ×5, mixed ×5, plus 3 json-off | Turn 010 and decision 0009 — uniform 3.7-flash never divides; the split returns with flash-lite judges |
+| `010-run-e-committed-allocation.json` | `cbdf1b97` | the committed allocation, no overrides | Turn 010 §6d — 7 of 7 on real models, both models recorded per call, panel divided |
 
 ## Adding to this folder
 

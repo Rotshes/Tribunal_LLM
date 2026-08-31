@@ -75,7 +75,10 @@ and the three budgets that failed.
 | The page polls rather than reading a body | Test greps for 202 handling, `awaitResult`, and the archive URL | Pass |
 | Polling is bounded | Test asserts `POLL_GIVE_UP_MS` exists | Pass |
 | Every name the page calls is defined in it | Test parses the module; verified by deleting `loadArchive` and watching it fail | Pass |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 63 tests, 81 files |
+| Every allowlisted model records what it was observed to do | Test asserts a verdict and a date on each | Pass |
+| The picker warns about models observed to fail | Test | Pass |
+| The four-provider panel completes without a platform error | Live run, 31.08 | Pass — 4 of 7 calls succeeded, 3 failed for model reasons (§6d) |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 65 tests, 81 files |
 
 ### 6a. A test was deleted, and that is the honest move
 
@@ -140,15 +143,64 @@ Decision 0008 said the cost of no build step is that discipline replaces a
 compiler. That cost came due here, and the answer is the cheapest possible
 stand-in rather than a bundler.
 
+### 6d. The four-provider panel ran, and the models were the problem all along
+
+The panel this whole sequence was for — Gemini 3.7, Solar Pro 4, GPT-5.6 Luna,
+Qwen 3.7, flash-lite — **ran to completion with no platform error of any kind.**
+Nothing was cut off, nothing timed out, no 502 and no 504.
+
+3 of 7 calls failed, and every one of them failed for a reason belonging to a
+model:
+
+| Role | Model | What happened |
+|---|---|---|
+| `daenerys_targaryen` | `openai/gpt-5.6-luna` | OpenRouter 404 — "no endpoints found that can handle the requested parameters" |
+| `barak_model` | `openai/gpt-5.6-luna` | the same 404 |
+| `tyrion_lannister` | `upstage/solar-pro4` | routed fine, returned prose; caught by G2 |
+
+Each appeared as a failed seat or a failed column with the reason on it, beside
+four working advocates and two rulings. That is precisely the behaviour decision
+0002 and the "failure is shown as failure" rule have specified since turn 002,
+and the first time all of it has been true in production at once.
+
+**And it exposed a false claim in `panel/models.json`.** That file said every
+entry was verified by appearing under
+`openrouter.ai/models?supported_parameters=response_format`. I fetched that list
+during this turn: **all five of ours are on it**, including the one that 404s
+every time.
+
+The reason is the distinction turn 004 already found and this file did not
+absorb: `response_format` support is per **endpoint**, not per model, and
+`require_parameters` restricts routing to endpoints supporting everything sent.
+A model can be catalogued as supporting the parameter and have no routable
+endpoint that does. It can also route successfully and ignore the parameter,
+which is what Solar Pro 4 did.
+
+So the verification note was true about the catalogue and false about the world.
+Every entry now carries an `observed` field — verdict, what happened, and the
+date — and the file says plainly that the catalogue flag is not evidence. The
+picker reads it: options show "· known to fail" or "· unreliable" in the
+dropdown, because offering a broken model identically to a working one is a
+trap rather than a choice.
+
+Two models are left on the list rather than removed. A visitor who picks Luna
+gets an instant, free, clearly-labelled failed seat, and that demonstrates the
+failure path better than a quietly shorter menu would.
+
 ### What I did not verify
 
 - ~~**That the 202 path works on Netlify.**~~ Confirmed live: a background run
   made all seven calls and the page polled the archive and found it.
 - ~~**The polling behaviour under a real run.**~~ Confirmed by the same run.
-- **The four-provider mixed panel.** The thing this was all for. Still not run
-  since the change.
+- ~~**The four-provider mixed panel.**~~ Ran, completed, and failed only where
+  models failed. See §6d.
 - **The restored archive, live.** Broken by §6c and fixed here; the fix is
   verified by a test, not by a browser.
+- **Whether Solar Pro 4 always returns prose.** One observation. It may be
+  intermittent, which is worse than always failing and is not distinguishable
+  from a single run.
+- **Whether Luna's 404 is permanent.** Endpoint availability moves. The
+  `observed` field is dated for that reason.
 - **Whether four minutes is the right give-up.** Chosen to be much longer than
   a normal run and much shorter than fifteen minutes. Not derived.
 
@@ -157,11 +209,11 @@ stand-in rather than a bundler.
 **Locked:** the deliberation is asynchronous, and no constant in this repository
 decides how many judges sit.
 
-**Open:** everything in §6's "what I did not verify" — this turn is verified
-only against tests, and the last one taught that this is not enough. G3, still.
+**Open:** the restored archive is verified by a test rather than a browser.
+Single observations for both failing models. G3, still.
 
-**Next turn:** run it on the live site. Defaults first, then the four-provider
-mixed panel that has never worked.
+**Next turn:** close the project out — `docs/PRE-SUBMISSION.md`, the evidence
+folder, and the README's missing public URL.
 
 ### Correction issued this turn
 

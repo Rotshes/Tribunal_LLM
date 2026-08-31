@@ -1137,3 +1137,26 @@ test('every function the page calls is defined in the page', async () => {
   const missing = [...called].filter((n) => !declared.has(n) && !BUILT_IN.has(n));
   assert.deepEqual(missing, [], `the page calls names it does not define: ${missing.join(', ')}`);
 });
+
+test('every allowlisted model records what it was observed to do', async () => {
+  // panel/models.json used to claim its entries were verified because they
+  // appeared in OpenRouter's response_format catalogue. On 31.08 a four-provider
+  // run showed two of the five failing anyway: response_format support is per
+  // ENDPOINT, and `require_parameters` routes only to endpoints supporting
+  // everything sent. The catalogue is not evidence; a run is.
+  const { allowedModels } = await import('../src/models.js');
+  for (const m of allowedModels()) {
+    assert.ok(m.observed, `${m.id} has no observed field — it has never been run`);
+    assert.match(m.observed, /^(works|FAILS|UNRELIABLE)/,
+      `${m.id}'s observed field must start with a verdict`);
+    assert.match(m.observed, /\d{2}\.\d{2}\.\d{4}/,
+      `${m.id}'s observed field must say when`);
+  }
+});
+
+test('the picker warns about models observed to fail', () => {
+  const page = fs.readFileSync('web/index.html', 'utf8');
+  assert.match(page, /known to fail/);
+  assert.match(page, /unreliable/);
+  assert.match(page, /m\.observed/, 'the warning must come from the recorded observation');
+});

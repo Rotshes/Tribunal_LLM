@@ -225,10 +225,27 @@ async function loadModels() {
     CASE.representatives.find((r) => r.id === id)?.name ?? id;
   const seatOf = (id) => CASE.representatives.find((r) => r.id === id)?.seat ?? '';
 
+  // A model that has been observed to fail says so IN THE OPTION.
+  //
+  // Two of the five on the allowlist appear in OpenRouter's own response_format
+  // catalogue and still fail in production — one returns 404 with no routable
+  // endpoint, one returns prose. Offering those to a visitor identically to the
+  // three that work is not a choice, it is a trap: they pick one, a seat argues
+  // nothing, and nothing on screen said it was likely.
+  //
+  // The word is taken from `observed` in panel/models.json, which records what
+  // a run actually did rather than what the catalogue claims.
+  const health = (m) => {
+    const o = String(m.observed ?? '');
+    if (o.startsWith('FAILS')) return ' · known to fail';
+    if (o.startsWith('UNRELIABLE')) return ' · unreliable';
+    return '';
+  };
+
   const options = (selected) =>
     MODELS.models
       .map((m) => `<option value="${esc(m.id)}"${m.id === selected ? ' selected' : ''}>` +
-        `${esc(m.label)} — $${m.price_per_m_in}/M in</option>`)
+        `${esc(m.label)} — $${m.price_per_m_in}/M in${esc(health(m))}</option>`)
       .join('');
 
   $('roles').innerHTML = MODELS.roles.map((key) => {
@@ -245,7 +262,9 @@ async function loadModels() {
   $('panel-note').textContent =
     'Each role can use a different model. The defaults are the allocation committed ' +
     'in the repository; anything you change here applies to this run only. ' +
-    'Seven calls, so the cost is roughly seven times one call.';
+    'Seven calls, so the cost is roughly seven times one call. ' +
+    'Options marked "known to fail" or "unreliable" are left in deliberately — a ' +
+    'seat that argues nothing is shown as a failure, never as silence.';
 
   $('panel').hidden = false;
 }

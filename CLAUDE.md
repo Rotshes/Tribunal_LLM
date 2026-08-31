@@ -150,12 +150,15 @@ kept as evidence; a new one joins its group rather than starting a new line.
   the tool, not in a shell whose defaults differ per machine (31.08).
 - **Concluding from too little.** Called `--json-mode off` free after one clean
   run; four runs showed ~29% of calls returning prose (31.08). Counted the
-  agreed facts from memory as six when there are five, and the indices are
-  load-bearing (24.08).
+  agreed facts from memory as six when there are five (24.08).
 - **Provider behaviour that is invisible without a gate.** `response_format`
   support on OpenRouter is per *endpoint*, not per model: without
   `require_parameters` a call is routed to one that ignores it, the request
-  succeeds, prose comes back, and you pay (31.08).
+  succeeds, prose comes back, and you pay (31.08). The catalogue flag is not
+  evidence either — all five allowlisted models appear under
+  `?supported_parameters=response_format` and two fail in production, one with
+  no routable endpoint and one by ignoring the parameter (31.08). Only a run
+  verifies a model; `panel/models.json` records what each one was observed to do.
 - **Four time budgets, one lesson each, all on 31.08.** (a) A 90s per-call
   timeout inside a smaller platform limit meant no call could ever fail on our
   side. (b) Sizing it to half the limit failed too: two sequential stages spent

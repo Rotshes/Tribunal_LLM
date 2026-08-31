@@ -1,7 +1,7 @@
 {
   "$comment": "The models a visitor may choose from, per role. THIS IS AN ALLOWLIST AND IT IS THE ONLY LIST THAT COUNTS. The browser sends a model id; the backend rejects anything not named here. Without that, a public URL is an invitation to spend the project's OpenRouter credit on the most expensive model available, seven calls at a time.",
 
-  "$verification": "Every entry must (a) appear under openrouter.ai/models?supported_parameters=response_format, because the runner sends response_format json_object with require_parameters and a model without it 404s, and (b) be cheap. Prices move and catalogues change: check before adding, and do not add a model on the strength of a summary. That mistake cost two runs in turn 004.",
+  "$verification": "THE CATALOGUE FLAG IS NOT EVIDENCE. All five ids below appear under openrouter.ai/models?supported_parameters=response_format, and two of them still fail in production: response_format support is per ENDPOINT, not per model, and require_parameters routes only to endpoints supporting everything sent. On 31.08.2026 gpt-5.6-luna returned OpenRouter 404 'no endpoints found' twice in one run, and solar-pro4 routed successfully and returned prose. The only verification that counts is a run. Every entry therefore carries an `observed` field saying what actually happened and when; add nothing here without one.",
 
   "default": "google/gemini-3.5-flash-lite",
 
@@ -12,31 +12,36 @@
       "id": "google/gemini-3.5-flash-lite",
       "label": "Gemini 3.5 Flash Lite",
       "price_per_m_in": 0.30,
-      "note": "The baseline. Every measurement in docs/turns/004 was made on this."
+      "note": "The baseline. Every measurement in docs/turns/004 was made on this.",
+      "observed": "works — the committed judge model, used in 19 recorded runs (31.08.2026)"
     },
     {
       "id": "google/gemini-3.7-flash",
       "label": "Gemini 3.7 Flash",
       "price_per_m_in": 0.75,
-      "note": "Same family, more capable. The natural first comparison."
+      "note": "Same family, more capable. The natural first comparison.",
+      "observed": "works — the committed advocate model, decision 0009 (31.08.2026)"
     },
     {
       "id": "openai/gpt-5.6-luna",
       "label": "GPT-5.6 Luna",
       "price_per_m_in": 0.20,
-      "note": "A different provider, which is the point of having more than one. Price checked against openrouter.ai/openai/gpt-5.6-luna on 31.08.2026 and corrected from 0.10, which was wrong when it was written."
+      "note": "A different provider, which is the point of having more than one. Price checked against openrouter.ai/openai/gpt-5.6-luna on 31.08.2026 and corrected from 0.10, which was wrong when it was written.",
+      "observed": "FAILS — OpenRouter 404, \"no endpoints found that can handle the requested parameters\", on both roles that used it (31.08.2026). Listed in the response_format catalogue and still unroutable with require_parameters. Kept rather than removed: the failure is instant, costs nothing, and shows as a failed seat saying exactly this — which is more useful to a reader than a quietly shorter menu."
     },
     {
       "id": "qwen/qwen3.7-flash",
       "label": "Qwen 3.7 Flash",
       "price_per_m_in": 0.03,
-      "note": "The cheapest credible option here."
+      "note": "The cheapest credible option here.",
+      "observed": "works — argued the prosecution seat cleanly (31.08.2026)"
     },
     {
       "id": "upstage/solar-pro4",
       "label": "Solar Pro 4",
       "price_per_m_in": 0.03,
-      "note": "A fourth provider, for a genuinely mixed panel."
+      "note": "A fourth provider, for a genuinely mixed panel.",
+      "observed": "UNRELIABLE — routed successfully and returned prose instead of JSON; caught by G2 and shown as a failed seat (31.08.2026). A model can accept response_format and ignore it, which is the case the gate exists for."
     }
   ]
 }

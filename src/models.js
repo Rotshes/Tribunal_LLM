@@ -17,13 +17,22 @@ function file() {
   return cache;
 }
 
-/** What the picker shows: id, label, price. Safe to send to a browser. */
+/**
+ * What the picker shows: id, label, price, and what the model has actually been
+ * observed to do. Safe to send to a browser — none of it is a secret.
+ *
+ * `observed` travels because two of the five models on this list fail in
+ * production while appearing in OpenRouter's own response_format catalogue, and
+ * a visitor choosing one has no way to know that. A picker that presents a
+ * broken option identically to a working one is a trap, not a choice.
+ */
 export function allowedModels() {
-  return file().models.map(({ id, label, price_per_m_in, note }) => ({
+  return file().models.map(({ id, label, price_per_m_in, note, observed }) => ({
     id,
     label,
     price_per_m_in,
     note,
+    observed: observed ?? null,
   }));
 }
 

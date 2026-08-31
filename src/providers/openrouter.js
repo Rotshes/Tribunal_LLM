@@ -3,8 +3,6 @@
 // The key is read from the environment and never leaves this module. Nothing
 // here is imported by anything that runs in a browser.
 
-import { REQUIRES_MODEL_ENV } from '../config.js';
-
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
@@ -32,13 +30,10 @@ export function makeOpenRouterProvider({
       'OPENROUTER_API_KEY is not set. Copy .env.example to .env and fill it in.',
     );
   }
-  if (!process.env[REQUIRES_MODEL_ENV]) {
-    throw new Error(
-      `${REQUIRES_MODEL_ENV} is not set. There is deliberately no default model — ` +
-        'naming one in code would make an unreviewed choice permanent by accident. ' +
-        'Set it in .env, and record the choice in a decision file.',
-    );
-  }
+  // No environment check for a model here any more. Until turn 010 the model
+  // came from TRIBUNAL_MODEL and an unset variable had to fail loudly; since
+  // decision 0009 the allocation is committed in src/config.js, so the map is
+  // always populated and the per-call check below is the one that matters.
 
   if (!['object', 'off'].includes(jsonMode)) {
     throw new Error(`Unknown jsonMode "${jsonMode}". Use object or off.`);
@@ -65,8 +60,8 @@ export function makeOpenRouterProvider({
       // its own model would make a mixed-model run untraceable.
       if (!model) {
         throw new Error(
-          `No model for ${role}.${roleId}. ${REQUIRES_MODEL_ENV} is empty and no ` +
-            'override was given — check .env has a model slug and that it is read.',
+          `No model for ${role}.${roleId}. The committed allocation in ` +
+            'src/config.js should cover all seven roles — check modelMap().',
         );
       }
 

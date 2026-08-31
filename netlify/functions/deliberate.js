@@ -95,7 +95,8 @@ export default async function handler(req) {
     status: result.status,
     provider: provider.name,
     json_mode: 'object',
-    model: process.env.TRIBUNAL_MODEL ?? null,
+    // Non-null only for a uniform control run; model_map is authoritative.
+    model: process.env.TRIBUNAL_UNIFORM_MODEL || null,
     model_map: result.model_map ?? null,
     temperature: 0.7,
     gate_problems: result.gate_problems ?? [],

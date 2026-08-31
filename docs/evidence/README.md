@@ -41,6 +41,7 @@ before running anything else. See `docs/turns/004-…`.
 | `004-run-c-no-endpoints-404.txt` | `286986f6` | `anthropic/claude-sonnet-5`, json object | Turn 004 — `require_parameters` failing free instead of billing for prose |
 | `004-run-d-judges-split.txt` | `8596428b` | `google/gemini-3.5-flash-lite`, json off | Turn 004 — the 2–1 split correcting turn 003's convergence claim |
 | `004-baseline-compare.txt` | 8 runs | `google/gemini-3.5-flash-lite`, json off ×3 and object ×5 | Turn 004 §6c — the baseline: 3% vs 29% failure, Barak the only judge that flips, no defense case in 3 of 5 runs |
+| `010-compare-three-conditions.txt` | 26 runs | flash-lite ×13, 3.7-flash ×5, mixed ×5, plus 3 json-off | Turn 010 and decision 0009 — uniform 3.7-flash never divides; the split returns with flash-lite judges |
 
 ## Adding to this folder
 
@@ -49,3 +50,21 @@ file. A run nothing refers to does not belong here.
 
 From turn 004 onward, copy the JSON from `logs/deliberations/<id>.json`
 unmodified. Do not edit it to be tidier.
+
+**Never produce a `.txt` here with shell redirection.** Use the tool's own
+`--out`:
+
+```
+npm run compare -- --out docs/evidence/010-compare-three-conditions.txt
+```
+
+`>` was used once, in turn 010, and produced a file that was UTF-16 with a BOM
+and carried 124 colour escapes — git treats UTF-16 as binary, so the evidence
+for that turn's central claim would have committed as an undiffable blob that
+renders as mojibake on GitHub. Nothing about the command said so; the file
+existed and the exit code was zero. `--out` writes plain UTF-8 with LF, which is
+what `.gitattributes` guarantees for everything else here.
+
+A transcript pasted by hand from a terminal is still fine — that is what the
+`003-*` and `004-*` files are. The rule is about redirection, which looks
+automatic and is not.

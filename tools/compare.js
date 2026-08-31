@@ -22,11 +22,40 @@
 // judges, within a run = a verdict. The first is evidence; the second is
 // forbidden.
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { loadDeliberations } from '../src/persist.js';
 import { supabaseConfigured, readDeliberations } from '../src/sinks/supabase.js';
 import { loadEnv } from '../src/env.js';
+import { captureTo } from './capture.js';
 
 loadEnv();
+
+// --out <file>: also write the table to a file, as evidence.
+//
+//   npm run compare -- --out docs/evidence/010-compare.txt
+//
+// Not shell redirection, and this is not a convenience. Decision 0007 makes
+// copying a cited run into docs/evidence/ a routine step, and `>` gets that
+// file wrong in two ways that are invisible until someone opens it:
+//
+//   - every colour escape in this tool lands in the file as literal bytes,
+//     in any shell;
+//   - PowerShell's `>` writes UTF-16 with a BOM, which git treats as binary,
+//     so the evidence commits as an undiffable blob.
+//
+// Both happened, to this file, in turn 010. The tool writes plain UTF-8 with
+// LF and no escape codes itself, so the evidence is the same on every machine —
+// the same reason .gitattributes forces eol=lf.
+const outIdx = process.argv.indexOf('--out');
+if (outIdx !== -1) {
+  const outFile = process.argv[outIdx + 1];
+  if (!outFile || outFile.startsWith('--')) {
+    console.error('--out needs a filename.');
+    process.exit(2);
+  }
+  captureTo(outFile, fs, path);
+}
 
 const JUDGES = ['barak_model', 'elon_model', 'shamgar_model'];
 const SHORT = { barak_model: 'barak', elon_model: 'elon', shamgar_model: 'shamgar' };

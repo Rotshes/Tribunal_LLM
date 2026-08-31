@@ -1,0 +1,119 @@
+
+26 stored deliberations  ·  24 local + 15 in Supabase, merged
+
+when             model                         json   status   calls   barak  elon   shamgar differ  waited   tok in/out   
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+08-31 02:49      google/gemini-3.5-flash-lite  off    partial  5/7     NOT    —      NOT     no      —        13473/5545   
+08-31 02:51      google/gemini-3.5-flash-lite  off    partial  5/7     —      NOT    —       —       —        11328/4431   
+08-31 02:55      google/gemini-3.5-flash-lite  off    partial  5/7     NOT    NOT    NOT     no      —        13093/5479   
+08-31 03:11      google/gemini-3.5-flash-lite  object partial  6/7     NOT    NOT    —       no      —        16086/5382   
+08-31 03:12      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      —        20234/6255   
+08-31 03:14      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     —        20504/6846   
+08-31 03:14      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      —        20834/6056   
+08-31 03:15      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      —        20828/6195   
+08-31 03:24      google/gemini-3.5-flash-lite  object complete 7/7     NOT    NOT    NOT     no      —        22684/6583   
+08-31 03:25      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     —        23329/6876   
+08-31 03:25      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     —        22066/6868   
+08-31 03:33      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     —        22654/7113   
+08-31 03:44      google/gemini-3.5-flash-lite  object complete ?/?     just   NOT    NOT     yes     —        0/0          
+08-31 10:52      google/gemini-3.5-flash-lite  object complete 7/7     just   just   NOT     yes     —        22471/6944   
+08-31 10:55      google/gemini-3.5-flash-lite  object complete 7/7     just   NOT    NOT     yes     13.6s    22717/6955   
+08-31 11:00      google/gemini-3.5-flash-lite  object complete ?/?     NOT    NOT    NOT     no      —        0/0          
+08-31 11:11      google/gemini-3.7-flash       object complete 7/7     just   just   just    no      34.5s    25219/18531  
+08-31 11:12      google/gemini-3.7-flash       object complete 7/7     just   just   just    no      28.1s    25846/14916  
+08-31 11:12      google/gemini-3.7-flash       object complete 7/7     just   just   just    no      30.0s    25297/15566  
+08-31 11:13      google/gemini-3.7-flash       object complete 7/7     just   just   just    no      26.9s    24139/12960  
+08-31 11:13      google/gemini-3.7-flash       object complete 7/7     just   just   just    no      27.1s    24637/14502  
+08-31 11:17      mixed: elon_model=google/geminobject complete 7/7     just   NOT    NOT     yes     27.9s    24241/10940  
+08-31 11:17      mixed: elon_model=google/geminobject complete 7/7     NOT    NOT    NOT     no      15.0s    24514/10278  
+08-31 11:17      mixed: elon_model=google/geminobject complete 7/7     just   just   NOT     yes     19.1s    24820/11750  
+08-31 11:18      mixed: elon_model=google/geminobject complete 7/7     NOT    NOT    NOT     no      26.1s    24604/12896  
+08-31 11:18      mixed: elon_model=google/geminobject complete 7/7     just   NOT    NOT     yes     19.7s    24601/12518  
+
+Variance — one judge across repetitions of the same config
+Never across the three judges within a run. See the header of this file.
+
+google/gemini-3.5-flash-lite · json:off  3 runs
+  calls     6 of 21 failed (29%)  ← a panel this incomplete cannot support a comparison
+  barak     not_justified ×2, failed/absent ×1
+  elon      failed/absent ×1, not_justified ×2
+  shamgar   not_justified ×2, failed/absent ×1
+
+google/gemini-3.5-flash-lite · json:object  13 runs
+  calls     1 of 77 failed (1%)
+  barak     not_justified ×6, justified ×7
+  elon      not_justified ×12, justified ×1
+  shamgar   failed/absent ×1, not_justified ×12
+
+google/gemini-3.7-flash · json:object  5 runs
+  calls     0 of 35 failed (0%)
+  barak     justified ×5
+  elon      justified ×5
+  shamgar   justified ×5
+
+mixed: elon_model=google/gemini-3.5-flash-lite, jon_snow=google/gemini-3.7-flash, barak_model=google/gemini-3.5-flash-lite, grey_worm=google/gemini-3.7-flash, shamgar_model=google/gemini-3.5-flash-lite, tyrion_lannister=google/gemini-3.7-flash, daenerys_targaryen=google/gemini-3.7-flash · json:object  5 runs
+  calls     0 of 35 failed (0%)
+  barak     justified ×3, not_justified ×2
+  elon      not_justified ×4, justified ×1
+  shamgar   not_justified ×5
+
+Why calls failed
+A failure rate is a number; the reason is what tells you what to change.
+
+  ×3  response was not JSON (model returned prose)
+        roles: elon_model, shamgar_model, tyrion_lannister
+  ×1  failed G2/G3: /representative_id "daenerys_targator" is not a representative in this case
+        roles: daenerys_targaryen
+  ×1  failed G2/G3: /responds_to/0/answer must NOT have more than N characters; / must match "th
+        roles: barak_model
+  ×1  failed G2/G3: /representative_id "daenerys_targatorn" is not a representative in this case
+        roles: daenerys_targaryen
+  ×1  failed G2/G3: /responds_to/1/representative_id must match pattern "^[a-z][a-z0-9_]{1,40}$"
+        roles: shamgar_model
+
+  failures by role:
+    daenerys_targaryen     ×2
+    shamgar_model          ×2
+    elon_model             ×1
+    barak_model            ×1
+    tyrion_lannister       ×1
+
+Fact citations — are the judges selecting, or filling the array?
+G3 can only fire if an opinion cites an index that does not exist.
+
+  [0,1,2,3,4]              73 of 74 judge opinions       every fact in the case
+  [4]                      1 of 74 judge opinions        
+
+Advocates — positions, and whether both cases were argued
+An advocate concluding against its own seat is permitted (decision 0004).
+From turn 005 every advocate also argues `case_for_seat`, so both cases reach
+the judges even when the positions agree. `positions` below is what they
+concluded; `cases` is whether both seats were actually argued.
+
+  08-31 02:49    positions differ  cases: pre-005  jon_snow:not_justified  tyrion_lannister:justified  grey_worm:not_justified
+  08-31 02:51    positions differ  cases: pre-005  jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 02:55    positions agree   cases: pre-005  jon_snow:not_justified  grey_worm:not_justified
+  08-31 03:11    positions differ  cases: pre-005  jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:12    positions agree   cases: pre-005  jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:14    positions differ  cases: pre-005  jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:14    positions agree   cases: pre-005  jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:15    positions agree   cases: pre-005  jon_snow:not_justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:24    positions differ  cases: both     jon_snow:justified  tyrion_lannister:not_justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:25    positions differ  cases: both     jon_snow:justified  tyrion_lannister:mixed  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:25    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:33    positions differ  cases: both     jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 03:44    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 10:52    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 10:55    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:00    positions differ  cases: both     jon_snow:not_justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:11    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:12    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:12    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:13    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:13    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:17    positions differ  cases: both     jon_snow:mixed  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:17    positions differ  cases: both     grey_worm:not_justified  jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified
+  08-31 11:17    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:18    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+  08-31 11:18    positions differ  cases: both     jon_snow:justified  tyrion_lannister:justified  daenerys_targaryen:not_justified  grey_worm:not_justified
+

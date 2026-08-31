@@ -5,3 +5,6 @@ node_modules/
 dist/
 .DS_Store
 logs/
+
+# Local Netlify folder
+.netlify

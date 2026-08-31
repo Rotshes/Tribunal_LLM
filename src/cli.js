@@ -12,6 +12,8 @@ import { makeStubProvider } from './providers/stub.js';
 import { loadEnv } from './env.js';
 import { persistDeliberation } from './persist.js';
 import { supabaseConfigured, writeDeliberation } from './sinks/supabase.js';
+import { ADVOCATE_ORDER, JUDGE_ORDER, configWarnings } from './config.js';
+import { allowedIds } from './models.js';
 
 function findCase(caseId) {
   const dir = 'cases';
@@ -31,6 +33,10 @@ const flag = (name, dflt) => {
 
 loadEnv();
 
+// A retired variable still sitting in .env is not an error, but it must not be
+// invisible: the run would succeed and quietly not be what the reader thinks.
+for (const w of configWarnings()) console.error(`\x1b[33m${w}\x1b[0m`);
+
 const providerName = flag('provider', 'stub');
 let provider;
 if (providerName === 'stub') {
@@ -46,8 +52,40 @@ if (providerName === 'stub') {
 
 const jsonMode = providerName === 'openrouter' ? flag('json-mode', 'object') : null;
 
+// --advocates <model> and --judges <model>: set a model for a whole layer.
+//
+// The browser picker sets all seven roles individually; this is the shape an
+// EXPERIMENT needs, because the question worth asking is which layer drives an
+// outcome, not which of seven roles does. Turn 010 found that changing the
+// model changed the rulings and removed the disagreement entirely, and uniform
+// panels cannot say whether that came from the advocates or the judges.
+//
+// Validated against the same allowlist as the browser: nothing here bypasses
+// the check just because it came from a terminal.
+const modelOverrides = {};
+const advocatesModel = flag('advocates', null);
+const judgesModel = flag('judges', null);
+if (advocatesModel) {
+  for (const id of ADVOCATE_ORDER) modelOverrides[`advocate.${id}`] = advocatesModel;
+}
+if (judgesModel) {
+  for (const id of JUDGE_ORDER) modelOverrides[`judge.${id}`] = judgesModel;
+}
+
 const caseObj = findCase(caseId);
-const result = await deliberate({ caseObj, provider });
+const result = await deliberate({
+  caseObj,
+  provider,
+  modelOverrides,
+  allowedIds: allowedIds(),
+});
+
+if (result.failed_gate === 'G0') {
+  console.error('\x1b[31mThat model selection was refused:\x1b[0m');
+  for (const p of result.problems) console.error(`  · ${p}`);
+  console.error('\x1b[2mNothing was spent. Allowed models are in panel/models.json.\x1b[0m');
+  process.exit(2);
+}
 const logFile = result.log.flush();
 
 // Record what was said, not only what it cost. Written even for a failed run:
@@ -55,7 +93,9 @@ const logFile = result.log.flush();
 const { file: runFile, doc } = persistDeliberation(result, caseObj, {
   provider: provider.name,
   json_mode: jsonMode,
-  model: process.env.TRIBUNAL_MODEL ?? null,
+  // Non-null only for a uniform control run. With a per-role allocation there
+  // is no single model for a run, and model_map is the authoritative field.
+  model: process.env.TRIBUNAL_UNIFORM_MODEL || null,
   temperature: 0.7,
 });
 

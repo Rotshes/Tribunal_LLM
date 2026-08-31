@@ -55,8 +55,10 @@ npm run deliberate -- T-001 --stub judgefail   # two rulings and one failure
 Stub modes: `good`, `unanimous`, `prose`, `badfact`, `verdict`, `onesided`,
 `judgefail`. Each one exists to make a specific gate fire.
 
-Against real models — once `OPENROUTER_API_KEY` and `TRIBUNAL_MODEL` are set in
-`.env`:
+Against real models — once `OPENROUTER_API_KEY` is set in `.env`. The models
+themselves are not configured here: the per-role allocation is committed in
+`modelMap()` in `src/config.js` (decision 0009), and the advocates and the
+judges do not run the same one.
 
 ```
 npm run deliberate -- T-001 --provider openrouter --json-mode object

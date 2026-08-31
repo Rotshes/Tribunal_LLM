@@ -142,7 +142,10 @@ kept as evidence; a new one joins its group rather than starting a new line.
   `TRIBUNAL_MODEL` at import time, before `.env` was loaded — imports evaluate
   first, so read config when needed, never at module scope (31.08). The `.env`
   parser split on `\n`, leaving a carriage return on every value on Windows —
-  anything reading a file must assume CRLF (31.08).
+  anything reading a file must assume CRLF (31.08). `npm run compare > file`
+  wrote the turn 010 evidence as UTF-16 with a BOM and 124 colour escapes, which
+  git would have committed as a binary blob — a step done every turn belongs in
+  the tool, not in a shell whose defaults differ per machine (31.08).
 - **Concluding from too little.** Called `--json-mode off` free after one clean
   run; four runs showed ~29% of calls returning prose (31.08). Counted the
   agreed facts from memory as six when there are five, and the indices are

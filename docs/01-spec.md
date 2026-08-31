@@ -115,7 +115,7 @@ Criteria 9–18 are new and specific to the case domain.
 ### Shape
 
 ```
-browser (React + Vite, on Netlify)
+browser (one plain HTML file, on Netlify — decision 0008)
     │  charge sheet in, three opinions out
     ▼
 Netlify Function  ── holds OPENROUTER_API_KEY, the prompts, the call budget

@@ -15,7 +15,15 @@ import {
 import { deliberate } from '../src/deliberate.js';
 import { makeStubProvider } from '../src/providers/stub.js';
 import { judgeUserMessage } from '../src/prompts.js';
-import { modelMap, callCap } from '../src/config.js';
+import {
+  modelMap,
+  callCap,
+  configWarnings,
+  ADVOCATE_ORDER,
+  JUDGE_ORDER,
+} from '../src/config.js';
+import { allowedIds } from '../src/models.js';
+import { captureTo, stripAnsi } from '../tools/capture.js';
 import { parseEnv } from '../src/env.js';
 import { judgeDisclaimer } from '../src/panel.js';
 
@@ -256,18 +264,59 @@ test('the model map reads the environment when called, not when imported', () =>
   // evaluated before cli.js loads .env, so every entry was undefined and all
   // seven calls failed with "No model mapped". This test fails against that
   // version and passes against the fix.
-  const before = process.env.TRIBUNAL_MODEL;
+  const before = process.env.TRIBUNAL_UNIFORM_MODEL;
   try {
-    process.env.TRIBUNAL_MODEL = 'test/model-set-after-import';
+    process.env.TRIBUNAL_UNIFORM_MODEL = 'test/model-set-after-import';
     const m = modelMap();
     assert.equal(Object.keys(m).length, 7);
     for (const [role, model] of Object.entries(m)) {
       assert.equal(model, 'test/model-set-after-import', `${role} did not resolve`);
     }
   } finally {
-    if (before === undefined) delete process.env.TRIBUNAL_MODEL;
-    else process.env.TRIBUNAL_MODEL = before;
+    if (before === undefined) delete process.env.TRIBUNAL_UNIFORM_MODEL;
+    else process.env.TRIBUNAL_UNIFORM_MODEL = before;
   }
+});
+
+// ------------------------------------------- the committed allocation (turn 010)
+
+test('the committed allocation gives advocates and judges different models', () => {
+  // This is the finding of turn 010 expressed as a check. Uniform panels ruled
+  // identically in 5 runs of 5; the division came back when only the judges
+  // went back to flash-lite. If someone later collapses this to one model
+  // because "the values look redundant", the run stops being the thing the
+  // decision record describes — so the difference is asserted, not assumed.
+  const before = process.env.TRIBUNAL_UNIFORM_MODEL;
+  delete process.env.TRIBUNAL_UNIFORM_MODEL;
+  try {
+    const m = modelMap();
+    const advocates = new Set(ADVOCATE_ORDER.map((id) => m[`advocate.${id}`]));
+    const judges = new Set(JUDGE_ORDER.map((id) => m[`judge.${id}`]));
+
+    assert.equal(advocates.size, 1, 'all four advocates run one model');
+    assert.equal(judges.size, 1, 'all three judges run one model');
+    assert.notEqual(
+      [...advocates][0],
+      [...judges][0],
+      'decision 0009: the advocates and the judges do not run the same model',
+    );
+
+    // And both must be on the allowlist, or the browser could not reproduce a
+    // committed run and the backend would refuse its own default.
+    const ids = allowedIds();
+    for (const model of Object.values(m)) {
+      assert.ok(ids.has(model), `${model} is not in panel/models.json`);
+    }
+  } finally {
+    if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
+  }
+});
+
+test('a retired TRIBUNAL_MODEL is reported, not silently ignored', () => {
+  assert.deepEqual(configWarnings({}), []);
+  const warnings = configWarnings({ TRIBUNAL_MODEL: 'google/gemini-3.5-flash-lite' });
+  assert.equal(warnings.length, 1);
+  assert.ok(warnings[0].includes('TRIBUNAL_UNIFORM_MODEL'));
 });
 
 test('the call cap reads the environment when called', () => {
@@ -649,4 +698,43 @@ test('the result object holds no combined field anywhere', async () => {
   for (const forbidden of ['"verdict"', '"majority"', '"consensus"', '"score"']) {
     assert.ok(!json.includes(forbidden), `${forbidden} appeared in the result`);
   }
+});
+
+// ------------------------------------------- evidence capture (turn 010)
+
+test('a captured report is plain text, whatever the terminal was sent', () => {
+  // The evidence file for turn 010 was first produced with `>` and came out
+  // UTF-16 with a BOM and 124 colour escapes in it — git would have committed
+  // the turn's central evidence as an undiffable binary blob. This is that
+  // defect as a test.
+  const written = {};
+  const fakeFs = {
+    mkdirSync: () => {},
+    writeFileSync: (f, contents, enc) => {
+      written.file = f;
+      written.contents = contents;
+      written.enc = enc;
+    },
+  };
+  const fakePath = { dirname: (p) => p, resolve: (p) => p };
+  const out = { log: (...a) => a };
+
+  const cap = captureTo('evidence.txt', fakeFs, fakePath, out);
+  out.log('\x1b[1m26 stored deliberations\x1b[0m' + '\x1b[2m  ·  merged\x1b[0m');
+  out.log('\x1b[2m' + '─'.repeat(5) + '\x1b[0m');
+  cap.write();
+
+  assert.equal(written.enc, 'utf8', 'anything but utf8 is unreadable elsewhere');
+  assert.ok(!/\x1b/.test(written.contents), 'a colour escape reached the file');
+  assert.ok(!/\r/.test(written.contents), 'a CR reached the file');
+  assert.match(written.contents, /^26 stored deliberations  ·  merged\n/);
+
+  // Non-ASCII content is kept, not mangled: the table is drawn with them.
+  assert.ok(written.contents.includes('─────'));
+});
+
+test('stripAnsi leaves ordinary text alone', () => {
+  assert.equal(stripAnsi('plain'), 'plain');
+  assert.equal(stripAnsi('\x1b[31mred\x1b[0m'), 'red');
+  assert.equal(stripAnsi('90% [not a colour]'), '90% [not a colour]');
 });

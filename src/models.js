@@ -31,7 +31,11 @@ export function allowedIds() {
   return new Set(file().models.map((m) => m.id));
 }
 
-/** Used only when TRIBUNAL_MODEL is unset. */
+/**
+ * The picker's pre-selected entry in the browser, and nothing else. The
+ * project's allocation is modelMap() in src/config.js (decision 0009); this is
+ * only what the dropdowns start on.
+ */
 export function defaultModel() {
   return file().default;
 }

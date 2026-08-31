@@ -3,7 +3,7 @@
 // The key is read from the environment and never leaves this module. Nothing
 // here is imported by anything that runs in a browser.
 
-import { MODEL_MAP, REQUIRES_MODEL_ENV } from '../config.js';
+import { modelMap, REQUIRES_MODEL_ENV } from '../config.js';
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -25,8 +25,13 @@ export function makeOpenRouterProvider({ timeoutMs = 90_000 } = {}) {
   return {
     name: 'openrouter',
     async call({ role, roleId, system, user }) {
-      const model = MODEL_MAP[`${role}.${roleId}`];
-      if (!model) throw new Error(`No model mapped for ${role}.${roleId}`);
+      const model = modelMap()[`${role}.${roleId}`];
+      if (!model) {
+        throw new Error(
+          `No model mapped for ${role}.${roleId}. ${REQUIRES_MODEL_ENV} is empty — ` +
+            'check .env has a model slug and that it is being read.',
+        );
+      }
 
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), timeoutMs);
@@ -49,6 +54,20 @@ export function makeOpenRouterProvider({ timeoutMs = 90_000 } = {}) {
             // provider to enforce it as well does not make G2 redundant: not
             // every model honours this, and G2 is what tells us which.
             response_format: { type: 'json_object' },
+
+            // Support for response_format is per ENDPOINT, not per model: the
+            // same model is served by several providers and only some honour
+            // it. Without this, OpenRouter may route to one that ignores the
+            // parameter — the request succeeds, prose comes back, and G2
+            // rejects a call you have already paid for. That is exactly what
+            // happened to tyrion_lannister on the first real run (turn 003).
+            //
+            // require_parameters restricts routing to endpoints that support
+            // every parameter sent. It can mean fewer available endpoints and
+            // occasionally a slower or unavailable route; a hard failure is
+            // preferable to a silent downgrade.
+            provider: { require_parameters: true },
+
             temperature: 0.7,
           }),
         });

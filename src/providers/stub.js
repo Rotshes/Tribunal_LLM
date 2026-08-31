@@ -81,6 +81,16 @@ export function makeStubProvider(mode = 'good') {
 
       if (role === 'advocate') {
         const rep = caseObj.representatives.find((r) => r.id === roleId);
+        if (mode === 'fumbled_identity' && roleId === 'daenerys_targaryen') {
+          // Reproduces a real failure: on 31.08 this model returned
+          // "daenerys_targator" and "daenerys_targatorn" in two separate runs,
+          // having been handed the correct id in its prompt. The runner now
+          // attaches identity, so this must no longer fail the call.
+          const op = advocateOpinion(caseObj, rep, { position: 'not_justified' });
+          op.representative_id = 'daenerys_targator';
+          op.seat = 'defense'; // wrong seat too, for good measure
+          return { raw: JSON.stringify(op), usage: { in: 4200, out: 900 } };
+        }
         if (mode === 'prose' && roleId === 'tyrion_lannister') {
           return {
             raw: 'Well. Where to begin. The question before this tribunal is not whether my client acted, but whether any of us would have acted differently...',
@@ -117,6 +127,14 @@ export function makeStubProvider(mode = 'good') {
 
       if (mode === 'badfact' && roleId === 'barak_model') {
         op.relies_on_facts = [0, 99];
+      }
+      if (mode === 'fumbled_identity' && roleId === 'elon_model') {
+        // Reproduces run A of turn 003, where a judge PARAPHRASED its own
+        // disclaimer. The runner now attaches the exact text from
+        // panel/judges.json, so this must no longer reach the screen.
+        op.disclaimer =
+          'A judicial-method profile. It does not impersonate the judgement, does not represent personal views.';
+        op.judge_id = 'elon_modl';
       }
       if (mode === 'verdict' && roleId === 'shamgar_model') {
         op.verdict = 'guilty'; // g5-ok: the stub deliberately emits a forbidden field so G2/G6 can catch it

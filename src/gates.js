@@ -8,6 +8,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import fs from 'node:fs';
 import path from 'node:path';
+import { judgeDisclaimer } from './panel.js';
 
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
@@ -160,8 +161,20 @@ export function g2OpinionEnvelope(opinion, caseObj) {
       );
     }
 
+    // G6 compares the disclaimer, it does not merely check for one. A judge
+    // paraphrased its own disclaimer in turn 003 — "does not impersonate the
+    // judgement, does not represent personal views" — and a check for presence
+    // passed it. This is a statement about named real people; it is not the
+    // model's to reword, and it is now attached by the runner from
+    // panel/judges.json rather than requested. This compares what was stored
+    // against that single source, so a drift anywhere is caught.
     if (!opinion.disclaimer) {
       problems.push('/disclaimer is required on every judge opinion');
+    } else if (opinion.disclaimer !== judgeDisclaimer()) {
+      problems.push(
+        '/disclaimer does not match panel/judges.json exactly. It is a statement ' +
+          'about named real people and may not be reworded.',
+      );
     }
   }
 

@@ -17,6 +17,7 @@ import { makeStubProvider } from '../src/providers/stub.js';
 import { judgeUserMessage } from '../src/prompts.js';
 import { modelMap, callCap } from '../src/config.js';
 import { parseEnv } from '../src/env.js';
+import { judgeDisclaimer } from '../src/panel.js';
 
 const CASE = JSON.parse(
   fs.readFileSync('cases/T-001-realm-v-jon-snow.json', 'utf8'),
@@ -39,7 +40,7 @@ const goodJudge = {
     { representative_id: 'grey_worm', answer: 'B'.repeat(40) },
   ],
   reasoning: 'R'.repeat(700),
-  disclaimer: 'A judicial-method profile, not the judge.',
+  disclaimer: judgeDisclaimer(),
 };
 
 const goodAdvocate = {
@@ -280,6 +281,97 @@ test('.env parsing survives Windows line endings, comments and quotes', () => {
   assert.equal(parsed.SUPABASE_URL, undefined);
   for (const v of Object.values(parsed)) {
     assert.ok(!/[\r\n]/.test(v), `value carries a line ending: ${JSON.stringify(v)}`);
+  }
+});
+
+// ------------------------------------ identity is attached, not requested (turn 004)
+
+test('the runner overwrites an identity the model fumbles', async () => {
+  const r = await deliberate({
+    caseObj: CASE,
+    provider: makeStubProvider('fumbled_identity'),
+  });
+
+  // Real failure this reproduces: "daenerys_targator" and "daenerys_targatorn"
+  // returned in two separate runs, each costing a whole call.
+  assert.equal(r.status, 'complete', 'a fumbled id must no longer fail the call');
+
+  const dany = r.advocate_opinions.find(
+    (o) => o.representative_id === 'daenerys_targaryen',
+  );
+  assert.ok(dany, 'the misspelled id was not corrected');
+  assert.equal(dany.seat, 'prosecution', 'the wrong seat was not corrected');
+
+  const elon = r.judge_opinions.find((o) => o.judge_id === 'elon_model');
+  assert.ok(elon, 'the misspelled judge id was not corrected');
+  assert.equal(
+    elon.disclaimer,
+    judgeDisclaimer(),
+    'a paraphrased disclaimer reached the stored opinion',
+  );
+});
+
+test('G6 rejects a disclaimer that has been reworded', () => {
+  const reworded = {
+    ...goodJudge,
+    disclaimer: judgeDisclaimer().replace('not the judge', 'not the judgement'),
+  };
+  const p = g2OpinionEnvelope(reworded, CASE);
+  assert.ok(
+    p.some((x) => x.includes('panel/judges.json')),
+    p.join(' | '),
+  );
+});
+
+test('a judge answer may run to 1200 characters', () => {
+  // 600 was the bound until turn 004, where it discarded a whole judge opinion
+  // over one long sentence.
+  const long = {
+    ...goodJudge,
+    responds_to: [
+      { representative_id: 'jon_snow', answer: 'A'.repeat(900) },
+      { representative_id: 'grey_worm', answer: 'B'.repeat(40) },
+    ],
+  };
+  assert.deepEqual(g2OpinionEnvelope(long, CASE), []);
+  const tooLong = {
+    ...goodJudge,
+    responds_to: [
+      { representative_id: 'jon_snow', answer: 'A'.repeat(1300) },
+      { representative_id: 'grey_worm', answer: 'B'.repeat(40) },
+    ],
+  };
+  assert.ok(g2OpinionEnvelope(tooLong, CASE).length);
+});
+
+test('a persisted deliberation stores the opinions and no combined field', async () => {
+  const fsp = await import('node:fs');
+  const os = await import('node:os');
+  const pathmod = await import('node:path');
+  const { persistDeliberation } = await import('../src/persist.js');
+
+  const cwd = process.cwd();
+  const tmp = fsp.mkdtempSync(pathmod.join(os.tmpdir(), 'tribunal-'));
+  try {
+    process.chdir(tmp);
+    const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+    const file = persistDeliberation(r, CASE, { provider: 'stub', json_mode: null });
+    const doc = JSON.parse(fsp.readFileSync(file, 'utf8'));
+
+    assert.equal(doc.judge_opinions.length, 3);
+    assert.equal(doc.advocate_opinions.length, 4);
+    // The stored run must carry what produced it, or it cannot be compared.
+    assert.ok('model' in doc && 'json_mode' in doc && 'temperature' in doc);
+    // And the facts as they stood, so an index means the same thing later.
+    assert.equal(doc.case_snapshot.agreed_facts.length, CASE.agreed_facts.length);
+
+    const json = JSON.stringify(doc);
+    for (const forbidden of ['"verdict"', '"majority"', '"consensus"', '"score"']) {
+      assert.ok(!json.includes(forbidden), `${forbidden} appeared in a stored run`);
+    }
+  } finally {
+    process.chdir(cwd);
+    fsp.rmSync(tmp, { recursive: true, force: true });
   }
 });
 

@@ -96,10 +96,10 @@
               "additionalProperties": false,
               "properties": {
                 "representative_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$" },
-                "answer": { "type": "string", "minLength": 20, "maxLength": 600 }
+                "answer": { "type": "string", "minLength": 20, "maxLength": 1200 }
               }
             },
-            "description": "Direct answers to advocate arguments. At least two, matching the instruction in the judge prompts. A judge that answers no one has not judged the case that was argued. The further requirement - that at least one answered advocate sits in the seat ruled against - depends on the case and is checked by G2b in code, not here."
+            "description": "Direct answers to advocate arguments. At least two, matching the instruction in the judge prompts. A judge that answers no one has not judged the case that was argued. The further requirement - that at least one answered advocate sits in the seat ruled against - depends on the case and is checked by G2b in code, not here. `answer` was capped at 600 characters until turn 004, when the cap discarded an entire judge opinion over one long sentence; raised to 1200, which still forbids an essay per answer."
           },
           "disclaimer": {
             "type": "string",

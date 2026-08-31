@@ -21,6 +21,7 @@ import {
   g7LogCompleteness,
 } from './gates.js';
 import { makeCallLog } from './log.js';
+import { judgeMethod, judgeDisclaimer } from './panel.js';
 
 class CapExceeded extends Error {}
 
@@ -87,13 +88,31 @@ export async function deliberate({ caseObj, provider }) {
         throw new Error('response was not JSON (model returned prose)');
       }
 
-      // The prompts tell the model NOT to send model_id, prompt_version or
-      // prompt_sha256 — the model cannot know the hash, and a model-supplied
-      // provenance field would be worthless anyway. The system attaches them
-      // here, and G2 validates the completed opinion: the object that gets
-      // stored, not the fragment that came off the wire.
+      // NEVER ASK THE MODEL FOR A VALUE THE SYSTEM ALREADY HAS.
+      //
+      // Everything attached below is known before the call is made. Asking for
+      // it buys nothing and costs a whole call every time the model fumbles a
+      // string it was handed. This project has paid for that four times:
+      //   - provenance fields, which broke all seven calls (turn 002)
+      //   - the disclaimer, which a judge paraphrased (turn 003)
+      //   - representative_id, misspelled as "daenerys_targator" and
+      //     "daenerys_targatorn" in two separate runs (turn 004)
+      //
+      // The model supplies only what ONLY it can supply: the reasoning.
+      // G2 then validates the completed opinion — the object that gets stored,
+      // not the fragment that came off the wire.
+      const identity =
+        role === 'advocate'
+          ? (() => {
+              const rep = caseObj.representatives.find((r) => r.id === roleId);
+              return { representative_id: rep.id, seat: rep.seat };
+            })()
+          : { judge_id: roleId, method: judgeMethod(roleId) };
+
       const opinion = {
         ...parsed,
+        ...identity,
+        ...(role === 'judge' ? { disclaimer: judgeDisclaimer() } : {}),
         model_id: res.model ?? base.model ?? provider.name,
         prompt_version: prompt.version,
         prompt_sha256: prompt.sha256,

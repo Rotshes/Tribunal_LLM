@@ -23,14 +23,20 @@
 # reported it as a JSON parse error, because it was parsing Netlify's HTML
 # error page.
 #
-# The real constraint, which does now belong on the record: seven calls, four
-# in parallel then three in sequence, is ~35s on gemini-3.5-flash-lite. That
-# leaves about 25 seconds of headroom before the platform's 60s limit. A slower
-# model on all seven roles could use it up, and the picker in web/ now lets a
-# visitor choose one. If that becomes a real failure rather than a hypothetical
-# one, the answers are to run the three judges concurrently (they are
-# independent by design and gain nothing from being sequenced) or to move to a
-# background function and have the page poll.
+# `netlify dev` is stricter than production: it runs functions through
+# lambda-local with a 30-SECOND cap. A sequential run took ~35s, so the browser
+# could not complete a deliberation locally even though production would have
+# allowed it. That is now fixed at the source — the three judges run
+# concurrently (src/deliberate.js), which they should always have done, since
+# they are independent by construction and sequencing bought nothing.
+#
+# Current shape: four advocate calls concurrently, then three judge calls
+# concurrently. Roughly 20s on gemini-3.5-flash-lite, against a 30s local cap
+# and a 60s production one.
+#
+# If a slow model on every role ever exceeds even that, the remaining answer is
+# a background function with the page polling for the result. Not needed yet,
+# and it would cost the page its single synchronous request.
 
 [dev]
   publish = "web"

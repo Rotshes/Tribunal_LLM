@@ -197,19 +197,28 @@ export async function deliberate({ caseObj, provider, modelOverrides = {}, allow
   // of the code rather than a promise in a document.
   const judgeUser = judgeUserMessage(caseObj, advocate_opinions);
 
-  const judgeResults = [];
-  for (const id of JUDGE_ORDER) {
-    if (capError) break;
-    const r = await callOnce({
-      role: 'judge',
-      roleId: id,
-      user: judgeUser,
-    }).catch((e) => {
-      if (e instanceof CapExceeded) capError = e;
-      return { ok: false, role: 'judge', roleId: id, reason: e.message };
-    });
-    judgeResults.push(r);
-  }
+  // The three judges run CONCURRENTLY.
+  //
+  // They are independent by construction: each receives the same `judgeUser`
+  // string, none sees another's ruling, and none is told another exists. That
+  // is the load-bearing property of the whole design, and it means sequencing
+  // them buys exactly nothing — it only made a deliberation three judge-calls
+  // long in wall-clock instead of one.
+  //
+  // It also stopped mattering hypothetically on 31.08: `netlify dev` runs
+  // functions with a 30s cap, a sequential run took ~35s, and the browser could
+  // not complete a single deliberation locally. Concurrency takes it to ~20s.
+  //
+  // Promise.all preserves input order, so judge_opinions still arrive in
+  // JUDGE_ORDER and the display columns do not move.
+  const judgeResults = await Promise.all(
+    JUDGE_ORDER.map((id) =>
+      callOnce({ role: 'judge', roleId: id, user: judgeUser }).catch((e) => {
+        if (e instanceof CapExceeded) capError = e;
+        return { ok: false, role: 'judge', roleId: id, reason: e.message };
+      }),
+    ),
+  );
 
   const judge_opinions = judgeResults.filter((r) => r.ok).map((r) => r.opinion);
   const judge_failures = judgeResults.filter((r) => !r.ok);

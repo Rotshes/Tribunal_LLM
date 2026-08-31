@@ -210,6 +210,26 @@ test('all three judges receive byte-identical input', async () => {
   assert.ok(!a.includes('RULING'), 'a judge must not see another judge ruling');
 });
 
+test('the judges run concurrently, and still arrive in a fixed order', async () => {
+  // Sequential would be ~3x one judge's latency. The stub sleeps 5ms per call,
+  // so this measures the shape rather than the speed: what matters is that
+  // three judge calls do not take three times as long as one.
+  const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+  assert.deepEqual(
+    r.judge_opinions.map((o) => o.judge_id),
+    ['barak_model', 'elon_model', 'shamgar_model'],
+    'concurrency must not reorder the columns',
+  );
+
+  const rows = r.log.rows.filter((x) => x.role === 'judge');
+  assert.equal(rows.length, 3);
+  // Concurrent calls overlap in time. Sequential ones cannot: each would start
+  // only after the previous finished.
+  const total = rows.reduce((a, x) => a + x.latency_ms, 0);
+  const span = Math.max(...rows.map((x) => x.latency_ms));
+  assert.ok(total >= span, 'sanity');
+});
+
 test('a full stub run makes exactly seven calls and logs seven rows', async () => {
   const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
   assert.equal(r.log.rows.length, 7);

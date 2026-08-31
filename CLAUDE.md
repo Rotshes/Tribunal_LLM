@@ -98,6 +98,13 @@ Do not reopen these without asking. Reasoning is in the record named after each.
   reason. A whole file quietly excluded is a hole nobody can see.
 - **When a rule is stated in two places, add a check that they agree — or delete
   one statement.** Three silent prompt-versus-schema disagreements in three turns.
+- **Never ask the model for a value the system already has.** Identity, method,
+  provenance, the disclaimer — all known before the call. Asking buys nothing
+  and costs a whole call when the model fumbles a string it was handed. This has
+  cost four times: provenance (broke all seven calls), the disclaimer
+  (paraphrased), `representative_id` (misspelled twice). The model supplies only
+  what only it can supply — the reasoning. The runner attaches the rest and the
+  gates compare against the single source.
 - **Where prompt and schema describe different shapes, the schema wins and the
   prompt is decoration.** A prompt asking for ordered tests against a schema
   offering `string[]` produces bullet points. If behaviour must differ, the
@@ -146,6 +153,14 @@ One line per failure actually observed. Written once, permanently.
   matters must be attached by the runner and compared, never requested.
 - 31.08 — Every judge cites every fact, every run, so G3 has never fired on real
   output.
+- 31.08 — `--json-mode off` cost ~29% of calls to prose. One clean run had made
+  it look free; four runs showed otherwise. Do not conclude from n=1.
+- 31.08 — A model misspelled its own `representative_id` twice
+  (`daenerys_targator`, `daenerys_targatorn`) despite being handed it. Fixed by
+  attaching identity rather than requesting it.
+- 31.08 — A 600-character cap on one `responds_to` answer discarded an entire
+  judge opinion. A bound tight enough to reject good output is a bug in the
+  bound. Raised to 1200.
 
 ## Conventions
 

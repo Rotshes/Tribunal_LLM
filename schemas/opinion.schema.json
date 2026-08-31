@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tribunal.local/schemas/opinion.schema.json",
   "title": "Opinion",
-  "description": "The return shape of a single model call. Two variants selected by `role`. Gate G2 validates every response against this. Gate G3 separately checks that every index in relies_on_facts is within range of the case's agreed_facts array - a bound the schema cannot express because it depends on the case.",
+  "description": "A STORED opinion: the model's response after the system has attached its provenance. Two variants selected by `role`. NOTE the boundary - `model_id`, `prompt_version` and `prompt_sha256` are required here but the prompts forbid the model from emitting them (it cannot know its own prompt hash); the runner attaches them before validating. G2 therefore validates the object that gets stored, not the fragment that came off the wire. G3 separately checks that every index in relies_on_facts is within range of the case's agreed_facts array - a bound the schema cannot express because it depends on the case.",
 
   "type": "object",
   "required": ["case_id", "role", "model_id", "prompt_version", "prompt_sha256", "relies_on_facts"],

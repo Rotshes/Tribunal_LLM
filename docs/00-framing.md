@@ -3,10 +3,13 @@
 Module 6. Written in pencil. Revised as the work teaches more; each revision
 dated rather than overwritten, so the reasoning stays legible.
 
-> **Open gap:** the case domain — what kind of charge the Tribunal rules on —
-> is supplied by the instructor in a later class. Everything below is written
-> to survive that decision. Sections that depend on it are marked PENDING.
-> This is a stated gap, not an oversight.
+> **Gap closed, 24.08.2026.** The case domain — what kind of charge the
+> Tribunal rules on — was supplied by the instructor: `T-001 — The Realm v.
+> Jon Snow`. Everything below was written to survive that decision, and it did:
+> the only sections needing revision are §1 (the PENDING narrowing) and §3
+> item 1 (a charge sheet is now a typed object, not three fields). Both are
+> revised in place and dated in the revision log at the foot of this file.
+> See `docs/decisions/0003-case-domain-fixed-by-the-instructor.md`.
 
 ---
 
@@ -21,7 +24,12 @@ shape — it arrives fluent, one-sided, and with its uncertainty invisible. The
 reader cannot tell whether the case was close or obvious, or what the strongest
 opposing argument was, because nothing shows them the argument that lost.
 
-PENDING: narrow to the instructor's domain once given.
+*Narrowed 24.08.2026.* The domain is a contested act of justification: one
+person kills another to prevent a harm he believes is coming, without authority
+and without exhausting the alternatives. It is chosen because the facts are
+agreed and only their weight is disputed — which is the case where a single
+confident answer is least trustworthy and the shape of the disagreement is the
+whole of the information.
 
 **Several solutions fit this problem**, which is the test passing: show a
 confidence score; show sources; show a written dissent; run opposing advocates;
@@ -50,8 +58,11 @@ violated. It is written down first for that reason.
 *What must be true for the work to count as finished. Test: could two people
 reading the result disagree about whether it was met?*
 
-1. A stranger can open a public web address, submit a charge sheet with all
-   three fields, and read a verdict — without being told how.
+1. *(revised 24.08.2026)* A stranger can open a public web address, submit a
+   charge sheet that satisfies `schemas/charge-sheet.schema.json`, and read the
+   opinions — without being told how. The charge sheet is a typed object, not
+   three free-text fields; the reason for the change is in
+   `docs/02-charge-sheet-spec.md`.
 2. The three judges' rulings appear side by side on one screen, each with its
    own reasoning, and no single combined verdict appears anywhere in the
    output. A reader can see which judges disagreed and on what grounds.
@@ -91,3 +102,5 @@ someone could reasonably have expected it in scope.*
 | Date | Change | What taught me |
 |---|---|---|
 | (initial) | First draft | — |
+| 24.08.2026 | Open gap closed; §1 PENDING narrowed to the instructor's domain | The gap was worth stating rather than guessing at — the framing survived the decision unchanged apart from two marked places, which is what "written to survive it" was supposed to mean |
+| 24.08.2026 | §3 item 1 revised: charge sheet is a typed object, not three fields | The instructor's case carries background, an agreed factual record, and a scope note. None of it is decoration: without the agreed record the four advocates argue from private reconstructions and the three judges rule on different cases |

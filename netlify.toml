@@ -14,13 +14,23 @@
   # to the wrong text.
   included_files = ["cases/**", "prompts/**", "panel/**", "schemas/**"]
 
-[functions."deliberate"]
-  # Seven model calls, four in parallel then three in sequence. Observed
-  # wall-clock is 30-35s against gemini-3.5-flash-lite; a slower model will be
-  # slower. Netlify's synchronous limit is well under what a slow model could
-  # take, so this is the known ceiling on model choice for the deployed app.
-  # Recorded rather than discovered later.
-  timeout = 26
+# NO TIMEOUT SETTING HERE, DELIBERATELY.
+#
+# Netlify's synchronous function limit is 60 seconds and is NOT configurable.
+# An earlier version of this file set `timeout = 26` for the deliberate
+# function, invented from a half-remembered figure. A deliberation takes about
+# 35 seconds, so every run through the browser was killed — and the page
+# reported it as a JSON parse error, because it was parsing Netlify's HTML
+# error page.
+#
+# The real constraint, which does now belong on the record: seven calls, four
+# in parallel then three in sequence, is ~35s on gemini-3.5-flash-lite. That
+# leaves about 25 seconds of headroom before the platform's 60s limit. A slower
+# model on all seven roles could use it up, and the picker in web/ now lets a
+# visitor choose one. If that becomes a real failure rather than a hypothetical
+# one, the answers are to run the three judges concurrently (they are
+# independent by design and gain nothing from being sequenced) or to move to a
+# background function and have the page poll.
 
 [dev]
   publish = "web"

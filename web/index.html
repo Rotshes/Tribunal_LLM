@@ -353,8 +353,29 @@ async function run() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ case_id: CASE.case_id, models: chosenModels() }),
     });
-    const doc = await res.json();
+    // Read the body as TEXT first. A platform error — a timeout, a crash, a
+    // 502 — comes back as an HTML page, and calling res.json() on it throws a
+    // parse error that replaces the real status with "unexpected character".
+    // That is exactly what happened on the first browser run: a function
+    // timeout was reported as malformed JSON, and the message named neither.
+    const raw = await res.text();
     stopWaiting();
+
+    let doc = null;
+    try { doc = JSON.parse(raw); } catch { /* not JSON; handled below */ }
+
+    if (!doc) {
+      showError(
+        `The tribunal did not answer properly (HTTP ${res.status}).`,
+        [
+          res.status === 502 || res.status === 504
+            ? 'This usually means the run exceeded the platform time limit. Seven calls take about 35 seconds; a slower model on every role can take longer.'
+            : 'The response was not JSON. The first part of it is below.',
+          raw.slice(0, 200).replace(/\s+/g, ' ').trim() || '(empty response)',
+        ],
+      );
+      return;
+    }
 
     if (res.status === 422) {
       showError(doc.error, doc.problems);

@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tribunal.local/schemas/charge-sheet.schema.json",
+  "title": "Charge sheet",
+  "description": "A case put to the Tribunal. Meaning of each field is specified in docs/02-charge-sheet-spec.md; this file is the enforceable form of that document. Word-count bounds on `background` and uniqueness of `case_id` are checked by G1 in code, not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "title",
+    "fictional",
+    "accused",
+    "affected_party",
+    "act_alleged",
+    "background",
+    "agreed_facts",
+    "issue",
+    "scope",
+    "representatives",
+    "provenance"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^T-[0-9]{3}$",
+      "description": "Assigned identifier. Never derived from the title."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "fictional": {
+      "const": true,
+      "description": "Every case this term is a fictional proceeding. Pinned so a non-fictional case cannot be added without an explicit schema change."
+    },
+    "accused": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "affected_party": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "act_alleged": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 400,
+      "description": "One act, stated as fact, without characterisation."
+    },
+    "background": {
+      "type": "string",
+      "minLength": 900,
+      "maxLength": 2600,
+      "description": "200-400 words for a reader who does not know the story. Narrative, not argument. Exact word bounds enforced by G1."
+    },
+    "agreed_facts": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "description": "Propositions both seats accept. ORDER IS SIGNIFICANT AND STABLE: opinions cite these by index. Never reorder or delete an entry once a case has been deliberated; a correction appends.",
+      "items": {
+        "type": "string",
+        "minLength": 20,
+        "maxLength": 500
+      }
+    },
+    "issue": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 500,
+      "description": "The exact question for judgment. Answerable as justified or not_justified and no other way."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decides", "imposes_sentence", "combines_opinions", "note"],
+      "properties": {
+        "decides": {
+          "type": "array",
+          "description": "The permitted rulings. Pinned.",
+          "prefixItems": [
+            { "const": "justified" },
+            { "const": "not_justified" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "imposes_sentence": {
+          "const": false,
+          "description": "The Tribunal decides justified / not justified and gives reasons. It does not sentence."
+        },
+        "combines_opinions": {
+          "const": false,
+          "description": "The three opinions are reported side by side and are never combined. Pinned false; a case cannot opt out."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 600
+        }
+      }
+    },
+    "representatives": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "description": "Exactly four. Exactly two per seat - the 2/2 balance is checked by G1. The seat fixes the procedural role only; it does not fix an opinion, an inference, or a final position.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "seat", "brief"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+          "seat": { "enum": ["defense", "prosecution"] },
+          "brief": { "type": "string", "minLength": 100, "maxLength": 1200 }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "received", "disclaimer"],
+      "properties": {
+        "source": { "type": "string", "minLength": 3, "maxLength": 300 },
+        "received": { "type": "string", "format": "date" },
+        "disclaimer": { "type": "string", "minLength": 20, "maxLength": 600 }
+      }
+    }
+  }
+}

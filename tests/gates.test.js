@@ -1086,3 +1086,54 @@ test('the page polls the archive rather than reading a response body', () => {
   assert.match(page, /api\/runs\?id=/, 'the archive endpoint is the polling endpoint');
   assert.match(page, /POLL_GIVE_UP_MS/, 'polling must be bounded, or a dead run hangs the page');
 });
+
+test('every function the page calls is defined in the page', async () => {
+  const vm = await import('node:vm');
+  // Turn 013 rewrote run() by replacing everything between it and the click
+  // handler, and took renderArchive, openRun, loadArchive and SHORT with it.
+  // The page then threw `loadArchive is not defined` at the END of a
+  // successful run — after seven paid model calls — and Past proceedings went
+  // blank. Nothing caught it: the page has no build step (decision 0008) and
+  // no test had ever read it as code.
+  //
+  // This parses the page's module and checks that every name it calls is
+  // declared in it. It is the cheapest possible stand-in for the compiler the
+  // no-build-step decision gives up, and it fails against that deletion.
+  const page = fs.readFileSync('web/index.html', 'utf8');
+  const script = page.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(script, 'the page must have a module script');
+
+  // It must at least parse. A syntax error would otherwise ship silently.
+  new vm.Script(script);
+
+  // Strings and comments are not code. Without stripping them the scan reads
+  // `var(--fail)` out of an inline style and "could not be opened (HTTP" out of
+  // a sentence, and reports both as undefined functions. A check that cries
+  // wolf gets deleted, which is worse than not having it.
+  const code = script
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ')
+    .replace(/`(?:[^`\\]|\\.)*`/g, '``')
+    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+
+  const declared = new Set([
+    ...[...code.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g)].map((m) => m[1]),
+    ...[...code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)].map((m) => m[1]),
+  ]);
+
+  // Names called as `foo(...)` at the start of a statement or after common
+  // operators. Deliberately narrow: this is a smoke check, not a linter.
+  const called = new Set(
+    [...code.matchAll(/(?:^|[\s;{(=>&|?:])([a-z][A-Za-z0-9_$]*)\s*\(/gm)].map((m) => m[1]),
+  );
+
+  const BUILT_IN = new Set([
+    'if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'await', 'new',
+    'fetch', 'setTimeout', 'setInterval', 'clearInterval', 'clearTimeout',
+    'parseInt', 'parseFloat', 'esc', 'options', 'encodeURIComponent', 'decodeURIComponent',
+  ]);
+
+  const missing = [...called].filter((n) => !declared.has(n) && !BUILT_IN.has(n));
+  assert.deepEqual(missing, [], `the page calls names it does not define: ${missing.join(', ')}`);
+});

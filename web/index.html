@@ -387,6 +387,109 @@ function describeModels(doc) {
 const POLL_EVERY_MS = 2_000;
 const POLL_GIVE_UP_MS = 240_000;   // four minutes; the run itself may take 15
 
+// ------------------------------------------------------- past proceedings
+//
+// Definition of done item 3. The list shows all three rulings per run, never a
+// tally and never a "2 of 3" — the same rule that governs a live result governs
+// its record. (decision 0002)
+//
+// These four were deleted by accident in turn 013 when run() was rewritten:
+// the replacement spanned from run() to the click handler and took everything
+// in between with it. The page then threw `loadArchive is not defined` at the
+// end of a successful run and Past proceedings rendered nothing. Restored, and
+// now placed BEFORE run() so that a future rewrite of run() cannot reach them.
+
+const SHORT = { barak_model: 'Barak', elon_model: 'Elon', shamgar_model: 'Shamgar' };
+
+function renderArchive(runs) {
+  if (runs.length === 0) {
+    $('archive').innerHTML =
+      '<p class="note">No proceedings have been held yet. The first one convened above will appear here.</p>';
+    return;
+  }
+
+  $('archive').innerHTML = runs.map((r) => {
+    const when = String(r.ran_at ?? '').slice(0, 16).replace('T', ' ');
+    const rulings = JUDGES.map((j) => {
+      const v = r.rulings?.[j];
+      return `<span>${esc(SHORT[j])} <b>${v ? esc(RULING[v] ?? v) : '—'}</b></span>`;
+    }).join('');
+
+    // A run where fewer than seven calls landed says so here, so nobody opens
+    // an incomplete panel expecting a complete one.
+    const short = r.calls_succeeded != null && r.calls_attempted != null
+      && r.calls_succeeded < r.calls_attempted;
+
+    return `<div class="run-row">
+      <div class="run-when">${esc(when)} · ${esc(r.case_id ?? '')}</div>
+      <div class="run-rulings">${rulings}${
+        short ? `<span class="run-incomplete">${r.calls_succeeded}/${r.calls_attempted} calls — incomplete</span>` : ''
+      }</div>
+      <div><button class="run-open" type="button" data-id="${esc(r.deliberation_id)}">Read it</button>
+        <div class="run-meta">${esc(String(r.deliberation_id).slice(0, 8))}</div></div>
+    </div>`;
+  }).join('');
+
+  $('archive').querySelectorAll('.run-open').forEach((b) =>
+    b.addEventListener('click', () => openRun(b.dataset.id, b)));
+}
+
+async function openRun(id, button) {
+  button.setAttribute('aria-busy', 'true');
+  button.textContent = 'Opening…';
+  try {
+    const res = await fetch(`/api/runs?id=${encodeURIComponent(id)}`);
+    const doc = await res.json().catch(() => null);
+    if (!res.ok || !doc) {
+      showError(doc?.error ?? `That proceeding could not be opened (HTTP ${res.status}).`);
+      return;
+    }
+
+    // Rendered by the same two functions as a live run. A retrieved
+    // deliberation that looked different from a fresh one would invite the
+    // reader to treat it as a lesser record, and it is the same record.
+    renderAdvocates(doc);
+    renderRulings(doc);
+    $('results').hidden = false;
+
+    const u = doc.usage ?? {};
+    $('runline').textContent =
+      `retrieved · run ${doc.deliberation_id} · ${doc.status} · ` +
+      `${u.succeeded ?? 0}/${u.attempted ?? 0} calls · ${describeModels(doc)} · held ${String(doc.ran_at ?? '').slice(0, 16).replace('T', ' ')}`;
+
+    if (doc.status !== 'complete') {
+      showError('This proceeding was incomplete when it was held.',
+        [`${u.failed} of ${u.attempted} calls failed. What is shown is what there was.`]);
+    }
+    $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showError('That proceeding could not be opened.', [err.message]);
+  } finally {
+    button.removeAttribute('aria-busy');
+    button.textContent = 'Read it';
+  }
+}
+
+async function loadArchive() {
+  try {
+    const res = await fetch('/api/runs');
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      // Shown, not swallowed. An archive that is silently empty because the
+      // database is unreachable reads as "nothing has ever run here".
+      $('archive-error').hidden = false;
+      $('archive-error').innerHTML =
+        `<h3>The archive could not be read</h3><p>${esc(body?.error ?? `HTTP ${res.status}`)}</p>`;
+      return;
+    }
+    renderArchive(body.runs ?? []);
+  } catch (err) {
+    $('archive-error').hidden = false;
+    $('archive-error').innerHTML =
+      `<h3>The archive could not be reached</h3><p>${esc(err.message)}</p>`;
+  }
+}
+
 async function run() {
   $('run').disabled = true;
   $('error').hidden = true;

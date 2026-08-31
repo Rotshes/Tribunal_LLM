@@ -74,7 +74,8 @@ and the three budgets that failed.
 | No time budget remains | Test asserts `deadlineAt` and `PLATFORM_LIMIT_MS` are gone from the function | Pass |
 | The page polls rather than reading a body | Test greps for 202 handling, `awaitResult`, and the archive URL | Pass |
 | Polling is bounded | Test asserts `POLL_GIVE_UP_MS` exists | Pass |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 62 tests, 79 files |
+| Every name the page calls is defined in it | Test parses the module; verified by deleting `loadArchive` and watching it fail | Pass |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 63 tests, 81 files |
 
 ### 6a. A test was deleted, and that is the honest move
 
@@ -112,18 +113,42 @@ tells the visitor to reload and check Past proceedings, and the result is
 genuinely there. It is a worse experience than a synchronous run and a better
 one than a truncated panel.
 
+### 6c. I deleted three functions and shipped it
+
+The first live run of the background design made all seven calls, wrote the run,
+and then threw **`loadArchive is not defined`** — after the money was spent. Past
+proceedings rendered nothing.
+
+The rewrite of `run()` in §5 replaced everything between `async function run()`
+and the click handler. `renderArchive`, `openRun`, `loadArchive` and the `SHORT`
+label map lived in that span. They went with it.
+
+Nothing caught this. The page has no build step by decision 0008, so there is no
+compiler; no test had ever read `web/index.html` as code; and the deletion broke
+only the path that runs *after* a successful deliberation, so it could not fail
+until a real run succeeded.
+
+Two fixes, and the second matters more:
+
+1. The four are restored, and moved **above** `run()` so a future rewrite of
+   `run()` cannot reach them.
+2. A test now parses the page's module and checks that every name it calls is
+   declared in it. Verified by deleting `loadArchive` again and watching it
+   fail with exactly that name.
+
+Decision 0008 said the cost of no build step is that discipline replaces a
+compiler. That cost came due here, and the answer is the cheapest possible
+stand-in rather than a bundler.
+
 ### What I did not verify
 
-- **Any of it in production.** Every criterion above is a test or a grep. The
-  previous turn shipped four times and was wrong three times, and the pattern
-  was always the same: passing tests, failing deployment. Nothing here is
-  settled until a background run completes on the live site.
-- **That the 202 path works at all on Netlify.** `background: true` is read from
-  the documentation. Whether this site honours it, and whether the function is
-  still reachable at `/api/deliberate`, is untested outside that page.
-- **The polling behaviour under a real run.** `awaitResult` has never run
-  against a live archive; the 404-while-writing case in particular is reasoned,
-  not observed.
+- ~~**That the 202 path works on Netlify.**~~ Confirmed live: a background run
+  made all seven calls and the page polled the archive and found it.
+- ~~**The polling behaviour under a real run.**~~ Confirmed by the same run.
+- **The four-provider mixed panel.** The thing this was all for. Still not run
+  since the change.
+- **The restored archive, live.** Broken by §6c and fixed here; the fix is
+  verified by a test, not by a browser.
 - **Whether four minutes is the right give-up.** Chosen to be much longer than
   a normal run and much shorter than fifteen minutes. Not derived.
 

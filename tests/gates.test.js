@@ -15,6 +15,8 @@ import {
 import { deliberate } from '../src/deliberate.js';
 import { makeStubProvider } from '../src/providers/stub.js';
 import { judgeUserMessage } from '../src/prompts.js';
+import { modelMap, callCap } from '../src/config.js';
+import { parseEnv } from '../src/env.js';
 
 const CASE = JSON.parse(
   fs.readFileSync('cases/T-001-realm-v-jon-snow.json', 'utf8'),
@@ -223,6 +225,62 @@ test('a failed judge is logged and does not become an acquittal', async () => {
   assert.equal(r.judge_failures.length, 1);
   assert.equal(r.log.rows.length, 7, 'the failed call must still be logged');
   assert.equal(r.log.rows.filter((x) => !x.succeeded).length, 1);
+});
+
+// ------------------------------------------- configuration read order (turn 003)
+
+test('the model map reads the environment when called, not when imported', () => {
+  // The first version of config.js built the map at import time. Imports are
+  // evaluated before cli.js loads .env, so every entry was undefined and all
+  // seven calls failed with "No model mapped". This test fails against that
+  // version and passes against the fix.
+  const before = process.env.TRIBUNAL_MODEL;
+  try {
+    process.env.TRIBUNAL_MODEL = 'test/model-set-after-import';
+    const m = modelMap();
+    assert.equal(Object.keys(m).length, 7);
+    for (const [role, model] of Object.entries(m)) {
+      assert.equal(model, 'test/model-set-after-import', `${role} did not resolve`);
+    }
+  } finally {
+    if (before === undefined) delete process.env.TRIBUNAL_MODEL;
+    else process.env.TRIBUNAL_MODEL = before;
+  }
+});
+
+test('the call cap reads the environment when called', () => {
+  const before = process.env.MAX_CALLS_PER_DELIBERATION;
+  try {
+    process.env.MAX_CALLS_PER_DELIBERATION = '3';
+    assert.equal(callCap(), 3);
+  } finally {
+    if (before === undefined) delete process.env.MAX_CALLS_PER_DELIBERATION;
+    else process.env.MAX_CALLS_PER_DELIBERATION = before;
+  }
+});
+
+test('.env parsing survives Windows line endings, comments and quotes', () => {
+  // Notepad writes CRLF. Splitting on "\n" leaves a carriage return on the end
+  // of every value: a model slug that is not a slug, and an API key that 401s.
+  // The key variable is named EXAMPLE_TOKEN rather than the real one on
+  // purpose: G8 scans tracked files for the real key name followed by a value,
+  // and flagged the first version of this test. That is the gate working.
+  // Renaming the fixture is the fix; weakening G8 is not.
+  const parsed = parseEnv(
+    '# a comment\r\n' +
+      'EXAMPLE_TOKEN=sk-or-v1-abc\r\n' +
+      '\r\n' +
+      'TRIBUNAL_MODEL="google/gemini-3.5-flash-lite"\r\n' +
+      '  MAX_CALLS_PER_DELIBERATION = 10  \r\n' +
+      '# SUPABASE_URL=ignored\r\n',
+  );
+  assert.equal(parsed.EXAMPLE_TOKEN, 'sk-or-v1-abc');
+  assert.equal(parsed.TRIBUNAL_MODEL, 'google/gemini-3.5-flash-lite');
+  assert.equal(parsed.MAX_CALLS_PER_DELIBERATION, '10');
+  assert.equal(parsed.SUPABASE_URL, undefined);
+  for (const v of Object.values(parsed)) {
+    assert.ok(!/[\r\n]/.test(v), `value carries a line ending: ${JSON.stringify(v)}`);
+  }
 });
 
 test('the result object holds no combined field anywhere', async () => {

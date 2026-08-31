@@ -9,16 +9,7 @@ import path from 'node:path';
 import { deliberate } from './deliberate.js';
 import { render } from './render.js';
 import { makeStubProvider } from './providers/stub.js';
-
-function loadEnv() {
-  // Deliberately tiny, rather than a dotenv dependency: one dependency was
-  // decided on (ajv), and this does not need to be a second one.
-  if (!fs.existsSync('.env')) return;
-  for (const line of fs.readFileSync('.env', 'utf8').split('\n')) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
-  }
-}
+import { loadEnv } from './env.js';
 
 function findCase(caseId) {
   const dir = 'cases';

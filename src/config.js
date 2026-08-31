@@ -6,17 +6,25 @@
 // object plus a decision record citing the per-call logs.
 //   docs/01-spec.md §3, docs/decisions/0001-log-every-model-call.md
 
-const MODEL_A = process.env.TRIBUNAL_MODEL;
-
-export const MODEL_MAP = {
-  'advocate.jon_snow': MODEL_A,
-  'advocate.tyrion_lannister': MODEL_A,
-  'advocate.daenerys_targaryen': MODEL_A,
-  'advocate.grey_worm': MODEL_A,
-  'judge.barak_model': MODEL_A,
-  'judge.elon_model': MODEL_A,
-  'judge.shamgar_model': MODEL_A,
-};
+// This is a FUNCTION, not a constant, and that is load-bearing.
+//
+// ES module imports are evaluated before the importing module's body runs, so
+// a `const MODEL_MAP = { ... process.env.TRIBUNAL_MODEL }` here is built before
+// cli.js has had a chance to read .env — every entry comes out undefined and
+// all seven calls fail with "No model mapped". Read the environment when the
+// value is needed, not when the file is loaded.
+export function modelMap() {
+  const MODEL_A = process.env.TRIBUNAL_MODEL;
+  return {
+    'advocate.jon_snow': MODEL_A,
+    'advocate.tyrion_lannister': MODEL_A,
+    'advocate.daenerys_targaryen': MODEL_A,
+    'advocate.grey_worm': MODEL_A,
+    'judge.barak_model': MODEL_A,
+    'judge.elon_model': MODEL_A,
+    'judge.shamgar_model': MODEL_A,
+  };
+}
 
 // There is deliberately no default model. Naming one here would make an
 // unreviewed choice permanent by accident, and model ids go stale. The
@@ -25,7 +33,10 @@ export const REQUIRES_MODEL_ENV = 'TRIBUNAL_MODEL';
 
 export const EXPECTED_CALLS = 7; // 4 advocates + 3 judges. Not a maximum: an exact count.
 
-export const CALL_CAP = Number(process.env.MAX_CALLS_PER_DELIBERATION ?? 10);
+// Also a function, for the same reason.
+export function callCap() {
+  return Number(process.env.MAX_CALLS_PER_DELIBERATION ?? 10);
+}
 
 export const PROMPT_FILES = {
   jon_snow: 'prompts/advocate-jon-snow.md',

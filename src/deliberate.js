@@ -9,8 +9,9 @@ import {
   ADVOCATE_ORDER,
   JUDGE_ORDER,
   EXPECTED_CALLS,
-  CALL_CAP,
-  MODEL_MAP,
+  callCap,
+  modelMap,
+  REQUIRES_MODEL_ENV,
 } from './config.js';
 import { loadPrompt, advocateUserMessage, judgeUserMessage } from './prompts.js';
 import {
@@ -26,6 +27,10 @@ class CapExceeded extends Error {}
 export async function deliberate({ caseObj, provider }) {
   const deliberation_id = crypto.randomUUID();
   const log = makeCallLog();
+
+  // Read once per deliberation, after the caller has loaded the environment.
+  const MODELS = modelMap();
+  const CAP = callCap();
 
   // G1 — before anything is spent.
   const g1 = g1ChargeSheet(caseObj);
@@ -45,10 +50,8 @@ export async function deliberate({ caseObj, provider }) {
   let attempted = 0;
 
   async function callOnce({ role, roleId, user }) {
-    if (attempted >= CALL_CAP) {
-      throw new CapExceeded(
-        `call cap of ${CALL_CAP} reached before ${role}.${roleId}`,
-      );
+    if (attempted >= CAP) {
+      throw new CapExceeded(`call cap of ${CAP} reached before ${role}.${roleId}`);
     }
     attempted += 1;
 
@@ -60,7 +63,7 @@ export async function deliberate({ caseObj, provider }) {
       case_id: caseObj.case_id,
       role,
       role_id: roleId,
-      model: MODEL_MAP[`${role}.${roleId}`] ?? provider.name,
+      model: MODELS[`${role}.${roleId}`] ?? provider.name,
       prompt_version: prompt.version,
       prompt_sha256: prompt.sha256,
     };
@@ -173,7 +176,7 @@ export async function deliberate({ caseObj, provider }) {
 
   // G4 and G7.
   const gateProblems = [
-    ...g4CallBudget({ attempted, expected: EXPECTED_CALLS, cap: CALL_CAP }),
+    ...g4CallBudget({ attempted, expected: EXPECTED_CALLS, cap: CAP }),
     ...g7LogCompleteness({ attempted, logged: log.rows.length }),
   ];
 

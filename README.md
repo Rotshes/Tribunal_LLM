@@ -15,9 +15,13 @@ disagreement is the output.
 | `SETUP.md` | The five accounts and how to set them up. |
 | `docs/00-framing.md` | Module 6: problem statement, stakeholders, definition of done, out-of-scope. |
 | `docs/01-spec.md` | Module 10: the five-part specification. |
+| `docs/02-charge-sheet-spec.md` | What each charge-sheet field means and what makes it valid. |
 | `docs/decisions/` | One file per decision that could have gone another way, with the reasoning at the moment it was made. |
 | `docs/turns/` | One record per turn of work, on the seven-part frame from Module 4. |
-| `prompts/` | The advocate and judge prompts. Versioned like code, because they are. |
+| `schemas/` | The enforceable forms: charge sheet in, opinion out. |
+| `cases/` | The cases, as repository fixtures. `T-001` is the instructor's. |
+| `panel/` | The three judges. Fixed across cases, because the course specification fixes the panel. |
+| `prompts/` | The seven prompts — four advocates, three judges. Versioned like code, because they are. |
 
 ## Reading this repo as a record
 
@@ -32,8 +36,16 @@ why it is this way rather than the other way that was also considered.
 
 ## Status
 
-Early. Case domain pending from the instructor; see the open gap noted in
-`docs/00-framing.md`.
+**Specified, not yet built.** As of 24.08.2026 the case domain is fixed
+(`T-001 — The Realm v. Jon Snow`), the five-part specification is written, the
+charge sheet exists as a schema plus its first instance, and all seven prompts
+are at v1.0.
+
+No model has been called yet. Nothing here has been executed, so nothing here
+has been tested — the prompts are v1.0 in the sense that they are written and
+reviewed, not in the sense that they are known to work. `docs/01-spec.md` §4
+lists eight verification gates; none has fired, and a gate that has never fired
+is a gate that has not yet proved it can.
 
 ## Grading
 

@@ -28,9 +28,12 @@ The course grades how well the agent is directed, not the app that ships.
 That means the written record in this repo is the deliverable. The app is the
 occasion for producing it.
 
-**The case domain is not yet decided.** The instructor supplies it in a later
-class. Do not invent one. Where the domain would matter, keep it configurable
-and say so.
+**The case domain is fixed.** The instructor supplied it on 24.08.2026: case
+`T-001 — The Realm v. Jon Snow`, four named representatives in two seats, three
+judges defined by judicial method. It lives in `cases/` and in the advocate
+prompts, **as data**. Nothing in the schema, the backend, the database, or the
+interface names a character. Keep it that way — `T-001` is numbered as the first
+of several. See `docs/decisions/0003-case-domain-fixed-by-the-instructor.md`.
 
 ## The build
 
@@ -62,6 +65,19 @@ These are settled. Do not reopen them without asking.
   failure. It is never shown as a verdict, and never silently defaulted to an
   acquittal. A blank result that reads as an answer is the worst outcome
   this app can produce.
+- **The seat does not fix the position.** An advocate's seat sets its procedural
+  role only. Nothing — no gate, no schema rule, no prompt line, no retry — may
+  require an advocate to conclude in favour of its own seat. Divergence is
+  measured and reported, never blocked.
+  See `docs/decisions/0004-the-seat-does-not-fix-the-position.md`.
+- **The judges are methods, not people.** No prompt tells a model to speak as a
+  named person. The disclaimer is a required field on every judge opinion, not a
+  page footer. No citations — the model has no library, and a fabricated citation
+  attributed to a real judge is the harm being prevented.
+  See `docs/decisions/0005-judges-are-method-models-not-people.md`.
+- **All three judges receive identical input** and never see each other. This is
+  load-bearing: identical input into three methods is the only arrangement in
+  which a divergent ruling means anything.
 
 ## How to work here
 
@@ -83,6 +99,11 @@ These are settled. Do not reopen them without asking.
   assembled at the end loses marks even when the build is sound.
 - A verification gate must be able to fail. A gate that has never caught
   anything, and could not, counts as no gate at all.
+- **Before writing a gate, say out loud what it would forbid, and check that the
+  specification actually forbids it.** A gate is a claim about what must be
+  true. It can enforce the opposite of the specification while looking like
+  verification, and once it is green nobody re-reads it. This rule came out of
+  an actual near-miss; see decision 0004.
 - When I correct you, do not just fix the instance. Ask whether the correction
   belongs in this file as a standing rule. A correction that lives only in the
   chat is gone next session.
@@ -104,11 +125,25 @@ These are settled. Do not reopen them without asking.
 
 Add to this list. One line per failure actually observed, written once, permanently.
 
-- (none recorded yet)
+- 24.08 — Reached for a validation gate that would have required each advocate to
+  conclude in favour of its own seat. That is the exact thing the instructor's
+  simulation rule forbids, and it would have sat in the suite looking like
+  diligence. Caught while writing the spec, before any code. Rule added above.
+- 24.08 — Miscounted the agreed factual record as six entries when it has five.
+  Small, but the indices are load-bearing: opinions cite facts by index, so an
+  off-by-one here corrupts every citation. Count the record, do not remember it.
 
 ## Conventions
 
-- Prompts live in `prompts/`, one file per role, versioned like code.
+- Prompts live in `prompts/`, one file per role, versioned like code. **Paths are
+  stable**: a new version bumps the `version` header in place and adds a
+  changelog row, so `git diff` shows what changed in the text. Never create
+  `…-v2.md`. The backend records the declared version *and* a SHA-256 of the
+  file on every call row, so an edit without a version bump is detectable.
+- Cases live in `cases/*.json` as repository fixtures, not only in the database.
+  A case that exists only in the database is not evidence anyone can open.
+- `agreed_facts` order is permanent. Opinions cite facts by index; a correction
+  appends, it never rewrites or reorders.
 - Secrets live in the environment, never in the repo. Check before committing.
 - Every model call is logged to the database, including the ones that failed.
 - Hard cap on model calls per deliberation; a run that exceeds it aborts.

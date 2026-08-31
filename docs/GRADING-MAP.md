@@ -40,13 +40,13 @@ choices.
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| The panel | Four advocates, three judges | OPEN |
-| **Protocol refuses to combine verdicts** — three reported side by side | `docs/decisions/0002`, and the absence of any aggregation field or logic | DONE (decided) / OPEN (built) |
-| **Charge sheet written precisely as a specification, not free text** | A structured, typed charge sheet — defendant, act, exact question — with stated validation | OPEN |
-| **Seven agent prompts written and versioned** | `prompts/`, one file per role, changes in commit history | OPEN |
-| The cases | Domain pending from the instructor | BLOCKED |
+| The panel | Four advocates (`cases/T-001…json`), three judges (`panel/judges.json`) — defined; not yet wired to code | STARTED |
+| **Protocol refuses to combine verdicts** — three reported side by side | `docs/decisions/0002`; `schemas/opinion.schema.json` has no field able to hold a combined result and forbids nine by name; gate G5 specified | DONE (decided) / STARTED (designed into the shape) / OPEN (built) |
+| **Charge sheet written precisely as a specification, not free text** | `docs/02-charge-sheet-spec.md` (meaning) + `schemas/charge-sheet.schema.json` (enforceable) + `cases/T-001-realm-v-jon-snow.json` (first instance) | DONE (written) / OPEN (validator not yet code) |
+| **Seven agent prompts written and versioned** | `prompts/` — four advocates, three judges, stable paths, `version` headers, changelogs; convention and its reasoning in `prompts/README.md` | DONE (v1.0 written) / OPEN (never yet executed against a model) |
+| The cases | `T-001` supplied by the instructor 24.08 and encoded as a repository fixture; `docs/decisions/0003` | STARTED |
 | Models reached through OpenRouter | Backend calls OpenRouter; key never in the browser | OPEN |
-| **Progression from one model toward several is visible** | Commit history showing the move, driven by the per-call logs | OPEN — start single, then actually carry it |
+| **Progression from one model toward several is visible** | Per-role `MODEL_MAP` specified in `docs/01-spec.md` §3 with all seven entries equal at the start, so the progression is a config diff plus a decision record citing the logs | STARTED (shape fixed) / OPEN (not yet carried) |
 
 ## Third 3 — Your own project (33%)
 
@@ -65,10 +65,10 @@ Specification is yours. Domain does not affect the grade; neither does polish.
 |---|---|---|
 | **Kept on schedule** — module beats, checkpoints on time | Commit timestamps | OPEN — behind; see below |
 | **Documented as you go, not retrofitted** | Doc commits interleaved with code commits, not clustered at the end | OPEN — starts with your first commit |
-| Context files kept **and maintained** across sessions | `CLAUDE.md` with a history of edits, not one initial commit | STARTED |
+| Context files kept **and maintained** across sessions | `CLAUDE.md` with a history of edits, not one initial commit — second edit 24.08 adding three standing rules and the first two entries in the pitfalls list | STARTED |
 | **Commits made before agent invocations** | Clean tree before each turn; the diff attributable to that turn | OPEN — habit starts now |
 | Honest atomic commit messages | One change per commit; messages that do not overstate | OPEN |
-| **Verification gates that catch real failure modes** | Gates that have actually failed at least once, visibly, in history | OPEN |
+| **Verification gates that catch real failure modes** | Eight gates specified in `docs/01-spec.md` §4, each with a written answer to "will this actually fire?"; two properties deliberately reported rather than gated, with the reason | STARTED — the two schemas were exercised with 14 sample objects (turn 001 §6a) and rejected all 10 that should fail, but the validator is not yet in the repo and no gate has fired on real model output, which is the part that counts |
 | Final state left merge-ready | No broken build, no stranded branch, no uncommitted work at the deadline | OPEN |
 
 ---

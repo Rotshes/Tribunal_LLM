@@ -918,26 +918,57 @@ test('a cut-off call fails with a reason that names the timeout', async () => {
   }
 });
 
-test('the deployed call timeout leaves room for two stages inside the platform limit', () => {
+test('the deployed budget fits inside the platform limit', () => {
   // The numbers in netlify/functions/deliberate.js, asserted rather than
-  // trusted. If someone raises the per-call timeout without redoing the
-  // arithmetic, two sequential stages stop fitting and every slow panel goes
-  // back to losing all seven results.
+  // trusted. Two earlier versions of this arithmetic shipped and both lost
+  // whole runs to a 504.
   const PLATFORM_LIMIT_MS = 60_000;
-  const RESERVED_MS = 8_000;
-  const SEQUENTIAL_STAGES = 2;
-  const CALL_TIMEOUT_MS =
-    Math.floor((PLATFORM_LIMIT_MS - RESERVED_MS) / SEQUENTIAL_STAGES) - 2_000;
+  const RESERVED_MS = 15_000;
+  const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
+  const CALL_TIMEOUT_MS = 20_000;
 
-  assert.ok(CALL_TIMEOUT_MS > 0);
+  assert.ok(MODEL_BUDGET_MS > 0);
+  assert.ok(MODEL_BUDGET_MS + RESERVED_MS <= PLATFORM_LIMIT_MS);
   assert.ok(
-    CALL_TIMEOUT_MS * SEQUENTIAL_STAGES + RESERVED_MS < PLATFORM_LIMIT_MS,
-    'two stages plus overhead must finish before the platform gives up',
+    CALL_TIMEOUT_MS * 2 < MODEL_BUDGET_MS,
+    'both sequential stages must be able to run to their cap inside the budget',
   );
 
   const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
-  assert.match(src, /timeoutMs: CALL_TIMEOUT_MS/,
-    'the function must pass the computed timeout, not the 90s default');
+  assert.match(src, /deadlineAt,/, 'the function must pass a deadline, not only a per-call cap');
+  assert.match(src, /timeoutMs: CALL_TIMEOUT_MS/);
+});
+
+test('the deadline shrinks: a later call gets only what is left', async () => {
+  // The defect the deadline exists for. With two independent per-call timeouts,
+  // the judges could spend the full cap no matter how long the advocates took,
+  // so the total was the sum and the platform killed the run.
+  const { makeOpenRouterProvider } = await import('../src/providers/openrouter.js');
+  const before = process.env.OPENROUTER_API_KEY;
+  process.env.OPENROUTER_API_KEY = 'test-key-not-a-real-one'; // g8-ok: a fake value the provider only checks for presence
+  try {
+    // A deadline that has already passed: nothing should be called at all.
+    const spent = makeOpenRouterProvider({
+      jsonMode: 'object',
+      timeoutMs: 20_000,
+      deadlineAt: Date.now() - 1,
+    });
+    const realFetch = globalThis.fetch;
+    let called = 0;
+    globalThis.fetch = () => { called += 1; return Promise.reject(new Error('should not happen')); };
+    try {
+      await assert.rejects(
+        spent.call({ role: 'judge', roleId: 'elon_model', model: 'test/m', system: 's', user: 'u' }),
+        /out of time before judge.elon_model was called/,
+      );
+      assert.equal(called, 0, 'an out-of-budget call must not be paid for');
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  } finally {
+    if (before === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = before; // g8-ok: restoring the caller's own value, not a literal
+  }
 });
 
 test('the G8 pragma cannot pardon actual key material', async () => {

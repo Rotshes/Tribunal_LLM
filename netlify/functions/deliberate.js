@@ -88,40 +88,51 @@ async function runDeliberation(req) {
     });
   }
 
-  // The per-call timeout has to fit inside the platform's budget, or it does
-  // nothing at all.
+  // The time budget.
   //
-  // The default is 90 seconds, which is fine from a terminal and wrong here:
-  // Netlify's synchronous limit is 60 seconds and is not configurable, so a
-  // call slower than 60s can never time out on our side — the platform kills
-  // the whole invocation first. The result was a 504 with SEVEN results lost
-  // and nothing written, where the project's own rule says a failed call should
-  // appear as a failed column beside the ones that succeeded.
+  // Netlify's synchronous limit is 60 seconds and is not configurable. Checked
+  // against the documentation on 31.08.2026 rather than recalled — the figure
+  // in this file was once invented from memory and killed every browser run.
   //
-  // Observed 31.08 on the deployed site: a panel mixing four providers returned
-  // "Inactivity Timeout — too much time has passed" and produced nothing.
+  // TWO ATTEMPTS AT THIS FAILED, and the second is the instructive one:
   //
-  // The arithmetic, kept visible on purpose. The two stages are sequential —
-  // four advocates, then three judges — so the worst case is two call timeouts
-  // back to back, not one:
+  //   1. 90s per call. Longer than the whole invocation was allowed to live, so
+  //      no call could ever time out on our side and the platform killed the
+  //      run instead. 504, seven results lost.
+  //   2. 24s per call, derived as (60 − 8) ÷ 2 stages. Still 504. The
+  //      arithmetic was right and the shape was wrong: two independent
+  //      timeouts are not a budget, they are two chances to spend the maximum.
+  //      48s of models plus a cold start plus four sequential Supabase inserts
+  //      does not fit in 60, and nothing in the code knew how much had already
+  //      been spent.
+  //
+  // So: an absolute DEADLINE, computed once, passed down, and shrinking. Each
+  // call gets whatever is left, capped. A run that overspends early fails its
+  // later calls immediately — cheaply, visibly, and as failed columns beside
+  // whatever did land, which is what this project says a failure should look
+  // like.
   //
   //   60s platform limit
-  //  − 8s for cold start, validation, the Supabase write and the response
-  //  = 52s for the models
-  //  ÷ 2 sequential stages
-  //  = 26s per call, rounded down to 24 for margin
+  //  −15s cold start, seven prompt hashes, four Supabase inserts, the response,
+  //      and margin — the last time this reserve was 8s it was not enough
+  //  = 45s of model time, total, for all seven calls
+  //   20s cap on any single call, so one slow model cannot eat the whole budget
   //
-  // A model that cannot answer in 24 seconds now fails as one call. Six rulings
-  // and one failure is a result; a 504 is not.
-  const PLATFORM_LIMIT_MS = 60_000;   // Netlify, fixed. See netlify.toml.
-  const RESERVED_MS = 8_000;          // everything that is not a model call
-  const SEQUENTIAL_STAGES = 2;        // advocates, then judges
-  const CALL_TIMEOUT_MS =
-    Math.floor((PLATFORM_LIMIT_MS - RESERVED_MS) / SEQUENTIAL_STAGES) - 2_000;
+  // Worst case now: advocates run to 20s, judges start with 25s left and are
+  // capped at 20, so the models stop by 40s and 20s remain for everything else.
+  const PLATFORM_LIMIT_MS = 60_000;   // Netlify, documented, not configurable.
+  const RESERVED_MS = 15_000;         // everything that is not a model call
+  const MODEL_BUDGET_MS = PLATFORM_LIMIT_MS - RESERVED_MS;
+  const CALL_TIMEOUT_MS = 20_000;     // cap on one call, inside that budget
+  const deadlineAt = Date.now() + MODEL_BUDGET_MS;
 
   let provider;
   try {
-    provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: CALL_TIMEOUT_MS });
+    provider = makeOpenRouterProvider({
+      jsonMode: 'object',
+      timeoutMs: CALL_TIMEOUT_MS,
+      deadlineAt,
+    });
   } catch (err) {
     // Missing configuration is an operator error, not a user error, and it must
     // not read as a failed deliberation.

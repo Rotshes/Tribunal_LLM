@@ -86,7 +86,9 @@ paragraph that said a mixed panel exceeding the limit was hypothetical.
 | The function passes the computed timeout, not the 90s default | Test greps the function source | Pass |
 | The G8 pragma cannot pardon key material | Test runs the real checker against a pragma'd fake key in a temp directory | Pass — still fails, as it must |
 | No error escapes the function as a platform 502 | Tests against the exported handler | Pass |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 59 tests, 79 files |
+| The budget fits the documented platform limit | Test recomputes it; limit re-checked against Netlify's docs | Pass |
+| A call with no budget left is never paid for | Test with an expired deadline asserts zero fetches | Pass |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 60 tests, 79 files |
 
 ### 6b. The fix worked, and revealed the next thing
 
@@ -116,6 +118,39 @@ is how you get a blank screen that reads as an answer. It reports.
 undiagnosed. This turn's change makes the next attempt say what it is, which is
 the prerequisite for fixing it and is why it was worth doing first.
 
+### 6c. The second attempt failed too, and the shape was the problem
+
+Deployed the 24-second timeout, retried, got **504 again**.
+
+The arithmetic was not wrong. `(60 − 8) ÷ 2 = 26`, minus margin, is a correct
+answer to the question I asked. The question was wrong. Two independent per-call
+timeouts are not a budget — they are two separate opportunities to spend the
+maximum, and nothing in the code knew how much had already gone. 20 seconds in
+the advocate stage bought the judges nothing; they still had their full 24.
+
+I also re-checked the 60-second limit against Netlify's documentation rather
+than my own note, because `CLAUDE.md` says to and because this file has been
+wrong about it before. It is 60 seconds, not configurable, not plan-dependent.
+The limit was never the thing I had wrong.
+
+The fix is an absolute **deadline**, computed once and passed down, from which
+each call takes what it needs and to which it returns nothing:
+
+```
+  60s platform limit
+ −15s cold start, prompt hashing, four sequential Supabase inserts, response
+ = 45s of model time for all seven calls, total
+  20s cap on any single call
+```
+
+A call that starts with no budget left is not made at all — it fails with
+`out of time before judge.elon_model was called`, costs nothing, and appears as
+a failed column beside whatever did land. That is the behaviour the project has
+claimed since turn 002 and has never once achieved in production.
+
+The reserve went from 8 seconds to 15 for the same reason the shape changed: 8
+was a guess that the evidence disagreed with.
+
 ### 6a. G8 fired on this turn's own test, and this time renaming would not do
 
 Constructing the real provider requires reading the real environment variable,
@@ -144,15 +179,17 @@ disagree with if you are going to.**
 
 ### What I did not verify
 
-- **That 24 seconds is enough for the slow models.** It is derived from the
+- **That 20 seconds is enough for the slow models.** It is derived from the
   platform limit, not measured against Qwen, Solar Pro or Luna. If those models
-  routinely need more than 24s, the picker will now produce failed columns where
-  it used to produce a 504 — better, but still not a working panel. Measuring
+  routinely need more than 20s, the picker will now produce failed columns where
+  it used to produce a 504 — better, and still not a working panel. Measuring
   them is a separate turn.
-- **What the remaining crash actually is.** The timeout fix removed the 504 and
-  a 502 took its place. It is not diagnosed. The last-resort handler was added
-  so the next attempt names it; until that attempt happens, this turn has
-  removed one failure and left another standing.
+- **The deadline in production.** Third attempt at this number. The first two
+  passed their tests and failed on the deployed site, so the tests are not the
+  thing that settles it — one run of the mixed panel on the live site is.
+- **The 15-second reserve.** Better founded than the 8 it replaces, in that 8
+  demonstrably was not enough. Still not measured. Cold start and the four
+  Supabase inserts have never been timed separately.
 - **The 8-second reserve.** A guess with margin in it, not a measurement. Cold
   start plus a Supabase write has never been timed.
 
@@ -161,14 +198,18 @@ disagree with if you are going to.**
 **Locked:** a slow model can no longer destroy a whole deliberation. The
 project's failure paths are reachable in production for the first time.
 
-**Open:** a 502 on the mixed panel, cause unknown, now instrumented to name
-itself on the next run. Whether 24s suits the non-Gemini models. G3, still.
+**Open:** whether the deadline holds on the deployed site — untested there, and
+the two previous versions of this number both passed tests and failed live.
+Whether 20s suits the non-Gemini models. G3, still.
 
-**Next turn:** read what the last-resort handler says, and fix that.
+**Next turn:** confirm the mixed panel returns rulings and failures rather than
+a platform error, then close the project out.
 
 ### Correction issued this turn
 
-**A timeout is only real if it is shorter than every limit above it.** The
-90-second per-call timeout was correct in the terminal and inert in production,
-and nothing in the code connected it to the platform's 60. Any bound now has to
-name what it sits inside.
+**A bound must be shorter than every limit above it — and bounds that run in
+sequence have to share one budget, not hold one each.** The 90-second timeout
+was inert because it was larger than the platform's 60. The 24-second timeout
+was correct per call and wrong in aggregate, because two of them ran back to
+back and neither knew about the other. A deadline is the form that survives
+both mistakes.

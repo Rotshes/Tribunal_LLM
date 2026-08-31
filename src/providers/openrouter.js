@@ -22,6 +22,21 @@ const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
  */
 export function makeOpenRouterProvider({
   timeoutMs = 90_000,
+  // An absolute wall-clock deadline for the WHOLE deliberation, as an epoch
+  // millisecond value. Null means no deadline, which is right for a terminal.
+  //
+  // A per-call timeout is not a budget. The seven calls run in two sequential
+  // stages, so two 24-second timeouts are 48 seconds of models before anything
+  // else has happened — and on the deployed site that plus a cold start and a
+  // database write went past Netlify's 60-second limit and lost the whole run
+  // for the second time (turn 012 §6c).
+  //
+  // A deadline is a budget, because it SHRINKS. Whatever the first stage
+  // spends, the second stage does not get. A run that has already used its
+  // time fails its remaining calls immediately instead of taking the platform
+  // down with it — which is the difference between a partial result and no
+  // result at all.
+  deadlineAt = null,
   jsonMode = 'object',
 } = {}) {
   const key = process.env.OPENROUTER_API_KEY;
@@ -65,8 +80,23 @@ export function makeOpenRouterProvider({
         );
       }
 
+      // The effective timeout is the smaller of the per-call bound and what is
+      // left of the deliberation's budget.
+      const remaining = deadlineAt == null ? Infinity : deadlineAt - Date.now();
+      const effectiveMs = Math.min(timeoutMs, remaining);
+
+      if (effectiveMs <= 0) {
+        // Out of budget before this call started. Fail it here rather than
+        // spending money on an answer that cannot be returned: the platform
+        // would kill the invocation mid-flight and every other result with it.
+        throw new Error(
+          `out of time before ${role}.${roleId} was called — the deliberation's ` +
+            'budget was spent by the calls before it, so this one was not made',
+        );
+      }
+
       const ac = new AbortController();
-      const timer = setTimeout(() => ac.abort(), timeoutMs);
+      const timer = setTimeout(() => ac.abort(), effectiveMs);
 
       try {
         const res = await fetch(ENDPOINT, {
@@ -116,7 +146,7 @@ export function makeOpenRouterProvider({
         // failure list on screen and into `failure_reason` in the database.
         if (err.name === 'AbortError' || /aborted/i.test(err.message ?? '')) {
           throw new Error(
-            `no answer within ${Math.round(timeoutMs / 1000)}s (${model}) — the call was cut off, not refused`,
+            `no answer within ${Math.round(effectiveMs / 1000)}s (${model}) — the call was cut off, not refused`,
           );
         }
         throw err;

@@ -154,11 +154,13 @@ kept as evidence; a new one joins its group rather than starting a new line.
   support on OpenRouter is per *endpoint*, not per model: without
   `require_parameters` a call is routed to one that ignores it, the request
   succeeds, prose comes back, and you pay (31.08).
-- **A bound is only real if it is smaller than every limit above it.** The
-  per-call timeout was 90s inside a platform limit of 60, so no call could ever
-  fail on our side and a slow panel lost all seven results to a 504 — every
-  failure path in the project unreachable in production behind one number
-  (31.08). A bound must name what it sits inside.
+- **A bound is only real if it is smaller than every limit above it — and
+  bounds that run in sequence must share one budget, not hold one each.** A 90s
+  per-call timeout inside a 60s platform limit meant no call could ever fail on
+  our side, so a slow panel lost all seven results to a 504 (31.08). Replacing
+  it with 24s per call failed the same way: two sequential stages spent it
+  twice, and neither knew about the other (31.08). Deadlines survive both;
+  per-call timeouts do not.
 
 ## Conventions
 

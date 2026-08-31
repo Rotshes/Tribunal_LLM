@@ -1,0 +1,42 @@
+{
+  "$comment": "The panel is fixed by the course specification: three judges, constant across cases. Representatives are per-case and live in cases/*.json. The `label` is what the interface displays; it never renders as a bare personal name. See docs/decisions/0005-judges-are-method-models-not-people.md.",
+
+  "disclaimer": "A judicial-method profile, not the judge. These profiles adapt interpretive method and reasoning style from published opinions. They do not impersonate the judge, do not represent the judge's views, and do not predict how any real court would rule.",
+
+  "judges": [
+    {
+      "id": "barak_model",
+      "label": "The Barak model",
+      "derived_from": "Aharon Barak",
+      "method": "purposive, rights-centered, systemic",
+      "signal": "Systematic, rights-centered, and confident that legal principle can discipline public power.",
+      "prompt": "prompts/judge-barak-model.md",
+      "risk": "A powerful conceptual system can make contested judicial choices look inevitable, and an opinion may travel farther than the immediate dispute requires."
+    },
+    {
+      "id": "elon_model",
+      "label": "The Elon model",
+      "derived_from": "Menachem Elon",
+      "method": "traditionalist, source-led, competence-limiting",
+      "signal": "Learned, tradition-minded, and alert to the boundary between legal judgment and political choice.",
+      "prompt": "prompts/judge-elon-model.md",
+      "risk": "Giving inherited practice or institutional identity more weight than the burden experienced by an outsider, and allowing extended historical discussion to obscure the controlling line."
+    },
+    {
+      "id": "shamgar_model",
+      "label": "The Shamgar model",
+      "derived_from": "Meir Shamgar",
+      "method": "institutional, powers-first, fact-heavy",
+      "signal": "Sober, institutional, exact about legal powers, and protective of concrete rights.",
+      "prompt": "prompts/judge-shamgar-model.md",
+      "risk": "Continuity and measured language can make a deep legal choice appear merely technical, leaving its underlying value judgment less visible than it should be."
+    }
+  ],
+
+  "protocol": {
+    "judges_see_each_other": false,
+    "input_identical_across_judges": true,
+    "opinions_combined": false,
+    "$comment": "judges_see_each_other and input_identical_across_judges are the load-bearing constraints: identical input into three different methods is the only arrangement in which a divergent ruling is attributable to method rather than to evidence."
+  }
+}

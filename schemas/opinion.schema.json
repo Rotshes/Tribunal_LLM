@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tribunal.local/schemas/opinion.schema.json",
+  "title": "Opinion",
+  "description": "The return shape of a single model call. Two variants selected by `role`. Gate G2 validates every response against this. Gate G3 separately checks that every index in relies_on_facts is within range of the case's agreed_facts array - a bound the schema cannot express because it depends on the case.",
+
+  "type": "object",
+  "required": ["case_id", "role", "model_id", "prompt_version", "prompt_sha256", "relies_on_facts"],
+
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^T-[0-9]{3}$" },
+    "role": { "enum": ["advocate", "judge"] },
+    "model_id": { "type": "string", "minLength": 3 },
+    "prompt_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "prompt_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hash of the prompt file at call time. Lets an opinion be traced to the exact text that produced it, and makes an un-bumped version header detectable."
+    },
+    "relies_on_facts": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "description": "Zero-based indices into the case's agreed_facts. May be empty only for an opinion that expressly rests on the absence of a fact, and then `no_facts_reason` is required."
+    },
+    "no_facts_reason": { "type": "string", "minLength": 20, "maxLength": 400 }
+  },
+
+  "allOf": [
+    {
+      "if": { "properties": { "relies_on_facts": { "maxItems": 0 } } },
+      "then": { "required": ["no_facts_reason"] }
+    },
+    {
+      "if": { "properties": { "role": { "const": "advocate" } } },
+      "then": {
+        "required": ["representative_id", "seat", "position", "key_points", "argument"],
+        "properties": {
+          "representative_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$" },
+          "seat": { "enum": ["defense", "prosecution"] },
+          "position": {
+            "enum": ["justified", "not_justified", "mixed"],
+            "description": "The advocate's own conclusion. MAY contradict its seat. No gate may require agreement between `position` and `seat` - the instructor's simulation rule fixes the procedural role only. Divergence is recorded and reported, never blocked."
+          },
+          "key_points": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": { "type": "string", "minLength": 20, "maxLength": 400 }
+          },
+          "argument": {
+            "type": "string",
+            "minLength": 400,
+            "maxLength": 6000,
+            "description": "The prose argument, in character."
+          },
+          "concedes": {
+            "type": "array",
+            "maxItems": 5,
+            "items": { "type": "string", "minLength": 20, "maxLength": 400 },
+            "description": "What this advocate accepts against its own seat. Optional, and its presence is a health signal: four advocates that concede nothing are probably one advocate."
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "role": { "const": "judge" } } },
+      "then": {
+        "required": ["judge_id", "method", "ruling", "grounds", "reasoning", "responds_to", "disclaimer"],
+        "properties": {
+          "judge_id": { "enum": ["barak_model", "elon_model", "shamgar_model"] },
+          "method": { "type": "string", "minLength": 5, "maxLength": 120 },
+          "ruling": {
+            "enum": ["justified", "not_justified"],
+            "description": "The permitted rulings, from the case's scope.decides. No third value. An opinion that cannot reach one of these is a failed call, not an abstention."
+          },
+          "grounds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": { "type": "string", "minLength": 20, "maxLength": 400 },
+            "description": "The load-bearing reasons, each stated so that another judge could disagree with it specifically."
+          },
+          "reasoning": {
+            "type": "string",
+            "minLength": 600,
+            "maxLength": 9000,
+            "description": "The opinion in the voice of the method."
+          },
+          "responds_to": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "required": ["representative_id", "answer"],
+              "additionalProperties": false,
+              "properties": {
+                "representative_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,40}$" },
+                "answer": { "type": "string", "minLength": 20, "maxLength": 600 }
+              }
+            },
+            "description": "Direct answers to advocate arguments. At least two, matching the instruction in the judge prompts. A judge that answers no one has not judged the case that was argued. The further requirement - that at least one answered advocate sits in the seat ruled against - depends on the case and is checked by G2b in code, not here."
+          },
+          "disclaimer": {
+            "type": "string",
+            "minLength": 20,
+            "description": "Carried as data, not as page decoration, so it cannot be lost in a redesign. Checked by G6."
+          }
+        },
+        "not": {
+          "anyOf": [
+            { "required": ["sentence"] },
+            { "required": ["penalty"] },
+            { "required": ["punishment"] },
+            { "required": ["verdict"] },
+            { "required": ["majority"] },
+            { "required": ["consensus"] },
+            { "required": ["score"] },
+            { "required": ["confidence"] },
+            { "required": ["agrees_with"] }
+          ],
+          "$comment": "scope.imposes_sentence is false and scope.combines_opinions is false. There is deliberately nowhere in this shape to put a sentence, a combined result, or one judge's assessment of another. Checked structurally by G6 rather than by reading prose."
+        }
+      }
+    }
+  ]
+}

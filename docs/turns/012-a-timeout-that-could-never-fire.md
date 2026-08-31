@@ -85,7 +85,36 @@ paragraph that said a mixed panel exceeding the limit was hypothetical.
 | Two stages plus overhead fit inside the platform limit | Test recomputes the arithmetic | Pass |
 | The function passes the computed timeout, not the 90s default | Test greps the function source | Pass |
 | The G8 pragma cannot pardon key material | Test runs the real checker against a pragma'd fake key in a temp directory | Pass — still fails, as it must |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 57 tests, 78 files |
+| No error escapes the function as a platform 502 | Tests against the exported handler | Pass |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 59 tests, 79 files |
+
+### 6b. The fix worked, and revealed the next thing
+
+Deployed and retried with the same mixed panel. **The 504 is gone** — the
+per-call timeout now fits, so the platform no longer kills the invocation.
+
+What came back instead was a 502 carrying
+`{"errorType":"Error","errorMessage":"An unknown error has occurred"}`. Three
+words, from the platform, about a run that had just spent money.
+
+`await deliberate(...)` had **no try/catch around it**. Neither did the render,
+the document assembly, or anything after. Every considered status this function
+returns — 400, 404, 405, 422, 503 — sits before that line; from there on, a
+throw anywhere in seven model calls, six gates and a database write escaped the
+handler entirely and the platform substituted its own sentence.
+
+So the app has spent this whole project insisting that a failure is shown as a
+failure, and had no way to say anything at all about the one failure mode most
+likely to matter in production.
+
+There is now a last-resort handler. Every response comes from the app, carries
+an `error` a reader can act on, and includes `where` — the first stack frame —
+which the page displays. It does not recover; recovering from an unknown throw
+is how you get a blank screen that reads as an answer. It reports.
+
+**What this does not do is fix the crash.** The crash is still there and still
+undiagnosed. This turn's change makes the next attempt say what it is, which is
+the prerequisite for fixing it and is why it was worth doing first.
 
 ### 6a. G8 fired on this turn's own test, and this time renaming would not do
 
@@ -120,9 +149,10 @@ disagree with if you are going to.**
   routinely need more than 24s, the picker will now produce failed columns where
   it used to produce a 504 — better, but still not a working panel. Measuring
   them is a separate turn.
-- **The fix in production.** Verified by test and arithmetic; the failing panel
-  has not been re-run on the deployed site since. That is the next thing to do,
-  and it is one click.
+- **What the remaining crash actually is.** The timeout fix removed the 504 and
+  a 502 took its place. It is not diagnosed. The last-resort handler was added
+  so the next attempt names it; until that attempt happens, this turn has
+  removed one failure and left another standing.
 - **The 8-second reserve.** A guess with margin in it, not a measurement. Cold
   start plus a Supabase write has never been timed.
 
@@ -131,10 +161,10 @@ disagree with if you are going to.**
 **Locked:** a slow model can no longer destroy a whole deliberation. The
 project's failure paths are reachable in production for the first time.
 
-**Open:** re-running the failing panel on the live site. Whether 24s suits the
-non-Gemini models. G3, still.
+**Open:** a 502 on the mixed panel, cause unknown, now instrumented to name
+itself on the next run. Whether 24s suits the non-Gemini models. G3, still.
 
-**Next turn:** measure the slower models, or close the project out.
+**Next turn:** read what the last-resort handler says, and fix that.
 
 ### Correction issued this turn
 

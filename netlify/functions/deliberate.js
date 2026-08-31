@@ -32,7 +32,36 @@ function loadCase(caseId) {
   return file ? JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) : null;
 }
 
+// The last-resort handler.
+//
+// Everything below returns a considered status with a message in the app's own
+// words — 400, 404, 405, 422, 503. Anything that ESCAPES gets replaced by the
+// platform with `{"errorType":"Error","errorMessage":"An unknown error has
+// occurred"}` and a 502, which tells the reader nothing and tells us nothing.
+//
+// That happened on the deployed site (turn 012 §6b): `await deliberate(...)`
+// had no catch around it, so a throw anywhere inside seven model calls, six
+// gates, the render or the database write surfaced as three identical words.
+// The project's own rule is that a failure is shown as a failure — a failure
+// the app declines to describe does not meet it.
+//
+// This wrapper exists so the function always answers for itself. It is not a
+// place to recover: it reports and gets out of the way.
 export default async function handler(req) {
+  try {
+    return await runDeliberation(req);
+  } catch (err) {
+    return json(500, {
+      error: 'The tribunal failed unexpectedly.',
+      detail: err?.message ?? String(err),
+      // The first frame, which is usually the only one that identifies where.
+      // Not the whole stack: this response is public.
+      where: String(err?.stack ?? '').split('\n')[1]?.trim() ?? null,
+    });
+  }
+}
+
+async function runDeliberation(req) {
   if (req.method !== 'POST') return json(405, { error: 'POST only' });
 
   let body;

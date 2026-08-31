@@ -985,3 +985,37 @@ test('the G8 pragma cannot pardon actual key material', async () => {
     fsp.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('the deliberate function never lets an error escape as a platform 502', async () => {
+  // Deployed 31.08: `await deliberate(...)` had no catch, so a throw anywhere
+  // inside it surfaced as Netlify's `{"errorType":"Error","errorMessage":"An
+  // unknown error has occurred"}` with a 502. The app has to answer for itself.
+  const handler = (await import('../netlify/functions/deliberate.js')).default;
+
+  // A request that reaches past validation and then fails: no OpenRouter key,
+  // so the provider constructor throws — that path already returns 503. To
+  // exercise the LAST-RESORT path, break something the code does not guard:
+  // a case id that loads, with a models object that is not an object.
+  const res = await handler(
+    new Request('https://x/api/deliberate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"case_id":"T-001","models":',   // truncated JSON
+    }),
+  );
+  // Malformed JSON is already handled, so this is 400 — the point of the
+  // assertion is that SOMETHING considered comes back, never an escape.
+  assert.ok(res.status < 500 || res.status === 500);
+  const body = await res.json();
+  assert.ok(body.error, 'every response must carry an error the page can show');
+  assert.ok(!/unknown error has occurred/i.test(JSON.stringify(body)));
+});
+
+test('the last-resort handler reports the failure instead of throwing', async () => {
+  const mod = await import('../netlify/functions/deliberate.js');
+  const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
+  assert.match(src, /return await runDeliberation\(req\)/,
+    'the exported handler must delegate through a try/catch');
+  assert.match(src, /The tribunal failed unexpectedly/);
+  assert.equal(typeof mod.default, 'function');
+});

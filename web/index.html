@@ -431,8 +431,10 @@ async function run() {
       return;
     }
     if (!res.ok) {
+      // `where` comes from the function's last-resort handler: the first stack
+      // frame, which is usually the only thing that says where it broke.
       showError(doc.error ?? `The tribunal could not sit (${res.status}).`,
-        doc.detail ? [doc.detail] : []);
+        [doc.detail, doc.where].filter(Boolean));
       return;
     }
 

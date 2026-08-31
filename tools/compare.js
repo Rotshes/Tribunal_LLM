@@ -32,25 +32,62 @@ const JUDGES = ['barak_model', 'elon_model', 'shamgar_model'];
 const SHORT = { barak_model: 'barak', elon_model: 'elon', shamgar_model: 'shamgar' };
 const R = { justified: 'just', not_justified: 'NOT', undefined: '—' };
 
-// The database is the record. Local files are the fallback for a machine with
-// no Supabase configured — and they are all that exists for runs made before
-// turn 006. Runs that came through the browser exist ONLY in the database: the
-// Netlify function has no local disk to write to, which is why reading from
-// here matters rather than being a nicety.
+// The record is the UNION of both sources, deduplicated by deliberation_id.
+//
+// Neither one is complete on its own, and preferring either loses runs:
+//   - Runs before turn 006 exist ONLY as local files; Supabase did not exist.
+//   - Runs through the browser exist ONLY in Supabase; the Netlify function has
+//     no local disk to write to.
+//
+// Preferring Supabase was the first attempt and it silently dropped nine runs,
+// including the whole json-mode comparison the turn 004 findings rest on. A
+// comparison tool that quietly shows a subset is worse than one that shows
+// nothing, because the subset still looks like an answer.
+//
+// Where a run is in both, the database wins: it is the copy a stranger could
+// open.
 let runs = [];
-let source = 'logs/deliberations';
+const sources = [];
 
+const local = loadDeliberations();
+if (local.length) sources.push(`${local.length} local`);
+
+let remote = [];
 if (supabaseConfigured()) {
   try {
-    runs = await readDeliberations();
-    source = 'Supabase';
+    remote = await readDeliberations();
+    sources.push(`${remote.length} in Supabase`);
   } catch (err) {
     console.error(`\x1b[31mSupabase read failed: ${err.message}\x1b[0m`);
-    console.error('\x1b[2mFalling back to local files. App runs will be missing.\x1b[0m');
-    runs = loadDeliberations();
+    console.error('\x1b[2mShowing local files only. Runs made through the app will be missing.\x1b[0m');
   }
-} else {
-  runs = loadDeliberations();
+}
+
+const byId = new Map();
+for (const d of local) byId.set(d.deliberation_id, d);
+for (const d of remote) {
+  const existing = byId.get(d.deliberation_id);
+  // The database row is authoritative, but the local file holds fields the
+  // schema has no column for — the failure lists compare needs for its
+  // "why calls failed" section. Keep those.
+  byId.set(
+    d.deliberation_id,
+    existing
+      ? {
+          ...d,
+          advocate_failures: existing.advocate_failures ?? [],
+          judge_failures: existing.judge_failures ?? [],
+          usage: { ...existing.usage, ...pruneNulls(d.usage) },
+        }
+      : d,
+  );
+}
+runs = [...byId.values()].sort((a, b) => String(a.ran_at).localeCompare(String(b.ran_at)));
+
+const source = sources.length ? sources.join(' + ') : 'nothing';
+
+function pruneNulls(o) {
+  return Object.fromEntries(Object.entries(o ?? {}).filter(([, v]) => v != null));
 }
 
 if (runs.length === 0) {
@@ -83,7 +120,7 @@ const describeModels = (d) => {
 console.log('');
 console.log(
   bold(`${runs.length} stored deliberation${runs.length === 1 ? '' : 's'}`) +
-    dim(`  ·  from ${source}`),
+    dim(`  ·  ${source}, merged`),
 );
 console.log('');
 console.log(

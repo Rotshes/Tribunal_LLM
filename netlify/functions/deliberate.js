@@ -59,9 +59,40 @@ export default async function handler(req) {
     });
   }
 
+  // The per-call timeout has to fit inside the platform's budget, or it does
+  // nothing at all.
+  //
+  // The default is 90 seconds, which is fine from a terminal and wrong here:
+  // Netlify's synchronous limit is 60 seconds and is not configurable, so a
+  // call slower than 60s can never time out on our side — the platform kills
+  // the whole invocation first. The result was a 504 with SEVEN results lost
+  // and nothing written, where the project's own rule says a failed call should
+  // appear as a failed column beside the ones that succeeded.
+  //
+  // Observed 31.08 on the deployed site: a panel mixing four providers returned
+  // "Inactivity Timeout — too much time has passed" and produced nothing.
+  //
+  // The arithmetic, kept visible on purpose. The two stages are sequential —
+  // four advocates, then three judges — so the worst case is two call timeouts
+  // back to back, not one:
+  //
+  //   60s platform limit
+  //  − 8s for cold start, validation, the Supabase write and the response
+  //  = 52s for the models
+  //  ÷ 2 sequential stages
+  //  = 26s per call, rounded down to 24 for margin
+  //
+  // A model that cannot answer in 24 seconds now fails as one call. Six rulings
+  // and one failure is a result; a 504 is not.
+  const PLATFORM_LIMIT_MS = 60_000;   // Netlify, fixed. See netlify.toml.
+  const RESERVED_MS = 8_000;          // everything that is not a model call
+  const SEQUENTIAL_STAGES = 2;        // advocates, then judges
+  const CALL_TIMEOUT_MS =
+    Math.floor((PLATFORM_LIMIT_MS - RESERVED_MS) / SEQUENTIAL_STAGES) - 2_000;
+
   let provider;
   try {
-    provider = makeOpenRouterProvider({ jsonMode: 'object' });
+    provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: CALL_TIMEOUT_MS });
   } catch (err) {
     // Missing configuration is an operator error, not a user error, and it must
     // not read as a failed deliberation.

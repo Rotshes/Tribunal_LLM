@@ -45,9 +45,24 @@
 # Shape: four advocate calls concurrently, then three judge calls concurrently,
 # against a 30s local cap and a 60s production one.
 #
-# If a slow model on every role ever exceeds even that, the remaining answer is
-# a background function with the page polling for the result. Not needed yet,
-# and it would cost the page its single synchronous request.
+# MEASURED, 31.08.2026, the committed allocation (3.7-flash advocates,
+# flash-lite judges):
+#   waited 20.8s  ·  model time (sum of 7 calls) 66.1s  ·  concurrency gain 3.18x
+#
+# A MIXED PANEL DID EXCEED IT. On the deployed site, a panel spanning four
+# providers returned Netlify's own "Inactivity Timeout" 504 and lost all seven
+# results. The cause was not the models being slow in itself: the per-call
+# timeout was 90 SECONDS, longer than the platform's 60, so no call could ever
+# fail on our side and the platform killed the whole invocation instead.
+#
+# The function now computes a per-call timeout that fits — see the arithmetic in
+# netlify/functions/deliberate.js. A model that cannot answer in time fails as
+# one call, which is what the project's rules say should happen: six rulings and
+# a failed column is a result, a 504 is not.
+#
+# If even that stops fitting, the remaining answer is a background function with
+# the page polling for the result. Not needed yet, and it would cost the page
+# its single synchronous request.
 
 [dev]
   publish = "web"

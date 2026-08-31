@@ -869,3 +869,119 @@ test('the runs endpoint rejects anything but GET', async () => {
   const res = await handler(new Request('https://x/api/runs', { method: 'POST' }));
   assert.equal(res.status, 405);
 });
+
+// ------------------------------------------- the call timeout (turn 012)
+
+test('a cut-off call fails with a reason that names the timeout', async () => {
+  // Deployed 31.08: a mixed panel returned Netlify's 504 and lost all seven
+  // results, because the per-call timeout was 90s and the platform limit is 60.
+  // The platform always won, so no call could ever fail on our side. Now one
+  // can — and when it does, "This operation was aborted" is not a reason
+  // anybody can act on.
+  const { makeOpenRouterProvider } = await import('../src/providers/openrouter.js');
+  const before = process.env.OPENROUTER_API_KEY;
+  // Constructing the real provider requires the real variable name, so this
+  // line cannot be renamed the way turn 003's fixture was. The pragma is on the
+  // line itself, where a reviewer reading the assignment also reads the reason.
+  process.env.OPENROUTER_API_KEY = 'test-key-not-a-real-one'; // g8-ok: a fake value the provider only checks for presence
+  try {
+    const provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: 20 });
+    // A fetch that never settles until it is aborted, which is the real shape.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (_url, opts) =>
+      new Promise((_resolve, reject) => {
+        opts.signal.addEventListener('abort', () => {
+          const e = new Error('This operation was aborted');
+          e.name = 'AbortError';
+          reject(e);
+        });
+      });
+    try {
+      await assert.rejects(
+        provider.call({
+          role: 'judge', roleId: 'barak_model', model: 'test/slow',
+          system: 's', user: 'u',
+        }),
+        (err) => {
+          assert.match(err.message, /no answer within 0s|no answer within \d+s/);
+          assert.match(err.message, /test\/slow/, 'the reason must name the model');
+          assert.ok(!/operation was aborted/i.test(err.message));
+          return true;
+        },
+      );
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  } finally {
+    if (before === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = before; // g8-ok: restoring the caller's own value, not a literal
+  }
+});
+
+test('the deployed call timeout leaves room for two stages inside the platform limit', () => {
+  // The numbers in netlify/functions/deliberate.js, asserted rather than
+  // trusted. If someone raises the per-call timeout without redoing the
+  // arithmetic, two sequential stages stop fitting and every slow panel goes
+  // back to losing all seven results.
+  const PLATFORM_LIMIT_MS = 60_000;
+  const RESERVED_MS = 8_000;
+  const SEQUENTIAL_STAGES = 2;
+  const CALL_TIMEOUT_MS =
+    Math.floor((PLATFORM_LIMIT_MS - RESERVED_MS) / SEQUENTIAL_STAGES) - 2_000;
+
+  assert.ok(CALL_TIMEOUT_MS > 0);
+  assert.ok(
+    CALL_TIMEOUT_MS * SEQUENTIAL_STAGES + RESERVED_MS < PLATFORM_LIMIT_MS,
+    'two stages plus overhead must finish before the platform gives up',
+  );
+
+  const src = fs.readFileSync('netlify/functions/deliberate.js', 'utf8');
+  assert.match(src, /timeoutMs: CALL_TIMEOUT_MS/,
+    'the function must pass the computed timeout, not the 90s default');
+});
+
+test('the G8 pragma cannot pardon actual key material', async () => {
+  // Turn 012 gave G8 a per-line escape so a test could set the real env var.
+  // An escape hatch on a secret scanner is only acceptable if it cannot cover
+  // the thing the scanner exists for, so that limit is asserted here rather
+  // than trusted to the comment next to it.
+  const { execFileSync } = await import('node:child_process');
+  const fsp = await import('node:fs');
+  const os = await import('node:os');
+  const pathMod = await import('node:path');
+
+  const script = pathMod.resolve('tools/repo-checks.js');
+  const tmp = fsp.mkdtempSync(pathMod.join(os.tmpdir(), 'g8-'));
+  const cwd = process.cwd();
+
+  // Built at runtime: written as a literal, this test file would itself be a
+  // leak by G8's own rule — correctly.
+  const keyish = 'sk-or-v1-' + 'a1b2c3d4'.repeat(3);
+
+  try {
+    fsp.writeFileSync(
+      pathMod.join(tmp, 'sneaky.js'),
+      `const k = '${keyish}'; // g8-ok: claiming this is fine does not make it fine\n`,
+    );
+    process.chdir(tmp);
+    let failed = false;
+    try {
+      execFileSync(process.execPath, [script], { stdio: 'pipe' });
+    } catch (err) {
+      failed = true;
+      assert.match(String(err.stderr), /looks like a live secret/);
+    }
+    assert.ok(failed, 'a pragma pardoned a real key pattern');
+
+    // And the pardonable case still passes, or the pragma would be pointless.
+    fsp.rmSync(pathMod.join(tmp, 'sneaky.js'));
+    fsp.writeFileSync(
+      pathMod.join(tmp, 'fine.js'),
+      `process.env.OPENROUTER_API_KEY = 'x'; // g8-ok: a test fixture\n`,
+    );
+    execFileSync(process.execPath, [script], { stdio: 'pipe' });
+  } finally {
+    process.chdir(cwd);
+    fsp.rmSync(tmp, { recursive: true, force: true });
+  }
+});

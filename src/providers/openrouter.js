@@ -108,6 +108,18 @@ export function makeOpenRouterProvider({
             cost: body.usage?.cost ?? null,
           },
         };
+      } catch (err) {
+        // An aborted fetch throws "This operation was aborted", which says
+        // nothing about why. This is now a path that fires in production —
+        // the deployed function sets a timeout that fits Netlify's 60-second
+        // limit — so the reason has to name itself: it goes straight into the
+        // failure list on screen and into `failure_reason` in the database.
+        if (err.name === 'AbortError' || /aborted/i.test(err.message ?? '')) {
+          throw new Error(
+            `no answer within ${Math.round(timeoutMs / 1000)}s (${model}) — the call was cut off, not refused`,
+          );
+        }
+        throw err;
       } finally {
         clearTimeout(timer);
       }

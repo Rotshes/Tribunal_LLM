@@ -35,6 +35,27 @@ const G8_PATTERNS = [
   /SUPABASE_SERVICE_KEY\s*=\s*\S+/,
 ];
 
+// Key MATERIAL is never exemptible. These two patterns match the actual shape
+// of a key, so a line matching one is a leak whatever it claims about itself,
+// and no pragma can wave it through.
+const G8_UNPARDONABLE = [/sk-or-v1-[A-Za-z0-9]{16,}/, /sb_secret_[A-Za-z0-9]{16,}/];
+
+// The other patterns match `NAME = value`, which is the shape of a leaked .env
+// line — and also the shape of a test legitimately setting the variable. That
+// has now happened twice.
+//
+// The first time, the test did not need the real variable name and the fixture
+// was renamed. The second time it did: a test of the call-timeout path has to
+// construct the real provider, which reads the real variable. Renaming was not
+// available, and the alternatives were worse than a pragma — writing
+// `process.env[SOME_VAR] = …` would have passed the scan by hiding from it,
+// which is an exemption nobody can review.
+//
+// So: `g8-ok: <reason>`, the same visible per-line escape G5 uses, and it
+// cannot cover key material. A reason is required — a bare pragma does not
+// count — because the point is that a later reader can judge it.
+const G8_PRAGMA = /g8-ok:\s*\S+/;
+
 function* walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (SKIP_DIRS.has(entry.name)) continue;
@@ -75,6 +96,9 @@ for (const file of walk('.')) {
   }
 
   text.split('\n').forEach((line, i) => {
+    const pardonable = !G8_UNPARDONABLE.some((p) => p.test(line));
+    if (pardonable && G8_PRAGMA.test(line)) return;
+
     for (const p of G8_PATTERNS) {
       if (p.test(line)) {
         problems.push(`G8: ${rel}:${i + 1} looks like a live secret`);

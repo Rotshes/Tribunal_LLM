@@ -390,13 +390,36 @@ async function run() {
     let doc = null;
     try { doc = JSON.parse(raw); } catch { /* not JSON; handled below */ }
 
+    // A platform failure is diagnosed by STATUS, before the body is consulted.
+    //
+    // This function never returns 502 or 504 — every path in it returns 200,
+    // 400, 404, 405, 422 or 503 with an `error` field. So either of these came
+    // from Netlify, and the only thing that produces them here is a run that
+    // crashed or exceeded the 60-second synchronous limit.
+    //
+    // Checking the body first was wrong: Netlify's timeout response is itself
+    // JSON, with `errorType`/`errorMessage` and no `error`, so it parsed
+    // cleanly and fell through to the generic branch — which printed "The
+    // tribunal could not sit (502)" and dropped the one sentence that explains
+    // what actually happened. Same shape as the original defect this whole
+    // block exists for: a platform error wearing the costume of an app error.
+    if (res.status === 502 || res.status === 504) {
+      showError(
+        `The run did not finish (HTTP ${res.status}).`,
+        [
+          'This is the platform, not the tribunal: the run either crashed or exceeded the 60-second function limit.',
+          'Seven calls on the committed allocation take about 21 seconds. A slow model chosen for several roles is what pushes it over — try fewer changed roles, or Reset to the committed defaults.',
+          (raw.slice(0, 160).replace(/\s+/g, ' ').trim()) || '(empty response)',
+        ],
+      );
+      return;
+    }
+
     if (!doc) {
       showError(
         `The tribunal did not answer properly (HTTP ${res.status}).`,
         [
-          res.status === 502 || res.status === 504
-            ? 'This usually means the run exceeded the platform time limit. Seven calls take about 35 seconds; a slower model on every role can take longer.'
-            : 'The response was not JSON. The first part of it is below.',
+          'The response was not JSON. The first part of it is below.',
           raw.slice(0, 200).replace(/\s+/g, ' ').trim() || '(empty response)',
         ],
       );

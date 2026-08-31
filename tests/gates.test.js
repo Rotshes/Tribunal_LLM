@@ -1160,3 +1160,28 @@ test('the picker warns about models observed to fail', () => {
   assert.match(page, /unreliable/);
   assert.match(page, /m\.observed/, 'the warning must come from the recorded observation');
 });
+
+test('a rejected model report carries no account identifier and pastes as valid JSON', async () => {
+  // The first version of try-model printed the provider's error body raw. On a
+  // 400 that put the account's user_id into the line offered for
+  // panel/models.json — an identifier headed for a public repository — with
+  // unescaped double quotes that would have broken the file on paste. Neither
+  // is the model's fault and neither belongs in a record of what the model did.
+  const src = fs.readFileSync('tools/try-model.js', 'utf8');
+  assert.match(src, /function clean\(message\)/);
+  assert.match(src, /JSON\.stringify\(`\$\{outcome\}/,
+    'the pasteable line must be JSON-escaped, not concatenated');
+
+  const body = src.match(/function clean\(message\)[\s\S]*?\n}/)[0];
+  const clean = new Function('return (' + body.replace('function clean', 'function') + ')')();
+
+  const raw =
+    'OpenRouter 400: {"error":{"message":"x is not a valid model ID","code":400},' +
+    '"user_id":"user_ABCDEFGHIJKLMNOP"}';
+  const out = clean(raw);
+
+  assert.ok(!/user_ABCDEFGHIJKLMNOP/.test(out), 'an account id reached the record');
+  assert.match(out, /not a valid model ID/, 'the useful part must survive');
+  // Round-trips through JSON, which is the only thing the paste has to do.
+  assert.equal(JSON.parse(JSON.stringify({ observed: out })).observed, out);
+});

@@ -7,6 +7,12 @@
 
   "$default_note": "This is the fallback only. The committed per-role allocation lives in modelMap() in src/config.js and remains the artifact the model-progression argument rests on. A visitor's choice is an override on that default for one run; it is not the project's model decision.",
 
+  "$rejected": {
+    "$comment": "Candidates tried with `npm run try-model` and NOT added. Kept so the same model is not evaluated twice, and so the menu's shortness is a recorded result rather than an oversight. A rejection here is one observation, like an `observed` field, and is dated for the same reason: endpoints and capacity move.",
+    "deepseek/deepseek-v4-flash-0731": "no answer within 120s — the call was cut off, not refused (31.08.2026). Two minutes is longer than any seat should wait; not a borderline case.",
+    "inclusionai/ling-3.0-flash": "returned JSON in 29s but omitted the required `reasoning` field, so G2 rejected it (31.08.2026). It can produce the shape and not the substance, which is the harder failure to notice."
+  },
+
   "models": [
     {
       "id": "google/gemini-3.5-flash-lite",

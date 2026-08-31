@@ -78,7 +78,8 @@ and the three budgets that failed.
 | Every allowlisted model records what it was observed to do | Test asserts a verdict and a date on each | Pass |
 | The picker warns about models observed to fail | Test | Pass |
 | The four-provider panel completes without a platform error | Live run, 31.08 | Pass — 4 of 7 calls succeeded, 3 failed for model reasons (§6d) |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 65 tests, 81 files |
+| A rejection report carries no account id and pastes as valid JSON | Test against a real 400 body | Pass |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 66 tests, 82 files |
 
 ### 6a. A test was deleted, and that is the honest move
 
@@ -187,6 +188,62 @@ Two models are left on the list rather than removed. A visitor who picks Luna
 gets an instant, free, clearly-labelled failed seat, and that demonstrates the
 failure path better than a quietly shorter menu would.
 
+### 6e. A tool so the next model is verified rather than assumed
+
+`npm run try-model -- <id>` makes **one** call — a real judge prompt, the
+longest and most structured of the seven — parses the answer, runs G2 over it,
+and prints the `observed` line to paste into `panel/models.json`.
+
+It exists because the alternative was me adding candidate models on the strength
+of a price table, which is exactly the mistake §6d found. Three candidates from
+providers the panel does not yet have are noted for Roy to try:
+`deepseek/deepseek-v4-flash-0731`, `inclusionai/ling-3.0-flash`,
+`nvidia/nemotron-3.5-lightning`. None of them is in `panel/models.json`, because
+none has been run, and the test added earlier this turn would refuse them.
+
+**Its first real run rejected a candidate.**
+`deepseek/deepseek-v4-flash-0731` — the cheapest option on the shortlist, from a
+provider the panel does not have — returned nothing in 120 seconds. One call,
+one clear answer, and a model that would have been added on the strength of a
+price table was not.
+
+`inclusionai/ling-3.0-flash` went the same way for a more interesting reason:
+it answered in 29 seconds with valid JSON that **omitted the required
+`reasoning` field**. It can produce the shape and not the substance, which is
+the harder failure to catch — a prose response is obvious, a structurally valid
+opinion with a missing element is not. G2 caught it in one call.
+
+Rejections are recorded too, in a `$rejected` block in `panel/models.json`.
+Without it the next person re-runs the same candidate, and the menu's shortness
+looks like an oversight instead of a result.
+
+**The tool leaked an account id.** On a 400, it printed OpenRouter's error body
+straight into the line offered for pasting into `panel/models.json` — and that
+body contains `user_id`. The suggested line therefore carried an account
+identifier headed for a public repository, alongside unescaped double quotes
+that would have broken the file on paste.
+
+Neither is the model's fault and neither belongs in a record of what a model
+did. The report is now sanitised — identifiers dropped, the useful sentence
+kept — and the pasteable line goes through `JSON.stringify` rather than string
+concatenation. A test asserts both.
+
+The general shape: **a tool that formats output for a committed file is
+handling untrusted input**, because the provider wrote half of it. I treated it
+as a print statement.
+
+Two things about it are worth stating rather than leaving to be discovered:
+
+- **It bypasses the allowlist deliberately.** That is safe because it is a
+  terminal tool and nothing under `netlify/` imports it. The allowlist stops a
+  visitor spending the project's credit on a model they named; it must not stop
+  the maintainer evaluating a candidate. The file says so at the top.
+- **G5 fired on it.** The first draft held the outcome in a variable called
+  `verdict`, which the gate forbids repository-wide. It was about a model rather
+  than a case, so the gate was arguably over-broad — and renaming a local
+  variable costs nothing while an exemption in the gate guarding decision 0002
+  costs the gate. Renamed, same call as the G8 fixture in turn 012.
+
 ### What I did not verify
 
 - ~~**That the 202 path works on Netlify.**~~ Confirmed live: a background run
@@ -201,6 +258,14 @@ failure path better than a quietly shorter menu would.
   from a single run.
 - **Whether Luna's 404 is permanent.** Endpoint availability moves. The
   `observed` field is dated for that reason.
+- ~~**`npm run try-model` against a real model.**~~ Run: it rejected
+  `deepseek/deepseek-v4-flash-0731` on a 120-second timeout.
+- **`nvidia/nemotron-3.5-lightning`.** Not tried: the id was mistyped with a
+  trailing `2` and OpenRouter rejected it in 0.3s as not a valid model. That is
+  a typo, not an observation, and it is not recorded as one.
+- **Whether DeepSeek's timeout is capacity or the model.** One call at one
+  moment. The rejection is dated for that reason; it is not a permanent verdict
+  on the model.
 - **Whether four minutes is the right give-up.** Chosen to be much longer than
   a normal run and much shorter than fifteen minutes. Not derived.
 

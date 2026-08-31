@@ -55,6 +55,18 @@ npm run deliberate -- T-001 --stub judgefail   # two rulings and one failure
 Stub modes: `good`, `unanimous`, `prose`, `badfact`, `verdict`, `onesided`,
 `judgefail`. Each one exists to make a specific gate fire.
 
+Before putting a new model on the allowlist in `panel/models.json`, try it —
+**one** call, not seven:
+
+```
+npm run try-model -- deepseek/deepseek-v4-flash-0731
+```
+
+It runs a real judge prompt through the model, checks the answer against G2, and
+prints the `observed` line to paste into `panel/models.json`. A test refuses any
+entry without one, because OpenRouter's own `supported_parameters` catalogue
+lists two models that fail in production.
+
 Against real models — once `OPENROUTER_API_KEY` is set in `.env`. The models
 themselves are not configured here: the per-role allocation is committed in
 `modelMap()` in `src/config.js` (decision 0009), and the advocates and the
@@ -72,8 +84,10 @@ npx netlify dev          # http://localhost:8888
 
 ## Status
 
-**Runs against real models, writes to Postgres, and has a browser front end.**
-Eleven real deliberations on T-001 as of 31.08.2026.
+**Live at https://subtle-axolotl-3f3681.netlify.app** — anyone can open it,
+convene a tribunal, read three opinions, and read every past proceeding. The
+last compare counted 26 recorded deliberations on T-001 (31.08.2026), with
+deployed runs since.
 
 What the runs established, in order:
 
@@ -81,23 +95,33 @@ What the runs established, in order:
   call was silently routed to one that ignored it; G2 caught the prose (turn 003).
 - Sending no `response_format` at all costs about 29% of calls. With it, 2%
   (turn 004).
-- **Barak is the only judge that has ever flipped.** Elon and Shamgar have not
-  varied across eight runs. Read as: Barak's method weighs the defence case;
-  theirs turn on formal authority, which the agreed record settles flatly.
 - Before turn 005, three runs in five had **no defence case at all** — every
   advocate reached the same position, so the judges ruled on a case only one
   side was put in. Every advocate now argues `case_for_seat` regardless of where
   it personally lands, and every run since has been contested.
+- **Divergence is a property of the judge model, not of argument quality.**
+  Uniform `gemini-3.7-flash` returned three identical rulings in five runs of
+  five; putting the same model on the advocates and `flash-lite` back on the
+  judges brought the split straight back, with the advocates concluding
+  identically in both conditions. The committed allocation follows from that
+  (turn 010, decision 0009).
+- **The catalogue is not evidence.** All five allowlisted models appear under
+  OpenRouter's `?supported_parameters=response_format`; two fail in production,
+  one with no routable endpoint and one by returning prose. Every entry now
+  records what it was *observed* to do, and `npm run try-model` earns that
+  record in one call (turn 013).
 
-Two earlier claims here were wrong and were corrected in the records rather than
-quietly deleted: turn 003 concluded from two runs that the judges converge, and
-a later note called the routing constraint nearly free after one clean run.
-Both were premature. `docs/turns/` carries the corrections.
+Several earlier claims here were wrong and were corrected in the records rather
+than quietly deleted: turn 003 concluded from two runs that the judges converge;
+a later note called the routing constraint nearly free after one clean run; and
+turn 012 computed three time budgets against a documented 60-second platform
+limit while this deployment's own log said 30. `docs/turns/` carries all of it.
 
-**Not done:** nothing reads the database back, row-level security has no read
-policy, the Supabase failure path is untested, and `G3` has never fired on real
-output because the judges cite every fact almost every time. Written and
-unproven is recorded as such in `docs/GRADING-MAP.md`, not as passing.
+**Not done:** `G3` has never fired on real output — 73 of 74 judge opinions cite
+all five facts — and the copied-case gate fires only in tests. Both are recorded
+as written-and-unproven in `docs/GRADING-MAP.md`, not as passing. Two models on
+the allowlist are known to fail and are labelled as such in the picker rather
+than removed.
 
 ## Grading
 

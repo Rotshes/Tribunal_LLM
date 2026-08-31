@@ -23,12 +23,35 @@
 // forbidden.
 
 import { loadDeliberations } from '../src/persist.js';
+import { supabaseConfigured, readDeliberations } from '../src/sinks/supabase.js';
+import { loadEnv } from '../src/env.js';
+
+loadEnv();
 
 const JUDGES = ['barak_model', 'elon_model', 'shamgar_model'];
 const SHORT = { barak_model: 'barak', elon_model: 'elon', shamgar_model: 'shamgar' };
 const R = { justified: 'just', not_justified: 'NOT', undefined: '—' };
 
-const runs = loadDeliberations();
+// The database is the record. Local files are the fallback for a machine with
+// no Supabase configured — and they are all that exists for runs made before
+// turn 006. Runs that came through the browser exist ONLY in the database: the
+// Netlify function has no local disk to write to, which is why reading from
+// here matters rather than being a nicety.
+let runs = [];
+let source = 'logs/deliberations';
+
+if (supabaseConfigured()) {
+  try {
+    runs = await readDeliberations();
+    source = 'Supabase';
+  } catch (err) {
+    console.error(`\x1b[31mSupabase read failed: ${err.message}\x1b[0m`);
+    console.error('\x1b[2mFalling back to local files. App runs will be missing.\x1b[0m');
+    runs = loadDeliberations();
+  }
+} else {
+  runs = loadDeliberations();
+}
 
 if (runs.length === 0) {
   console.log('No stored deliberations yet.');
@@ -58,7 +81,10 @@ const describeModels = (d) => {
 // ---------------------------------------------------------------- per run
 
 console.log('');
-console.log(bold(`${runs.length} stored deliberation${runs.length === 1 ? '' : 's'}`));
+console.log(
+  bold(`${runs.length} stored deliberation${runs.length === 1 ? '' : 's'}`) +
+    dim(`  ·  from ${source}`),
+);
 console.log('');
 console.log(
   dim(

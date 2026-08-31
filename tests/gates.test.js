@@ -426,6 +426,78 @@ test('the Supabase sink posts four tables in dependency order, and no combined r
   }
 });
 
+test('the sink writes the timing columns flattened out of usage', async () => {
+  const { writeDeliberation } = await import('../src/sinks/supabase.js');
+  const before = { u: process.env.SUPABASE_URL, k: process.env.SUPABASE_SECRET_KEY };
+  const calls = [];
+  const fetchImpl = async (url, opts) => {
+    calls.push({ table: url.split('/rest/v1/')[1], rows: JSON.parse(opts.body) });
+    return { ok: true, text: async () => '' };
+  };
+  try {
+    process.env.SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SECRET_KEY = 'sb_secret_test';
+    const r = await deliberate({ caseObj: CASE, provider: makeStubProvider('good') });
+    const doc = {
+      deliberation_id: r.deliberation_id,
+      case_id: r.case_id,
+      ran_at: new Date().toISOString(),
+      status: r.status,
+      case_snapshot: {},
+      usage: r.log.summary({ wall_ms: r.wall_ms }),
+      advocate_opinions: r.advocate_opinions,
+      judge_opinions: r.judge_opinions,
+      model_calls: r.log.rows,
+    };
+    await writeDeliberation(doc, CASE, { fetchImpl });
+    const row = calls.find((c) => c.table === 'deliberations').rows[0];
+
+    // The two timings must both be present and must be different things.
+    assert.equal(typeof row.wall_ms, 'number');
+    assert.equal(typeof row.model_time_ms, 'number');
+    assert.equal(row.calls_attempted, 7);
+    assert.equal(row.calls_succeeded, 7);
+    assert.ok(row.tokens_in > 0 && row.tokens_out > 0);
+  } finally {
+    if (before.u === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = before.u;
+    if (before.k === undefined) delete process.env.SUPABASE_SECRET_KEY; else process.env.SUPABASE_SECRET_KEY = before.k;
+  }
+});
+
+test('reading from Supabase rebuilds the shape compare expects', async () => {
+  const { readDeliberations } = await import('../src/sinks/supabase.js');
+  const before = { u: process.env.SUPABASE_URL, k: process.env.SUPABASE_SECRET_KEY };
+  const fetchImpl = async (url) => ({
+    ok: true,
+    json: async () =>
+      url.includes('/deliberations')
+        ? [{
+            deliberation_id: 'd1', case_id: 'T-001', ran_at: '2026-08-31T10:55:00Z',
+            status: 'complete', json_mode: 'object', model: 'm', model_map: null,
+            wall_ms: 13600, model_time_ms: 36200,
+            calls_attempted: 7, calls_succeeded: 7, tokens_in: 100, tokens_out: 50,
+          }]
+        : [
+            { deliberation_id: 'd1', role: 'judge', judge_id: 'barak_model', ruling: 'justified', relies_on_facts: [0] },
+            { deliberation_id: 'd1', role: 'advocate', representative_id: 'jon_snow', seat: 'defense', position: 'justified', case_for_seat: 'x' },
+          ],
+  });
+  try {
+    process.env.SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_SECRET_KEY = 'sb_secret_test';
+    const runs = await readDeliberations({ fetchImpl });
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].usage.wall_ms, 13600);
+    assert.equal(runs[0].usage.failed, 0);
+    assert.equal(runs[0].judge_opinions.length, 1);
+    assert.equal(runs[0].advocate_opinions.length, 1);
+    assert.equal(runs[0].source, 'supabase');
+  } finally {
+    if (before.u === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = before.u;
+    if (before.k === undefined) delete process.env.SUPABASE_SECRET_KEY; else process.env.SUPABASE_SECRET_KEY = before.k;
+  }
+});
+
 test('the sink refuses to run unconfigured, naming the right key', async () => {
   const { writeDeliberation, supabaseConfigured } = await import('../src/sinks/supabase.js');
   const before = process.env.SUPABASE_URL;

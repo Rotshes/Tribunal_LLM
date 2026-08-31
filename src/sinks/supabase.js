@@ -80,6 +80,65 @@ const opinionRow = (deliberation_id, case_id, o) => ({
 });
 
 /**
+ * Reads stored deliberations back, newest last, in the shape `tools/compare.js`
+ * expects from a local file. The database is the record — turn 006 said so and
+ * turn 009 made it true for runs that came through the app.
+ */
+export async function readDeliberations({ limit = 200, fetchImpl = fetch } = {}) {
+  const { url, key } = requireConfig();
+
+  const get = async (path) => {
+    const res = await fetchImpl(`${url}/rest/v1/${path}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Supabase read of ${path} failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  };
+
+  const runs = await get(
+    `deliberations?select=*&order=ran_at.asc&limit=${Number(limit)}`,
+  );
+  if (runs.length === 0) return [];
+
+  const ids = runs.map((r) => `"${r.deliberation_id}"`).join(',');
+  const opinions = await get(`opinions?select=*&deliberation_id=in.(${ids})`);
+
+  const byRun = new Map(runs.map((r) => [r.deliberation_id, r]));
+  const grouped = new Map(runs.map((r) => [r.deliberation_id, []]));
+  for (const o of opinions) grouped.get(o.deliberation_id)?.push(o);
+
+  return runs.map((r) => {
+    const os = grouped.get(r.deliberation_id) ?? [];
+    return {
+      ...r,
+      // compare reads `usage`; rebuild it from the flattened columns.
+      usage: {
+        attempted: r.calls_attempted,
+        succeeded: r.calls_succeeded,
+        failed:
+          r.calls_attempted != null && r.calls_succeeded != null
+            ? r.calls_attempted - r.calls_succeeded
+            : null,
+        tokens_in: r.tokens_in,
+        tokens_out: r.tokens_out,
+        wall_ms: r.wall_ms,
+        model_time_ms: r.model_time_ms,
+      },
+      advocate_opinions: os.filter((o) => o.role === 'advocate'),
+      judge_opinions: os.filter((o) => o.role === 'judge'),
+      // Failures are in model_calls, not opinions. Not fetched here: compare
+      // uses them only for the "why calls failed" section, and pulling every
+      // call row for every run to fill one table is not worth the request.
+      advocate_failures: [],
+      judge_failures: [],
+      source: 'supabase',
+    };
+  });
+}
+
+/**
  * Writes the case, the run, its opinions and every model call.
  *
  * Order matters: charge sheet, then deliberation, then the rest — the foreign
@@ -119,6 +178,18 @@ export async function writeDeliberation(doc, caseObj, opts = {}) {
     model: doc.model,
     model_map: doc.model_map ?? null,
     temperature: doc.temperature,
+
+    // Flattened out of `usage` so a run is comparable straight from the
+    // database. Before turn 009 these lived only in the local JSON, which the
+    // Netlify function never writes — so every run through the app was
+    // invisible to `npm run compare`, the tool the model-progression argument
+    // depends on.
+    wall_ms: doc.usage?.wall_ms ?? null,
+    model_time_ms: doc.usage?.model_time_ms ?? null,
+    calls_attempted: doc.usage?.attempted ?? null,
+    calls_succeeded: doc.usage?.succeeded ?? null,
+    tokens_in: doc.usage?.tokens_in ?? null,
+    tokens_out: doc.usage?.tokens_out ?? null,
     gate_problems: doc.gate_problems ?? [],
     cap_error: doc.cap_error ?? null,
     reported: doc.reported ?? null,

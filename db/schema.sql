@@ -53,6 +53,17 @@ create table if not exists deliberations (
   model           text,
   model_map       jsonb,   -- per-role allocation; `model` alone lies on a mixed run
   temperature     real,
+
+  -- Two different measurements, kept apart because conflating them cost a
+  -- session. wall_ms is what a person waited. model_time_ms is the SUM of the
+  -- seven call latencies, which concurrency does not change. Reading the second
+  -- as the first made a working fix look ineffective.
+  wall_ms         integer,
+  model_time_ms   integer,
+  calls_attempted integer,
+  calls_succeeded integer,
+  tokens_in       integer,
+  tokens_out      integer,
   gate_problems   jsonb       not null default '[]'::jsonb,
   cap_error       text,
   reported        jsonb,
@@ -63,6 +74,14 @@ create table if not exists deliberations (
 
 -- For a database created before turn 008, when the picker was added:
 alter table deliberations add column if not exists model_map jsonb;
+
+-- For a database created before turn 009, when app runs became observable:
+alter table deliberations add column if not exists wall_ms         integer;
+alter table deliberations add column if not exists model_time_ms   integer;
+alter table deliberations add column if not exists calls_attempted integer;
+alter table deliberations add column if not exists calls_succeeded integer;
+alter table deliberations add column if not exists tokens_in       integer;
+alter table deliberations add column if not exists tokens_out      integer;
 
 comment on column deliberations.model_map is
   'The model used for each of the seven roles. A single `model` column is wrong '

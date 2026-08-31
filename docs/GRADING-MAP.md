@@ -68,10 +68,10 @@ and the model progression, none of which require deployment. It is required by
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| Persistence | `db/schema.sql`, `src/sinks/supabase.js`; a real run written to Postgres 31.08 (turn 006) | DONE |
-| HTTP wrapper | `netlify/functions/` — thin by design; every rejection path verified with real `Request` objects (turn 007 §6) | STARTED |
+| Persistence | `db/schema.sql`, `src/sinks/supabase.js`; runs written to Postgres from both the CLI and the app, and read back by `npm run compare`, which merges database and local files so no run is dropped (turns 006, 009) | DONE |
+| HTTP wrapper | `netlify/functions/` — thin by design; every rejection path verified with real `Request` objects (turn 007 §6), and the success path now exercised through a browser | DONE locally |
 | Interface | `web/index.html`, no build step (decision 0008): three judge columns in fixed order, a failed judge shown as a failure, per-role model picker | STARTED |
-| **DoD 1 — a stranger can submit and read the opinions** | — | **OPEN. The app has never completed a single run.** Every verified path is a rejection path; the success path has not rendered once (turn 008 §6b) |
+| **DoD 1 — a stranger can submit and read the opinions** | A browser submitted T-001 and read three opinions, 31.08 (turn 009). Two such runs are in the database | **DONE locally** — OPEN at a public address, since nothing is deployed |
 | DoD 3 — a case is retrievable by someone who did not submit it | — | OPEN — nothing reads the database back, and RLS has no read policy |
 | Deployed at a public address | — | OPEN — no Netlify site exists |
 

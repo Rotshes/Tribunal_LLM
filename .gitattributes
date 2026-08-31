@@ -1,0 +1,21 @@
+# Line endings are normalised to LF in the repository and on checkout.
+#
+# This is not housekeeping. `src/prompts.js` computes a SHA-256 of each prompt
+# file as it sits on disk, and that hash goes on every model-call row so an
+# opinion can be traced to the exact text that produced it.
+#
+# Git's default on Windows converts LF to CRLF on checkout. That would make the
+# same prompt hash differently on a Windows machine than on a Linux one, so a
+# hash recorded here would not reproduce for anyone cloning the repository —
+# including the instructor. The traceability claim would be silently false.
+#
+# `eol=lf` forces the working copy to LF everywhere, so the bytes hashed are the
+# same bytes on every machine.
+
+* text=auto eol=lf
+
+# Belt and braces for the files the hash actually covers.
+prompts/*.md   text eol=lf
+cases/*.json   text eol=lf
+panel/*.json   text eol=lf
+schemas/*.json text eol=lf

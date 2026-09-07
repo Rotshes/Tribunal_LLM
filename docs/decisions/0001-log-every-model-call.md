@@ -1,47 +1,68 @@
-# 0001 — Log every model call, including the failures
+# 0001 — Every model call is logged, failures included
 
 Status: accepted
-Date: (fill in)
+Date decided: 24 August 2026
+**Date written: 31 August 2026** — see the note at the foot of this file.
 
 ## The decision
 
-Every call to a model writes one database row before the response is shown:
-model name, role (which advocate or judge), tokens in, tokens out, cost,
-latency, and whether it succeeded. Calls that failed, timed out, or returned
-malformed output are logged too.
+Every call to a model produces a row, whether it succeeded or not. The row
+carries: the deliberation it belongs to, the role and role id, the model, the
+prompt version and a SHA-256 of the prompt file, whether it succeeded, the
+failure reason if it did not, tokens in and out, cost, and latency.
+
+Nothing is written only on success. A run where five of seven calls failed
+produces seven rows.
 
 ## Why, and what it was chosen over
 
-The obvious alternative is to log only what the user sees — the final verdict
-and its reasoning — and treat the mechanics as plumbing.
+**Logging only what came back.** Rejected, and it is the default a runner falls
+into. The failures are the rows the project actually needed: turn 003 found a
+provider routing downgrade because a failed call recorded *why* it failed; turn
+004's finding that `--json-mode off` costs 29% of calls exists only because the
+lost calls were counted; turn 010's model comparison rests on failure rates per
+configuration. A log of successes describes a system that always works, which is
+not the system.
 
-Rejected for three reasons:
+**A single summary per deliberation.** Rejected. Seven calls with one aggregate
+line cannot answer "which role failed", and the roles are not interchangeable —
+a failed advocate leaves a seat unargued, a failed judge leaves a column empty.
+Per call is the granularity the questions are asked at.
 
-1. **The cost decision depends on it.** Module 9 names model choice the biggest
-   lever on cost, and this project deliberately starts with one model
-   everywhere. That is only defensible as a starting point if it produces the
-   measurements that let a later choice rest on data rather than on a guess.
-   Without the log, "cheap advocates, capable judges" stays an intuition.
-
-2. **Failures are the interesting rows.** A model that returns prose where a
-   verdict was demanded is Module 9's fluent failure. If failures are not
-   logged, the only evidence they happened is that a user saw an error, and
-   the rate is unknowable.
-
-3. **Module 4 calls the audit trail the thing that separates engineering from
-   craft** — and notes it is the part most easily lost, precisely because it is
-   the part nobody misses until later.
+**Logging without the prompt hash.** Rejected once the prompts became versioned.
+A `prompt_version` header can be edited without being bumped; the hash of the
+file as it sits on disk cannot. Together they make an edit-without-a-bump
+detectable, which is what makes "this opinion came from this text" a claim
+rather than a hope. This is also why `.gitattributes` forces LF (turn 009 §6b):
+a hash that differs by platform would be worthless.
 
 ## What it costs
 
-A write on the hot path for every one of the seven calls per deliberation, and
-a table that grows faster than the case table by roughly seven to one. Both
-are accepted. If the write latency becomes visible to users, log asynchronously
-rather than dropping the log.
+- Duplication. `logs/model-calls.jsonl` is append-only across all runs;
+  `logs/deliberations/<id>.json` repeats the same rows for one run; the
+  `model_calls` table repeats them again. Each is the readable unit for a
+  different question, and turn 009 showed the alternative — preferring one
+  source — silently drops runs.
+- Cost and latency are recorded as the provider reports them, and OpenRouter's
+  `usage.cost` has not been independently checked against billing.
+
+## What it buys
+
+- Every claim in `docs/turns/` about failure rates, latency, tokens or model
+  behaviour has rows behind it.
+- G7 can assert that the number of calls attempted equals the number logged, so
+  a silently swallowed call is a gate failure rather than a smaller number.
 
 ## What would change this
 
-If the per-call fields turn out never to be read after a term of use, the row
-can narrow. The existence of the log should not be reopened on those grounds —
-the argument for it is not that the fields get read often, but that they cannot
-be recovered later if they were never written.
+Nothing foreseen. If the volume ever made the append-only file unwieldy, the
+answer is rotation, not selective logging.
+
+---
+
+**On this file's date.** The decision was made and acted on in turn 001 and has
+governed every turn since; the *record* was not written until 31 August, when
+`G9` found that this file and `0002` were cited eighteen times across the
+repository and neither existed. Written late and labelled as such, because a
+record backdated to look contemporaneous is worth less than an honest gap —
+that principle is 0007's, and it applies to 0007's own siblings.

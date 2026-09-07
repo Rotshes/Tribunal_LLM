@@ -1185,3 +1185,55 @@ test('a rejected model report carries no account identifier and pastes as valid 
   // Round-trips through JSON, which is the only thing the paste has to do.
   assert.equal(JSON.parse(JSON.stringify({ observed: out })).observed, out);
 });
+
+test('G9 catches a decision that is cited but never written', async () => {
+  // Decisions 0001 and 0002 were cited eighteen times across this repository —
+  // by the schema, the gates, tools/compare.js, CLAUDE.md, the README and half
+  // the turn records — and neither file existed. 0002 is the non-combination
+  // rule, the project's central claim, argued nowhere for nine turns.
+  //
+  // Nobody follows a link that looks authoritative. A machine can.
+  const { execFileSync } = await import('node:child_process');
+  const fsp = await import('node:fs');
+  const os = await import('node:os');
+  const pathMod = await import('node:path');
+
+  const script = pathMod.resolve('tools/repo-checks.js');
+  const tmp = fsp.mkdtempSync(pathMod.join(os.tmpdir(), 'g9-'));
+  const cwd = process.cwd();
+
+  try {
+    fsp.mkdirSync(pathMod.join(tmp, 'docs', 'decisions'), { recursive: true });
+    fsp.writeFileSync(
+      pathMod.join(tmp, 'CLAUDE.md'),
+      'The rule is that nothing is combined. (0002)\n',
+    );
+    process.chdir(tmp);
+
+    let failed = false;
+    try {
+      execFileSync(process.execPath, [script], { stdio: 'pipe' });
+    } catch (err) {
+      failed = true;
+      assert.match(String(err.stderr), /decision 0002 is cited/);
+    }
+    assert.ok(failed, 'G9 did not catch a citation with no file behind it');
+
+    // And it passes once the file exists, or it would just be noise.
+    fsp.writeFileSync(
+      pathMod.join(tmp, 'docs', 'decisions', '0002-nothing-is-combined.md'),
+      '# 0002\n',
+    );
+    execFileSync(process.execPath, [script], { stdio: 'pipe' });
+  } finally {
+    process.chdir(cwd);
+    fsp.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('G9 does not report a four-digit number that is not a decision', () => {
+  // The first draft flagged `(1300)` — a character count in this file — as a
+  // missing decision. A check that invents work gets switched off.
+  const src = fs.readFileSync('tools/repo-checks.js', 'utf8');
+  assert.match(src, /\\\(\(00\\d\{2\}\)\\\)/, 'the bare reference pattern must be limited to 00NN');
+});

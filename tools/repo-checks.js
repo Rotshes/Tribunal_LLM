@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // G5 — the no-combination static check.
 // G8 — the secret scan.
+// G9 — every decision record a file points at actually exists.
 //
 // These are checks over the repository rather than over one run, so they live
 // here rather than in src/gates.js. `npm run check`.
@@ -107,10 +108,64 @@ for (const file of walk('.')) {
   });
 }
 
+// ---------------------------------------------------------------- G9
+//
+// Every `docs/decisions/NNNN-...` this repository names must be a file.
+//
+// Added 31.08.2026, after decisions 0001 and 0002 were found to be cited
+// EIGHTEEN times — by the schema, the gates, `tools/compare.js`, `CLAUDE.md`,
+// the README and half the turn records — with neither file ever written. 0002
+// is the non-combination rule: the project's central claim, argued nowhere.
+//
+// It is the same class of defect as the ones already in the pitfalls list: a
+// statement that looks like it has a source, where nobody follows the link. The
+// difference is that this one is mechanically checkable, so it should never
+// have needed a person to notice it.
+const DECISION_REF = /docs\/decisions\/(\d{4}-[a-z0-9-]+)(?:\.md)?/g;
+// Only `(00NN)`, not any four digits in brackets. The first draft matched
+// `(1300)` — a character count in a test — and reported it as a missing
+// decision. A check that invents work gets switched off.
+const BARE_REF = /\((00\d{2})\)/g;
+
+const decisionFiles = fs.existsSync('docs/decisions')
+  ? fs.readdirSync('docs/decisions').filter((f) => f.endsWith('.md'))
+  : [];
+const decisionNumbers = new Set(decisionFiles.map((f) => f.slice(0, 4)));
+
+const seenRefs = new Map(); // "0002" -> first file that named it
+
+for (const file of walk('.')) {
+  const rel = file.replace(/^\.[\\/]/, '').replace(/\\/g, '/');
+  if (rel.startsWith('docs/decisions/')) continue; // a record may cite itself
+  let text;
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    continue;
+  }
+
+  for (const m of text.matchAll(DECISION_REF)) {
+    if (!seenRefs.has(m[1].slice(0, 4))) seenRefs.set(m[1].slice(0, 4), rel);
+  }
+  // The shorthand this repo uses in prose and comments: "(0002)".
+  for (const m of text.matchAll(BARE_REF)) {
+    if (!seenRefs.has(m[1])) seenRefs.set(m[1], rel);
+  }
+}
+
+for (const [number, where] of seenRefs) {
+  if (!decisionNumbers.has(number)) {
+    problems.push(
+      `G9: decision ${number} is cited (first in ${where}) but docs/decisions/ has no such file`,
+    );
+  }
+}
+
 console.log(`checked ${scanned} files`);
 if (problems.length === 0) {
   console.log('G5 (no combined result) : pass');
   console.log('G8 (no secrets)         : pass');
+  console.log('G9 (decisions exist)    : pass');
   process.exit(0);
 }
 for (const p of problems) console.error(p);

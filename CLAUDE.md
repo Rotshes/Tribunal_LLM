@@ -66,8 +66,8 @@ lines are the rule, not the argument.
 - **The judges are methods, not people.** No prompt speaks as a named person; no
   citations, because a fabricated one attributed to a real judge is the harm. The
   disclaimer is data, attached by the runner. (0005)
-- **One model for all seven calls to begin with**, then a progression toward
-  several, driven by the logs and visible in the history. Graded.
+- **The advocates and the judges run different models** — 3.7-flash argues,
+  flash-lite rules, because only flash-lite judges divide. (0009)
 - **Validation runs the schema files directly**, never restates them. (0006)
 - **Runs cited by a record are copied to `docs/evidence/` by hand**, never
   reconstructed. (0007)
@@ -85,18 +85,20 @@ lines are the rule, not the argument.
   overstating it.
 - **Every turn ends with a record in `docs/turns/`**, written during the turn,
   never reconstructed. A retrofitted trail loses marks even when the build is
-  sound. See `docs/turns/TEMPLATE.md`.
+  sound. Follow the shape of the most recent one; there is no template file.
 - **A gate must be able to fail.** One that has never caught anything, and could
   not, counts as no gate at all — and "written but never fired on real input" is
   *unproven*, not passing.
 - **Before writing a gate, say out loud what it would forbid**, and check the
-  specification actually forbids it. A gate can enforce the opposite of the spec
-  while looking like verification, and once green nobody re-reads it. (0004)
-- **A gate that exempts the code it exists to check is decoration.** Scan
-  everything; mark legitimate exceptions with a visible per-line pragma and a
-  reason. A whole file quietly excluded is a hole nobody can see.
+  spec actually forbids it — a gate can enforce the opposite while looking like
+  verification, and once green nobody re-reads it (0004). **A gate that exempts
+  the code it exists to check is decoration:** scan everything, and mark
+  legitimate exceptions with a visible per-line pragma and a reason.
 - **When a rule is stated in two places, add a check that they agree — or delete
-  one statement.** Three silent prompt-versus-schema disagreements in three turns.
+  one statement.** Three silent prompt-versus-schema disagreements in three
+  turns. A citation is the same shape — a claim and its source — and decisions
+  0001 and 0002 were cited eighteen times with neither file written, for
+  thirteen turns, every reference looking authoritative. G9 checks them now.
 - **Never ask the model for a value the system already has.** Identity, method,
   provenance, the disclaimer — all known before the call. The model supplies
   only what only it can supply: the reasoning. The runner attaches the rest and
@@ -129,10 +131,9 @@ kept as evidence; a new one joins its group rather than starting a new line.
   forbade them, schema required them, all seven calls failed (24.08). `grounds`
   as `string[]` flattening three judicial methods into bullets (31.08). Assume
   it is happening again somewhere.
-- **Asking the model for what we already hold.** Provenance (24.08),
-  the disclaimer, returned paraphrased (31.08), `representative_id`, misspelled
-  as `daenerys_targator` and `daenerys_targatorn` in two runs (31.08). Each cost
-  a whole call. Fixed by attaching, not requesting.
+- **Asking the model for what we already hold.** Provenance (24.08), the
+  disclaimer paraphrased, `representative_id` misspelled twice (31.08). Each
+  cost a call. Fixed by attaching, not requesting.
 - **Gates that could not catch, or caught the wrong thing.** A gate requiring an
   advocate to agree with its seat — the exact thing the simulation rule forbids,
   and it would have looked like diligence (24.08). G5 skipping all of `src/`,
@@ -181,8 +182,7 @@ kept as evidence; a new one joins its group rather than starting a new line.
   that exists only in the database is not evidence anyone can open.
 - `agreed_facts` order is permanent. Opinions cite by index; a correction
   appends, never rewrites or reorders.
-- Secrets live in the environment, never the repo. Check before committing.
-- Hard cap on calls per deliberation; a run that exceeds it aborts.
+- Secrets live in the environment, never the repo. `npm run check` runs G8.
 - **`logs/` is gitignored, so nothing in it reaches the repo.** Remind me to copy
   a cited run into `docs/evidence/` whenever a turn record cites one, and again
   at the end of the project — `docs/PRE-SUBMISSION.md` is the checklist. (0007)

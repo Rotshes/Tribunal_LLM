@@ -124,13 +124,73 @@ panel, and no unit test substitutes for that.
 - `qwen3.7-flash`'s 429s were upstream capacity on one afternoon. It may be
   fine next week. Marked UNRELIABLE on what was observed, not on what it is.
 
+## 6b. Postscript, same evening — the five runs, and a defect in the reporting
+
+Roy ran the five. The compare table said **21 of 35 calls failed (60%)** on the
+new allocation, which reads as a worse result than the one it replaced.
+
+**Fifteen of the twenty-one were OpenRouter refusing on the account**, not the
+models: twelve `This request requires more credits, or fewer max_tokens` and
+three `Key limit exceeded (total limit)`. The credit ran out partway through the
+session. No model was asked anything on those calls.
+
+The first run, before the wall:
+
+| | barak | elon | shamgar | differ |
+|---|---|---|---|---|
+| 20:52, **complete 7/7** | justified | justified | not_justified | **yes** |
+
+`meta/muse-glimmer-30b` ruled, and the panel divided. One run.
+
+### The defect this exposed
+
+`tools/compare.js` counted a billing refusal and a model producing prose as the
+same event. Three consequences, all of them wrong in the same direction:
+
+- the per-config rate said 60% when the model-attributable rate was 17%;
+- *failures by role* put jon_snow, tyrion and daenerys at four each, inventing a
+  pattern out of whichever seats were in flight when the credit ran out;
+- the "cannot support a comparison" warning fired on a panel whose only
+  completed run was clean.
+
+The tool's own header says *"a failure rate is a number; the reason is what
+tells you what to change."* It was pointing at the models while the reason
+pointed at the wallet.
+
+Fixed by `isAccountFailure()` in `src/failures.js` — in `src/`, not in the tool,
+so it can be tested and so a second reporting path cannot write a different rule.
+Account refusals are excluded from the rate and the role tally, and labelled
+`[ACCOUNT, not the model]` in the reason list. They are excluded from the rate,
+not from the record: a run that died on billing is still a run that produced no
+panel.
+
+**Two exclusions are deliberate and are what the test actually guards.** A 429
+and a 404 are *not* account-side. They are real evidence against a model —
+qwen3.7-flash lost grey_worm's seat for 429s and gpt-5.6-luna is marked FAILS for
+404s — and a classifier that excused them would hand two models their seats back
+on a technicality. Verified by breaking it in both directions: removing the
+credit pattern fails the test, and adding `429` to it fails the test.
+
+### The lesson, and it is the third time
+
+This is the same mistake as the `daenerys_targator` misattribution earlier in
+this turn, and as the four false positives in `CLAUDE.md`: **a number read
+without checking what it was counting.** Twice in one turn, from the same tool.
+The fix this time is in the tool rather than in my attention, which is the only
+version of the fix that survives the next session.
+
 ## 7. Outcome
 
 Done: failures attributed by seat, four candidates screened, two seats replaced,
 0013 amended with the five-run evidence, two models downgraded to UNRELIABLE
 with their production records, one misattribution corrected.
 
-Open: five runs on the amended allocation. **If shamgar or grey_worm fails
-again, 0013's amendment says revert to 0009 rather than screen a third round** —
-two rounds without a stable panel would mean the affordable model pool is not
-deep enough to seat seven, which is a result in itself.
+Also done, in the postscript: `isAccountFailure()` and its test, so a billing
+wall never again reads as a broken allocation.
+
+Open: **four more runs, once the OpenRouter credit is topped up.** One clean run
+exists on this allocation and its panel divided. Four of the five were spent on
+an empty account and prove nothing either way. **If shamgar or grey_worm then
+fails again, 0013's amendment says revert to 0009 rather than screen a third
+round** — two rounds without a stable panel would mean the affordable model pool
+is not deep enough to seat seven, which is a result in itself.

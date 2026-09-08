@@ -27,6 +27,7 @@ import path from 'node:path';
 import { loadDeliberations } from '../src/persist.js';
 import { supabaseConfigured, readDeliberations } from '../src/sinks/supabase.js';
 import { loadEnv } from '../src/env.js';
+import { isAccountFailure } from '../src/failures.js';
 import { captureTo } from './capture.js';
 
 loadEnv();
@@ -215,15 +216,35 @@ for (const d of runs) {
 for (const [key, ds] of groups) {
   const attempted = ds.reduce((a, d) => a + (d.usage?.attempted ?? 0), 0);
   const failed = ds.reduce((a, d) => a + (d.usage?.failed ?? 0), 0);
-  const rate = attempted ? Math.round((failed / attempted) * 100) : 0;
+
+  // Account refusals are counted out of the rate, not out of the record. They
+  // still appear under "Why calls failed" below, labelled, because a run that
+  // died on billing is still a run that did not produce a panel.
+  const account = ds.reduce(
+    (a, d) =>
+      a +
+      [...(d.advocate_failures ?? []), ...(d.judge_failures ?? [])].filter((f) =>
+        isAccountFailure(f.reason),
+      ).length,
+    0,
+  );
+  const modelFailed = Math.max(0, failed - account);
+  const rate = attempted ? Math.round((modelFailed / attempted) * 100) : 0;
 
   console.log(`${bold(key)}  ${dim(`${ds.length} run${ds.length === 1 ? '' : 's'}`)}`);
   console.log(
-    `  ${pad('calls', 9)} ${failed} of ${attempted} failed (${rate}%)` +
+    `  ${pad('calls', 9)} ${modelFailed} of ${attempted} failed (${rate}%)` +
       (rate >= 10
         ? dim('  ← a panel this incomplete cannot support a comparison')
         : ''),
   );
+  if (account) {
+    console.log(
+      `  ${pad('', 9)} ${dim(
+        `+${account} refused by the provider for account reasons (credit or key limit) — not counted above`,
+      )}`,
+    );
+  }
   if (ds.length < 3) {
     console.log(
       dim(
@@ -275,17 +296,27 @@ if (failures.length) {
   }
 
   for (const [reason, fs] of [...byReason].sort((a, b) => b[1].length - a[1].length)) {
-    console.log(`  ${bold(`×${fs.length}`)}  ${reason}`);
+    // Say which of these is not about a model, on the line itself. The reader
+    // who scans this section and stops is the one who most needs to know.
+    const tag = isAccountFailure(reason) ? bold('  [ACCOUNT, not the model]') : '';
+    console.log(`  ${bold(`×${fs.length}`)}  ${reason}${tag}`);
     console.log(dim(`        roles: ${fs.map((f) => f.roleId).join(', ')}`));
   }
 
   // Which seats and judges are actually losing calls. If the same role fails
   // every time, the cause is that role — its prompt, or its input size — not
   // the provider.
+  // Account refusals are excluded here. They hit whichever seats happened to be
+  // in flight when the credit ran out, so counting them by role invents a
+  // pattern: on 08.09 it put jon_snow, tyrion and daenerys at four failures each
+  // and made three healthy seats look like the problem.
   const byRole = new Map();
-  for (const f of failures) byRole.set(f.roleId, (byRole.get(f.roleId) ?? 0) + 1);
+  for (const f of failures) {
+    if (isAccountFailure(f.reason)) continue;
+    byRole.set(f.roleId, (byRole.get(f.roleId) ?? 0) + 1);
+  }
   console.log('');
-  console.log(dim('  failures by role:'));
+  console.log(dim('  failures by role (account refusals excluded):'));
   for (const [role, n] of [...byRole].sort((a, b) => b[1] - a[1])) {
     console.log(`    ${pad(role, 22)} ×${n}`);
   }

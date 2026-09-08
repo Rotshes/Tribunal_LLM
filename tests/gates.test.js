@@ -1465,3 +1465,47 @@ test('the picker offers only models observed to work, and the backend still acce
   const fn = fs.readFileSync('netlify/functions/models.js', 'utf8');
   assert.match(fn, /offeredModels\(\)/, 'the endpoint must serve the offer, not the allowlist');
 });
+
+test('an account refusal is told apart from a model failure', async () => {
+  // 08.09.2026: five runs reported 21 of 35 calls failed and the allocation was
+  // read as broken. Fifteen were OpenRouter refusing on credit and key limits —
+  // no model was asked anything. The one run that completed before the wall was
+  // a clean 7/7 with a divided panel.
+  //
+  // The two exclusions are the point of the test, not an afterthought. A 429 and
+  // a 404 are real evidence against a model and must NOT be excused as account
+  // problems: qwen3.7-flash lost grey_worm's seat for 429s, and gpt-5.6-luna is
+  // marked FAILS for 404s. If those ever classify as account-side, two models
+  // get their seats back on a technicality.
+  const { isAccountFailure } = await import('../src/failures.js');
+
+  for (const reason of [
+    'This request requires more credits, or fewer max_tokens',
+    'Key limit exceeded (total limit). Manage it using https://openrouter.ai/keys',
+    'OpenRouter 402: payment required',
+    'insufficient credit',
+    'quota exceeded',
+  ]) {
+    assert.ok(isAccountFailure(reason), `not recognised as account-side: ${reason}`);
+  }
+
+  for (const reason of [
+    'response was not JSON (model returned prose)',
+    'failed G2/G3: /responds_to/0/answer must NOT have fewer than 20 characters',
+    'no answer within 90s (qwen/qwen3.7-flash) — the call was cut off, not refused',
+    'OpenRouter 429: Provider returned error, temporarily rate-limited upstream',
+    'OpenRouter 404: no endpoints found that can handle the requested parameters',
+    '',
+  ]) {
+    assert.ok(!isAccountFailure(reason), `wrongly excused as account-side: ${reason}`);
+  }
+
+  // And the tool must actually use it, in all three places it reports failures:
+  // the per-config rate, the reason list, and the by-role tally.
+  const cmp = fs.readFileSync('tools/compare.js', 'utf8');
+  assert.equal(
+    (cmp.match(/isAccountFailure\(/g) ?? []).length >= 3,
+    true,
+    'compare.js must apply the classifier to the rate, the reasons and the roles',
+  );
+});

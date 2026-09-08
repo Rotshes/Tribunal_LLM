@@ -6,10 +6,11 @@
 
 import crypto from 'node:crypto';
 import {
-  ADVOCATE_ORDER,
   JUDGE_ORDER,
   EXPECTED_CALLS,
+  advocateOrder,
   callCap,
+  modelMapForCase,
   resolveModelMap,
 } from './config.js';
 import { loadPrompt, advocateUserMessage, judgeUserMessage } from './prompts.js';
@@ -51,10 +52,15 @@ export async function deliberate({
   // Overrides are untrusted (a visitor's dropdown); resolveModelMap checks the
   // role exists and the model is on the allowlist, and reports rather than
   // silently ignoring anything it rejects.
-  const { map: MODELS, problems: modelProblems } = resolveModelMap(
+  const { map: committed, problems: modelProblems } = resolveModelMap(
     modelOverrides,
     allowedIds,
   );
+  // Then re-keyed onto whatever advocates THIS case has. The committed
+  // allocation names T-001's four; a submitted charge sheet may name any four,
+  // and since 0013 the allocation is about seats rather than about people, so
+  // the case's advocates take the four advocate models by position (turn 024).
+  const MODELS = modelMapForCase(caseObj, committed);
   const CAP = callCap();
 
   if (modelProblems.length) {
@@ -95,7 +101,7 @@ export async function deliberate({
     }
     attempted += 1;
 
-    const prompt = loadPrompt(roleId);
+    const prompt = loadPrompt(roleId, role);
     const started = Date.now();
 
     const base = {
@@ -202,7 +208,7 @@ export async function deliberate({
 
   // --- The four advocates, concurrently. They do not see each other.
   const advocateResults = await Promise.all(
-    ADVOCATE_ORDER.map((id) =>
+    advocateOrder(caseObj).map((id) =>
       callOnce({
         role: 'advocate',
         roleId: id,

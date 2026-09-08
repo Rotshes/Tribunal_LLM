@@ -1957,3 +1957,72 @@ test('G10 refuses a charge sheet that carries the fence marker', async () => {
     );
   }
 });
+
+test('a submitted case with representatives nobody wrote a prompt for still runs', async () => {
+  // Turn 021 shipped a form that could produce a charge sheet the app could not
+  // run: ADVOCATE_ORDER was a fixed list of four ids, loadPrompt needed a file
+  // per id, and the model allocation was keyed by those same four. A case
+  // naming any other representatives failed all four advocate calls.
+  //
+  // Decision 0003 says a new case means new representatives; definition-of-done
+  // item 1 says a STRANGER can submit one. A stranger cannot commit prompt
+  // files, so an advocate with no file of its own gets the generic prompt.
+  const fresh = structuredClone(CASE);
+  fresh.case_id = 'T-777';
+  fresh.title = 'The Guild v. Marren Vale';
+  fresh.representatives = [
+    { id: 'marren_vale', name: 'Marren Vale', seat: 'defense', brief: CASE.representatives[0].brief },
+    { id: 'ilse_bracken', name: 'Ilse Bracken', seat: 'defense', brief: CASE.representatives[1].brief },
+    { id: 'oren_kask', name: 'Oren Kask', seat: 'prosecution', brief: CASE.representatives[2].brief },
+    { id: 'petra_dunn', name: 'Petra Dunn', seat: 'prosecution', brief: CASE.representatives[3].brief },
+  ];
+
+  const seen = [];
+  const good = makeStubProvider('good');
+  const recorder = {
+    name: 'stub:recording',
+    async call(args) {
+      seen.push(args);
+      return good.call(args);
+    },
+  };
+
+  const r = await deliberate({ caseObj: fresh, provider: recorder });
+
+  assert.equal(r.status, 'complete', `a submitted case must run: ${JSON.stringify(r.advocate_failures)}`);
+  assert.equal(r.advocate_opinions.length, 4);
+  assert.equal(r.judge_opinions.length, 3);
+
+  // Each advocate was given its own brief, and the case's order was kept.
+  assert.deepEqual(
+    r.advocate_opinions.map((o) => o.representative_id),
+    ['marren_vale', 'ilse_bracken', 'oren_kask', 'petra_dunn'],
+  );
+  const mine = seen.find((c) => c.roleId === 'oren_kask');
+  assert.match(mine.user, /YOUR BRIEF \(Oren Kask, prosecution seat\)/);
+  assert.match(mine.system, /Your name,\s+your seat and your brief are supplied/);
+
+  // And every seat got a model, by position from the committed allocation.
+  const { modelMap } = await import('../src/config.js');
+  assert.equal(r.model_map['advocate.marren_vale'], modelMap()['advocate.jon_snow']);
+  assert.equal(r.model_map['advocate.petra_dunn'], modelMap()['advocate.grey_worm']);
+  assert.equal(r.model_map['judge.barak_model'], modelMap()['judge.barak_model']);
+});
+
+test('a case cannot invent a judge', async () => {
+  // The generic fallback is for ADVOCATES only. The three judges are the
+  // panel's method — fixed by the schema's judge_id enum — and a submitted
+  // charge sheet does not get to add a fourth or replace one.
+  const { loadPrompt } = await import('../src/prompts.js');
+
+  assert.throws(
+    () => loadPrompt('judge_of_my_own_invention', 'judge'),
+    /No prompt file registered/,
+  );
+  // Without a role, nothing falls back either: the fallback is explicit.
+  assert.throws(() => loadPrompt('someone_new'), /No prompt file registered/);
+
+  const generic = loadPrompt('someone_else_new', 'advocate');
+  assert.match(generic.file, /advocate-generic\.md$/);
+  assert.match(generic.version, /^\d+\.\d+$/);
+});

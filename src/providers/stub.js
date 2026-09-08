@@ -118,11 +118,19 @@ export function makeStubProvider(mode = 'good') {
         mode === 'unanimous' ? 'not_justified' : DEFAULT_RULINGS[roleId];
 
       // Answer one advocate from each seat, so G2b passes by default.
-      let respondTo = ['jon_snow', 'grey_worm'];
+      //
+      // Taken FROM THE CASE rather than named. These were the literal ids
+      // 'jon_snow' and 'grey_worm' until turn 024, which made the stub itself
+      // one of the places that named T-001's characters — so a case with any
+      // other representatives produced judges answering advocates who were not
+      // in it, and G2b failed every run. The app's defect was real; this one
+      // was the fixture's, and it hid the fix.
+      const seat = (s) => caseObj.representatives.filter((r) => r.seat === s).map((r) => r.id);
+      let respondTo = [seat('defense')[0], seat('prosecution')[0]];
       if (mode === 'onesided' && roleId === 'shamgar_model') {
         // ruling not_justified -> seat ruled against is defense; answering only
         // the prosecution is the failure G2b exists to catch.
-        respondTo = ['daenerys_targaryen', 'grey_worm'];
+        respondTo = seat('prosecution');
       }
 
       const op = judgeOpinion(caseObj, roleId, JUDGE_METHODS[roleId], {

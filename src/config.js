@@ -188,6 +188,53 @@ export function callCap() {
   return Number(process.env.MAX_CALLS_PER_DELIBERATION ?? 10);
 }
 
+/**
+ * The advocates of THIS case, in the order the case lists them.
+ *
+ * `ADVOCATE_ORDER` below is T-001's four, and until turn 024 it was the only
+ * order the runner knew — which meant a submitted charge sheet naming any other
+ * representatives failed all four advocate calls, because
+ * `caseObj.representatives.find(r => r.id === 'jon_snow')` found nothing.
+ * Definition-of-done item 1 was therefore satisfied only by a case that happened
+ * to reuse the same four ids.
+ *
+ * The fixed-order property is kept, and it is what mattered: docs/01-spec.md §3
+ * wants the judges to receive the advocates in a stable order so an ordering
+ * effect is detectable across runs rather than varying invisibly. A case's own
+ * `representatives` array is stable — it is part of the charge sheet, and the
+ * charge sheet is immutable once submitted. Fixed per case is the property;
+ * fixed to four particular people never was.
+ */
+export function advocateOrder(caseObj) {
+  const reps = caseObj?.representatives;
+  if (!Array.isArray(reps) || reps.length === 0) return ADVOCATE_ORDER;
+  return reps.map((r) => r.id);
+}
+
+/**
+ * The committed allocation, re-keyed onto whatever advocates this case has.
+ *
+ * The allocation in SEAT_MODELS names T-001's four advocates, so a case with
+ * other representatives has no model for any of them. Since decision 0013 the
+ * allocation is about SEATS rather than about people — seven seats, seven
+ * models — so the mapping is by position: the case's first advocate takes the
+ * model committed to the first advocate seat, and so on. The judges are
+ * untouched; their three ids are fixed by the schema and by the panel.
+ */
+export function modelMapForCase(caseObj, base = modelMap()) {
+  const order = advocateOrder(caseObj);
+  const out = { ...base };
+
+  order.forEach((id, i) => {
+    const key = `advocate.${id}`;
+    if (key in out) return; // one of the canonical four; already allocated
+    const canonical = out[`advocate.${ADVOCATE_ORDER[i]}`];
+    if (canonical) out[key] = canonical;
+  });
+
+  return out;
+}
+
 export const PROMPT_FILES = {
   jon_snow: 'prompts/advocate-jon-snow.md',
   tyrion_lannister: 'prompts/advocate-tyrion-lannister.md',
@@ -197,6 +244,17 @@ export const PROMPT_FILES = {
   elon_model: 'prompts/judge-elon-model.md',
   shamgar_model: 'prompts/judge-shamgar-model.md',
 };
+
+/**
+ * Used for any advocate nobody has written a prompt for (turn 024).
+ *
+ * 0003's answer to a new case is "new representatives means new prompt files",
+ * which a maintainer can do and a stranger submitting a charge sheet cannot.
+ * This is the file for the second kind. There is deliberately NO judge
+ * equivalent: the three judges are the panel's method, fixed by the schema's
+ * `judge_id` enum, and a case does not get to invent one.
+ */
+export const GENERIC_ADVOCATE_PROMPT = 'prompts/advocate-generic.md';
 
 // Fixed order. All three judges receive the advocate opinions in this order,
 // so that an ordering effect is at least detectable across runs rather than

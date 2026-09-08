@@ -8,14 +8,18 @@
 
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { PROMPT_FILES, ADVOCATE_ORDER } from './config.js';
+import { PROMPT_FILES, ADVOCATE_ORDER, GENERIC_ADVOCATE_PROMPT, advocateOrder } from './config.js';
 
 const cache = new Map();
 
-export function loadPrompt(roleId) {
+export function loadPrompt(roleId, role = null) {
   if (cache.has(roleId)) return cache.get(roleId);
 
-  const file = PROMPT_FILES[roleId];
+  // An advocate with no file of its own gets the generic prompt (turn 024).
+  // A JUDGE never does: the three are the panel's method, fixed by the schema's
+  // judge_id enum, and a submitted case does not get to invent one.
+  const file =
+    PROMPT_FILES[roleId] ?? (role === 'advocate' ? GENERIC_ADVOCATE_PROMPT : null);
   if (!file) throw new Error(`No prompt file registered for role "${roleId}"`);
 
   const raw = fs.readFileSync(file, 'utf8');
@@ -119,11 +123,18 @@ const caseHeader = (c) => fenced('CASE-RECORD', caseBody(c));
 export function advocateUserMessage(caseObj, representativeId) {
   const rep = caseObj.representatives.find((r) => r.id === representativeId);
   if (!rep) throw new Error(`No representative "${representativeId}" in ${caseObj.case_id}`);
-  // The line naming the seat is ours and stays OUTSIDE the fence: an advocate's
-  // own identity is not something the submission gets to argue with. The brief
-  // is not passed here — it lives in the role's prompt file (0003) — which is
-  // the subject of the open defect recorded in docs/turns/023.
-  return `${caseHeader(caseObj)}
+  // The brief travels INSIDE the fence, because it is case data like any other
+  // submitted string. The four named advocates also carry their character in
+  // their own prompt file; the duplication is deliberate and harmless — the
+  // prompt is the voice, the brief is the record — and it is what lets an
+  // advocate nobody wrote a prompt for argue at all (turn 024).
+  //
+  // The line naming the seat stays OUTSIDE the fence: an advocate's own
+  // identity is not something the submission gets to argue with.
+  return `${fenced('CASE-RECORD', `${caseBody(caseObj)}
+
+YOUR BRIEF (${rep.name}, ${rep.seat} seat):
+${rep.brief ?? '(none supplied)'}`)}
 
 YOU: ${rep.name} — ${rep.seat} seat (id: ${rep.id})`;
 }
@@ -135,7 +146,7 @@ YOU: ${rep.name} — ${rep.seat} seat (id: ${rep.id})`;
  */
 export function judgeUserMessage(caseObj, advocateOpinions) {
   const byId = new Map(advocateOpinions.map((o) => [o.representative_id, o]));
-  const blocks = ADVOCATE_ORDER.map((id) => {
+  const blocks = advocateOrder(caseObj).map((id) => {
     const rep = caseObj.representatives.find((r) => r.id === id);
     const o = byId.get(id);
     if (!o) {

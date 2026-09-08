@@ -36,8 +36,21 @@
   --f-head:"Archivo","Helvetica Neue",Arial,sans-serif;
   --f-body:"Archivo","Helvetica Neue",Arial,sans-serif;
 }
+/* The dark palette, declared once and applied two ways (turn 022).
+ *
+ *   · the media query, guarded so an explicit "light" beats the machine;
+ *   · the attribute, so an explicit "dark" beats a machine set to light.
+ *
+ * Both are needed. With only the media query the control cannot force dark on
+ * a light machine; with only the attribute the page stops following the system
+ * for everyone who has not chosen, which is the behaviour it had for five
+ * turns. `system` removes the attribute and the query decides again.
+ *
+ * The values are identical in both blocks on purpose, and a test asserts that
+ * — this is a palette stated twice, and two statements of one thing drifting
+ * is the defect this project keeps paying for. */
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --paper:#12100C;
     --ink:#EDE7DA;
     --soft:#B4AB99;
@@ -47,6 +60,16 @@
     --rubric:#E08C80;
     --rubric-soft:#2A1613;
   }
+}
+:root[data-theme="dark"]{
+  --paper:#12100C;
+  --ink:#EDE7DA;
+  --soft:#B4AB99;
+  --faint:#7F7666;
+  --rule:#EDE7DA;
+  --hair:#332D23;
+  --rubric:#E08C80;
+  --rubric-soft:#2A1613;
 }
 
 *{box-sizing:border-box}
@@ -342,3 +365,27 @@ button:focus-visible{outline:2px solid var(--rubric);outline-offset:3px}
   .sheet-form .pair{grid-template-columns:1fr}
   .modes{flex-wrap:wrap}
 }
+
+/* ------------------------------------------------------ the paper control
+   Turn 022. Set as a marginal note, not a widget: small caps, hairline
+   separators, no box. It sits in the masthead where a printed report carries
+   its edition line, and it must not compete with the Convene button. */
+
+.theme{
+  border:0;padding:0;margin:0;
+  display:flex;align-items:baseline;gap:.55rem;
+  font-family:var(--f-head);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+}
+.theme legend{float:left;color:var(--faint);padding:0;margin-right:.55rem}
+.theme label{
+  color:var(--faint);cursor:pointer;padding:.15rem 0;
+  border-bottom:1px solid transparent;white-space:nowrap;
+}
+.theme label:hover{color:var(--ink)}
+.theme label[data-active="yes"]{color:var(--ink);border-bottom-color:var(--rubric)}
+/* The radio itself is the control; it is hidden from sight and not from
+   assistive technology or the keyboard, so focus still lands on it. */
+.theme input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.theme label:focus-within{outline:2px solid var(--rubric);outline-offset:3px}
+
+.masthead-top{display:flex;justify-content:space-between;align-items:baseline;gap:1.5rem;flex-wrap:wrap}

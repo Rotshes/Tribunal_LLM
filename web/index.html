@@ -3,7 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>The Tribunal</title>
+<script>
+  /*
+    Set the palette BEFORE the first paint. Turn 022.
+
+    If this ran with the app instead, the page would render in the light
+    palette and then flip once React mounted. A document set as printed paper
+    flashing white at a reader in a dark room is worse than not offering the
+    choice at all.
+
+    It cannot import web/src/theme.js, because a module would not have run yet
+    — which is why the storage key appears here as a literal and there as a
+    constant. Two statements of one contract, so a test asserts they agree.
+
+    Wrapped, because localStorage THROWS in some privacy modes rather than
+    returning null, and a page must not fail to load over a colour preference.
+    Absent or unrecognised, no attribute is set and prefers-color-scheme
+    decides, which is what this page did before the control existed.
+  */
+  try {
+    var t = localStorage.getItem('tribunal-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">

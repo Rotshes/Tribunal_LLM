@@ -30,6 +30,7 @@ import ChargeSheet from './components/ChargeSheet.jsx';
 import ChargeSheetForm from './components/ChargeSheetForm.jsx';
 import ModelPicker from './components/ModelPicker.jsx';
 import Rulings from './components/Rulings.jsx';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import Waiting from './components/Waiting.jsx';
 
 export default function App() {
@@ -216,7 +217,11 @@ export default function App() {
     <>
       <header>
         <div className="wrap">
-          <p className="eyebrow">In the Tribunal · a fictional proceeding</p>
+          {/* The edition line: what this is, and which paper it is set on. */}
+          <div className="masthead-top eyebrow">
+            <span>In the Tribunal · a fictional proceeding</span>
+            <ThemeToggle />
+          </div>
           <h1>The Tribunal</h1>
           <p className="sub">
             Four advocates argue. Three judges rule, each by a different judicial

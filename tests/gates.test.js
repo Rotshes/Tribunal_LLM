@@ -1756,3 +1756,93 @@ test('the form offers nothing the project forbids, and the page can send one', a
     /path: '\/api\/validate'/,
   );
 });
+
+// ------------------------------------------------- light and dark (turn 022)
+
+test('the two dark palettes agree, and every colour token has a dark value', () => {
+  // The dark palette is now stated TWICE — once behind the media query, once
+  // behind [data-theme="dark"] — because each covers a case the other cannot.
+  // Two statements of one thing drifting is the defect this project has paid
+  // for four times (CLAUDE.md), so they are compared rather than trusted.
+  const css = fs.readFileSync('web/src/styles.css', 'utf8');
+
+  const block = (start) => {
+    const i = css.indexOf(start);
+    assert.ok(i !== -1, `missing block: ${start}`);
+    const open = css.indexOf('{', i);
+    return css.slice(open + 1, css.indexOf('}', open));
+  };
+
+  const tokens = (text) =>
+    Object.fromEntries(
+      [...text.matchAll(/(--[\w-]+)\s*:\s*(#[0-9A-Fa-f]{3,8})/g)].map((m) => [m[1], m[2].toLowerCase()]),
+    );
+
+  const light = tokens(block(':root{'));
+  const queried = tokens(block(':root:not([data-theme="light"])'));
+  const attr = tokens(block(':root[data-theme="dark"]'));
+
+  assert.ok(Object.keys(light).length >= 6, 'the light palette must have colour tokens');
+  assert.deepEqual(
+    attr,
+    queried,
+    'the media-query dark palette and the [data-theme="dark"] one have drifted',
+  );
+
+  // A colour token added to :root and forgotten in the dark block renders as
+  // the light value on a dark ground — unreadable, and invisible in review.
+  for (const name of Object.keys(light)) {
+    assert.ok(name in attr, `${name} has no dark value`);
+  }
+});
+
+test('an explicit theme beats the machine, in both directions', () => {
+  const css = fs.readFileSync('web/src/styles.css', 'utf8');
+
+  // Without the :not() guard, choosing Light on a dark machine does nothing:
+  // the media query would keep winning and the control would be a lie.
+  assert.match(
+    css,
+    /@media \(prefers-color-scheme: dark\)\{\s*:root:not\(\[data-theme="light"\]\)/,
+    'the dark media query must yield to an explicit light choice',
+  );
+
+  // Without the attribute block, choosing Dark on a light machine does nothing.
+  assert.match(css, /:root\[data-theme="dark"\]\{/);
+});
+
+test('the palette is set before the first paint, from the key the app writes', async () => {
+  // The inline script in index.html cannot import theme.js — it has to run
+  // before any module loads — so the storage key is written out as a literal
+  // there and as a constant here. If they disagree, the page renders light and
+  // then flips, which is the whole thing the script exists to prevent.
+  const html = fs.readFileSync('web/index.html', 'utf8');
+  const { THEME_KEY, THEMES, readTheme } = await import('../web/src/theme.js');
+
+  const head = html.slice(0, html.indexOf('<body'));
+  assert.ok(head.includes('<script>'), 'the pre-paint script must be in <head>');
+  assert.ok(
+    head.indexOf('<script>') < html.indexOf('src="/src/main.jsx"'),
+    'it must run before the app module',
+  );
+  assert.ok(
+    head.includes(`'${THEME_KEY}'`) || head.includes(`"${THEME_KEY}"`),
+    `index.html does not read ${THEME_KEY} — the key has drifted from theme.js`,
+  );
+
+  // It must not throw where localStorage does. Some privacy modes throw on
+  // access rather than returning null, and a page must not fail to load over
+  // a colour preference.
+  assert.match(head, /try\s*\{[\s\S]*localStorage[\s\S]*\}\s*catch/, 'the read must be wrapped');
+
+  // 'system' is the default, so a reader who never touches the control keeps
+  // the behaviour the page had for five turns.
+  assert.deepEqual(THEMES, ['light', 'dark', 'system']);
+  const saved = globalThis.localStorage;
+  try {
+    globalThis.localStorage = undefined; // the throwing case
+    assert.equal(readTheme(), 'system', 'an unreadable store must fall back to system');
+  } finally {
+    globalThis.localStorage = saved;
+  }
+});

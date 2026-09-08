@@ -65,6 +65,58 @@ export function g1ChargeSheet(caseObj) {
     }
   }
 
+  problems.push(...g10NoFenceEscape(caseObj));
+
+  return problems;
+}
+
+/**
+ * G10 — no submitted field may carry the marker that delimits submitted fields.
+ *
+ * Since turn 021 a stranger can submit a charge sheet, and `src/prompts.js`
+ * wraps every submitted string in a marker carrying a value minted per
+ * assembly, so that the block cannot be closed from inside. Module 17: "A
+ * charge sheet can order the judge to acquit."
+ *
+ * THIS CHECKS FOR AN ESCAPE ATTEMPT, NOT FOR A PHRASE. Deliberately: a gate
+ * that greps for "ignore previous instructions" is the verification theatre
+ * Module 13 names — it catches the one attack somebody thought of, reports a
+ * clean bill of health against every other, and false-positives on a case that
+ * legitimately concerns instructions. There is no legitimate reason for a
+ * charge sheet to contain this marker, so this fires only on an attempt to
+ * break out of the block, and it fires on every such attempt regardless of what
+ * the escaping text then says.
+ *
+ * It is one layer of three and does not pretend otherwise. The other two are
+ * the unguessable delimiter and the standing instruction beside the data; the
+ * limit on all of them is that the model holds no tools and no authority the
+ * runner has not already attached itself.
+ */
+export function g10NoFenceEscape(caseObj) {
+  const problems = [];
+  const MARKER = /⟪|⟫|CASE-RECORD|ARGUMENTS-[0-9a-f]{6}/;
+
+  const walk = (value, path) => {
+    if (typeof value === 'string') {
+      if (MARKER.test(value)) {
+        problems.push(
+          `${path} contains the marker that delimits submitted material. ` +
+            'Nothing in a charge sheet has a reason to, and text placed there ' +
+            'could pass itself off as an instruction to the models.',
+        );
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((v, i) => walk(v, `${path}/${i}`));
+      return;
+    }
+    if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) walk(v, `${path}/${k}`);
+    }
+  };
+
+  walk(caseObj, '');
   return problems;
 }
 

@@ -64,8 +64,9 @@ lines are the rule, not the argument.
 - **The judges are methods, not people.** No prompt speaks as a named person; no
   citations, because a fabricated one attributed to a real judge is the harm. The
   disclaimer is data, attached by the runner. (0005)
-- **The advocates and the judges run different models** — 3.7-flash argues,
-  flash-lite rules, because only flash-lite judges divide. (0009)
+- **Every seat runs its own model**, judges from three vendors. *Provisional* —
+  adopted without the comparison 0009 asked for, so a split no longer attributes
+  to method over model; `TRIBUNAL_UNIFORM_MODEL` asks it. (0013 over 0009)
 - **Validation runs the schema files directly**, never restates them. (0006)
 - **Runs cited by a record are copied to `docs/evidence/` by hand**, never
   reconstructed. (0007)

@@ -278,35 +278,105 @@ test('the model map reads the environment when called, not when imported', () =>
   }
 });
 
-// ------------------------------------------- the committed allocation (turn 010)
+// ------------------------- the committed allocation (turns 010 and 018)
 
-test('the committed allocation gives advocates and judges different models', () => {
-  // This is the finding of turn 010 expressed as a check. Uniform panels ruled
-  // identically in 5 runs of 5; the division came back when only the judges
-  // went back to flash-lite. If someone later collapses this to one model
-  // because "the values look redundant", the run stops being the thing the
-  // decision record describes — so the difference is asserted, not assumed.
+test('the committed allocation gives all seven seats a different model', async () => {
+  // Turn 010's version of this test asserted the opposite shape — four
+  // advocates on one model, three judges on another, and the two different.
+  // Decision 0013 replaced that with one model per seat, so the check is
+  // rewritten rather than relaxed: a test that still passed under both
+  // allocations would not be checking the allocation at all.
   const before = process.env.TRIBUNAL_UNIFORM_MODEL;
   delete process.env.TRIBUNAL_UNIFORM_MODEL;
   try {
     const m = modelMap();
-    const advocates = new Set(ADVOCATE_ORDER.map((id) => m[`advocate.${id}`]));
-    const judges = new Set(JUDGE_ORDER.map((id) => m[`judge.${id}`]));
+    const seats = [
+      ...ADVOCATE_ORDER.map((id) => `advocate.${id}`),
+      ...JUDGE_ORDER.map((id) => `judge.${id}`),
+    ];
+    assert.equal(seats.length, 7);
 
-    assert.equal(advocates.size, 1, 'all four advocates run one model');
-    assert.equal(judges.size, 1, 'all three judges run one model');
-    assert.notEqual(
-      [...advocates][0],
-      [...judges][0],
-      'decision 0009: the advocates and the judges do not run the same model',
+    const models = seats.map((key) => m[key]);
+    for (const [i, model] of models.entries()) {
+      assert.ok(model, `${seats[i]} has no model`);
+    }
+    assert.equal(
+      new Set(models).size,
+      7,
+      'decision 0013: seven seats, seven distinct models — two seats share one',
     );
 
-    // And both must be on the allowlist, or the browser could not reproduce a
+    // Every seat must be on the allowlist, or the browser could not reproduce a
     // committed run and the backend would refuse its own default.
     const ids = allowedIds();
-    for (const model of Object.values(m)) {
+    for (const model of models) {
       assert.ok(ids.has(model), `${model} is not in panel/models.json`);
     }
+
+    // And every seat must be on a model OBSERVED TO WORK. The allowlist
+    // deliberately keeps entries that fail, so that archived runs which used
+    // them still resolve; the committed allocation may not contain one. Without
+    // this, a copy-paste from the allowlist into config.js ships a tribunal
+    // with a permanently dead seat and every test still green.
+    const { allowedModels } = await import('../src/models.js');
+    const observedBy = new Map(allowedModels().map((x) => [x.id, x.observed]));
+    for (const model of models) {
+      assert.match(
+        String(observedBy.get(model)),
+        /^works/,
+        `${model} holds a committed seat but was not observed to work`,
+      );
+    }
+  } finally {
+    if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
+  }
+});
+
+test('the judges hold three different vendors and no two seats share a lineage by accident', () => {
+  // The point of 0013's arrangement, asserted where it can be broken.
+  //
+  // Seven distinct ids is satisfiable by seven models from one vendor, and that
+  // would defeat the reason for doing it: sibling models agree, and three
+  // judges that agree by lineage produce a panel with nothing to report (0002).
+  // So the judge side carries the stronger condition.
+  const before = process.env.TRIBUNAL_UNIFORM_MODEL;
+  delete process.env.TRIBUNAL_UNIFORM_MODEL;
+  try {
+    const m = modelMap();
+    const vendor = (id) => String(id).split('/')[0];
+    const judgeVendors = JUDGE_ORDER.map((id) => vendor(m[`judge.${id}`]));
+    assert.equal(
+      new Set(judgeVendors).size,
+      3,
+      `the three judges must come from three vendors, got ${judgeVendors.join(', ')}`,
+    );
+  } finally {
+    if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
+  }
+});
+
+test('a visitor override cannot alter the committed allocation for later runs', async () => {
+  // modelMap() returns a spread of SEAT_MODELS, not SEAT_MODELS itself.
+  // resolveModelMap() writes overrides into the object it is given, so handing
+  // it the module-level constant would let one request's model choice become
+  // every later request's default for the life of the process — a bug that
+  // would only ever show on the deployed site, under concurrent visitors, and
+  // never once locally.
+  const { resolveModelMap } = await import('../src/config.js');
+  const before = process.env.TRIBUNAL_UNIFORM_MODEL;
+  delete process.env.TRIBUNAL_UNIFORM_MODEL;
+  try {
+    const original = modelMap()['judge.barak_model'];
+    const { problems } = resolveModelMap(
+      { 'judge.barak_model': 'qwen/qwen3.7-flash' },
+      allowedIds(),
+    );
+    assert.deepEqual(problems, []);
+    assert.equal(
+      modelMap()['judge.barak_model'],
+      original,
+      'an override leaked into the committed allocation',
+    );
   } finally {
     if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
   }
@@ -363,16 +433,22 @@ test('an override must name a real role and an allowed model', async () => {
   const before = process.env.TRIBUNAL_MODEL;
   process.env.TRIBUNAL_MODEL = 'google/gemini-3.5-flash-lite';
   try {
+    // Read the defaults from modelMap() rather than naming them. This test
+    // twice hardcoded whatever the allocation happened to be, and turn 018
+    // broke it by changing the allocation without changing the behaviour under
+    // test — which is leakage, not any particular model. Derive, don't restate.
+    const defaults = modelMap();
+
     const ok = resolveModelMap({ 'judge.barak_model': 'qwen/qwen3.7-flash' }, ids);
     assert.deepEqual(ok.problems, []);
     assert.equal(ok.map['judge.barak_model'], 'qwen/qwen3.7-flash');
-    assert.equal(ok.map['judge.elon_model'], 'google/gemini-3.5-flash-lite',
+    assert.equal(ok.map['judge.elon_model'], defaults['judge.elon_model'],
       'an override must not leak onto other roles');
 
     // The whole point: a model id from a request never reaches the provider.
     const evil = resolveModelMap({ 'judge.barak_model': 'anthropic/claude-opus-5' }, ids);
     assert.ok(evil.problems.some((p) => p.includes('not an allowed model')));
-    assert.equal(evil.map['judge.barak_model'], 'google/gemini-3.5-flash-lite');
+    assert.equal(evil.map['judge.barak_model'], defaults['judge.barak_model']);
 
     const nobody = resolveModelMap({ 'judge.nobody': 'qwen/qwen3.7-flash' }, ids);
     assert.ok(nobody.problems.some((p) => p.includes('not a role')));

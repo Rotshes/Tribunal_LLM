@@ -1,9 +1,22 @@
 # 0009 — The advocates and the judges run different models
 
-Status: accepted (Roy, 31 August 2026)
+Status: **superseded by 0013** (8 September 2026)
 Date: 31 August 2026
 Evidence: `docs/turns/010-model-comparison.md`, and the compare table over 23
 runs of T-001 it cites.
+
+> Superseded **against its own terms, not on them.** This record named a
+> per-seat allocation as the interesting experiment, declined it for want of
+> runs, and listed a per-judge comparison under *What would change this*. That
+> comparison was never run. 0013 adopts the allocation anyway, on instruction,
+> and says so in those words. See
+> `docs/decisions/0013-seven-seats-seven-models.md`.
+>
+> Left in place unedited below this line. The 23-run comparison is still the
+> only measurement this project has of what the judge model does to the panel,
+> and it is the standard against which 0013's *provisional* status will be
+> settled or withdrawn. A superseded record whose evidence is still load-bearing
+> is not a dead file.
 
 ## The decision
 

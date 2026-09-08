@@ -1,23 +1,57 @@
 // Per-role model map. This is the committed allocation.
 //
-// Until turn 010 every entry here was the same model, read from
-// TRIBUNAL_MODEL, and this comment said the progression from one model toward
-// several "should arrive as a diff to this object plus a decision record citing
-// the per-call logs". This is that diff.
+//   why:      docs/decisions/0013-seven-seats-seven-models.md
+//   supersedes: docs/decisions/0009-advocates-and-judges-run-different-models.md
+//   evidence: docs/turns/018-seven-seats-seven-models.md
 //
-//   why:      docs/decisions/0009-advocates-and-judges-run-different-models.md
-//   evidence: docs/turns/010-model-comparison.md
+// Turn 010 replaced one model for all seven calls with two: 3.7-flash argues,
+// flash-lite rules, because across twenty-three runs the model the JUDGES run
+// decided whether the panel divided at all. Uniform 3.7-flash gave three
+// identical rulings in five runs out of five — a panel that cannot disagree,
+// the one outcome this project has no use for.
 //
-// The short version: across twenty-three runs on T-001, which model the JUDGES
-// run decides whether the panel divides at all. Uniform gemini-3.7-flash gave
-// three identical rulings in five runs out of five — a panel that cannot
-// disagree, which is the one outcome this project has no use for. Putting
-// 3.7-flash on the advocates while leaving flash-lite on the judges brought the
-// division straight back. So: the better model argues, the model that actually
-// produces a panel rules.
+// Turn 018 replaces two with seven, one per seat (0013). That was asked for,
+// and it is not free: with three judge models on three judges, a division in
+// the panel can no longer be attributed to the judicial method rather than to
+// the model, which is the claim 0009's whole comparison existed to support.
+// 0009 named this experiment and declined it for want of runs; 0013 takes it
+// anyway, on instruction, and says so.
+//
+// TRIBUNAL_UNIFORM_MODEL below is what keeps that recoverable: one run with it
+// set puts all seven seats on one model, and the difference between that run
+// and this allocation is the only place the method-versus-model question can
+// still be asked.
+//
+// WHICH MODEL SITS WHERE IS NOT ARBITRARY.
+//
+// The judges hold the three most different models available — three separate
+// vendors — because the judges are the seats where a shared lineage would
+// quietly manufacture agreement. The advocates hold the near-siblings, because
+// an advocate's seat already fixes what gets argued (0004) and its job is to
+// put a case, not to reach an independent conclusion. Same seven distinct ids
+// either way; this arrangement spends the distinctness where it buys something.
+//
+// Every id below is in panel/models.json with a dated `observed` record of a
+// real call. A test asserts that, that the seven are distinct, and that each
+// one was observed to WORK — the allowlist accepts models that fail, and the
+// committed allocation may not contain one.
 
-const ADVOCATE_MODEL = 'google/gemini-3.7-flash';
-const JUDGE_MODEL = 'google/gemini-3.5-flash-lite';
+const SEAT_MODELS = {
+  // The advocates. gemini-3.7-flash keeps jon_snow because it is the model
+  // 0009's advocate finding was made on; moving it would have discarded the
+  // only advocate-side evidence this project has.
+  'advocate.jon_snow': 'google/gemini-3.7-flash',
+  'advocate.tyrion_lannister': 'google/gemini-3.8-flash',
+  'advocate.daenerys_targaryen': 'google/gemini-3.6-flash',
+  'advocate.grey_worm': 'qwen/qwen3.7-flash',
+
+  // The judges, one vendor each. flash-lite keeps barak_model for the same
+  // reason: it is the seat every pre-018 judge measurement was taken on, so it
+  // is the one column of the panel that stays comparable across the change.
+  'judge.barak_model': 'google/gemini-3.5-flash-lite',
+  'judge.elon_model': 'inception/mercury-2.5-preview',
+  'judge.shamgar_model': 'nvidia/nemotron-3.5-lightning',
+};
 
 // This is a FUNCTION, not a constant, and that is load-bearing.
 //
@@ -33,18 +67,15 @@ export function modelMap() {
   // project runs: unset, the committed allocation above applies.
   const uniform = process.env.TRIBUNAL_UNIFORM_MODEL || null;
 
-  const advocate = uniform ?? ADVOCATE_MODEL;
-  const judge = uniform ?? JUDGE_MODEL;
-
-  return {
-    'advocate.jon_snow': advocate,
-    'advocate.tyrion_lannister': advocate,
-    'advocate.daenerys_targaryen': advocate,
-    'advocate.grey_worm': advocate,
-    'judge.barak_model': judge,
-    'judge.elon_model': judge,
-    'judge.shamgar_model': judge,
-  };
+  // A fresh object every call. Returning SEAT_MODELS itself would hand the
+  // committed allocation to resolveModelMap() below, which writes a visitor's
+  // overrides straight into it — one request choosing a model would change
+  // what every later request considered the default, for the life of the
+  // process. Spreading it is what keeps a per-run choice a per-run choice.
+  if (uniform) {
+    return Object.fromEntries(Object.keys(SEAT_MODELS).map((key) => [key, uniform]));
+  }
+  return { ...SEAT_MODELS };
 }
 
 export const ROLE_KEYS = Object.keys(modelMap());

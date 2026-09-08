@@ -48,10 +48,11 @@ export default function ModelPicker({ charge, models, chosen, onChange, onReset 
       </div>
 
       {/* Two groups, not one list of seven.
-          The advocates and the judges do different jobs, they run different
-          models by default (decision 0009 — 3.7-flash argues, flash-lite
-          rules), and the allocation is far easier to reason about when the
+          The advocates and the judges do different jobs and run in two stages,
+          four then three, and the allocation is far easier to read when the
           layout says so rather than leaving it to be inferred from the order.
+          Since 0013 all seven defaults differ, so the grouping is now the only
+          thing on screen that still says which half a seat belongs to.
           The roles still come from the server in the server's order. */}
       {GROUPS.map(({ kind, heading, blurb }) => {
         const keys = models.roles.filter((key) => key.startsWith(`${kind}.`));
@@ -93,12 +94,13 @@ export default function ModelPicker({ charge, models, chosen, onChange, onReset 
       })}
 
       <p className="panel-note">
-        Each role can use a different model. The defaults are the allocation
-        committed in the repository; anything you change here applies to this run
-        only. Seven calls, so the cost is roughly seven times one call. The list
-        offers only models this project has run and seen work — two others are on
-        the allowlist and are not offered, with the reason recorded against each
-        in <code>panel/models.json</code>.
+        All seven seats run a different model by default — that is the committed
+        allocation, not a suggestion; anything you change here applies to this
+        run only. Seven calls, so the cost is roughly seven times one call. The
+        list offers only models this project has run and seen work, and marks the
+        one that works but takes about a minute. Two more are on the allowlist
+        and are not offered, with the reason recorded against each in{' '}
+        <code>panel/models.json</code>.
       </p>
     </div>
   );

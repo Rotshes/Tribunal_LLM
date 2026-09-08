@@ -1,16 +1,23 @@
 {
   "$comment": "The models a visitor may choose from, per role. THIS IS AN ALLOWLIST AND IT IS THE ONLY LIST THAT COUNTS. The browser sends a model id; the backend rejects anything not named here. Without that, a public URL is an invitation to spend the project's OpenRouter credit on the most expensive model available, seven calls at a time.",
 
-  "$verification": "THE CATALOGUE FLAG IS NOT EVIDENCE. All five ids below appear under openrouter.ai/models?supported_parameters=response_format, and two of them still fail in production: response_format support is per ENDPOINT, not per model, and require_parameters routes only to endpoints supporting everything sent. On 31.08.2026 gpt-5.6-luna returned OpenRouter 404 'no endpoints found' twice in one run, and solar-pro4 routed successfully and returned prose. The only verification that counts is a run. Every entry therefore carries an `observed` field saying what actually happened and when; add nothing here without one.",
+  "$verification": "THE CATALOGUE FLAG IS NOT EVIDENCE. Every id below appears under openrouter.ai/models?supported_parameters=response_format, and two of them still fail in production: response_format support is per ENDPOINT, not per model, and require_parameters routes only to endpoints supporting everything sent. On 31.08.2026 gpt-5.6-luna returned OpenRouter 404 'no endpoints found' twice in one run, and solar-pro4 routed successfully and returned prose. The only verification that counts is a run. Every entry therefore carries an `observed` field saying what actually happened and when; add nothing here without one.",
+
+  "$price_note": "price_per_m_in is dollars per million input tokens, converted from OpenRouter's raw per-token pricing.prompt (×1e6), checked 08.09.2026. It is one number for something that is not one number: gemini-3.6-flash alone quotes 0.375 on flex endpoints, 0.75 standard and 1.35 on priority. Price is per endpoint too, exactly as response_format support is. The figure here is the standard endpoint, and it is an order of magnitude, not an invoice.",
 
   "default": "google/gemini-3.5-flash-lite",
 
   "$default_note": "This is the fallback only. The committed per-role allocation lives in modelMap() in src/config.js and remains the artifact the model-progression argument rests on. A visitor's choice is an override on that default for one run; it is not the project's model decision.",
 
   "$rejected": {
-    "$comment": "Candidates tried with `npm run try-model` and NOT added. Kept so the same model is not evaluated twice, and so the menu's shortness is a recorded result rather than an oversight. A rejection here is one observation, like an `observed` field, and is dated for the same reason: endpoints and capacity move.",
+    "$comment": "Candidates tried with `npm run try-model` and NOT added. Kept so the same model is not evaluated twice, and so the menu's shortness is a recorded result rather than an oversight. A rejection here is one observation, like an `observed` field, and is dated for the same reason: endpoints and capacity move. The rule for which list an id lands in is chronological, not qualitative: a model tested BEFORE being added and failing goes here, a model already in `models` that later fails keeps its entry and carries the failure in `observed` — so nothing that an archived run references is ever removed.",
     "deepseek/deepseek-v4-flash-0731": "no answer within 120s — the call was cut off, not refused (31.08.2026). Two minutes is longer than any seat should wait; not a borderline case.",
-    "inclusionai/ling-3.0-flash": "returned JSON in 29s but omitted the required `reasoning` field, so G2 rejected it (31.08.2026). It can produce the shape and not the substance, which is the harder failure to notice."
+    "inclusionai/ling-3.0-flash": "returned JSON in 29s but omitted the required `reasoning` field, so G2 rejected it (31.08.2026). It can produce the shape and not the substance, which is the harder failure to notice.",
+    "z-ai/glm-5.3-flash": "no answer within 45s, and no answer within 120s on a second attempt (08.09.2026). Two cut-offs at two different bounds is not a slow model, it is an unreachable one.",
+    "ibm-granite/granite-4.2-8b": "returned valid JSON in 46.1s whose first `grounds` entry exceeded the schema's 400-character cap (08.09.2026). The only candidate so far to fail on length rather than on shape or silence — see the open question in docs/turns/018, because a bound tight enough to reject good output has been a bug in the bound before now.",
+    "qwen/qwen3.8-flash": "OpenRouter 429, 'temporarily rate-limited upstream', on two attempts four minutes apart (08.09.2026). This is a verdict on the provider's capacity today and not on the model; it is worth retrying if a seat is ever needed.",
+    "dots-studio/dots-3-note-preview:free": "no answer within 45s (08.09.2026). Not retried at 120s, because by then seven working models were already in hand — recorded as untested at the longer bound rather than as a failure at it.",
+    "liquid/lfm-2.5-2.6b:free": "works — produced a valid judge opinion (not_justified) in 38.9s (08.09.2026) — and is rejected anyway. A test on this file has forbidden `:free` ids since turn 008, on the grounds that a free tier rate-limits, and adding this one made that test fail. The rule was right on the day: qwen3.8-flash returned OpenRouter 429 'temporarily rate-limited upstream' twice within the same hour. A seat that works in screening and 429s under a seven-call run is worse than no seat. This is the only entry in this file rejected for a reason other than what it did when called."
   },
 
   "models": [
@@ -19,21 +26,28 @@
       "label": "Gemini 3.5 Flash Lite",
       "price_per_m_in": 0.30,
       "note": "The baseline. Every measurement in docs/turns/004 was made on this.",
-      "observed": "works — the committed judge model, used in 19 recorded runs (31.08.2026)"
+      "observed": "works — the committed model for the first judge's seat, used in 19 recorded runs (31.08.2026)"
     },
     {
       "id": "google/gemini-3.7-flash",
       "label": "Gemini 3.7 Flash",
       "price_per_m_in": 0.75,
       "note": "Same family, more capable. The natural first comparison.",
-      "observed": "works — the committed advocate model, decision 0009 (31.08.2026)"
+      "observed": "works — the committed model for the first advocate's seat, decisions 0009 and 0013 (31.08.2026)"
     },
     {
-      "id": "openai/gpt-5.6-luna",
-      "label": "GPT-5.6 Luna",
-      "price_per_m_in": 0.20,
-      "note": "A different provider, which is the point of having more than one. Price checked against openrouter.ai/openai/gpt-5.6-luna on 31.08.2026 and corrected from 0.10, which was wrong when it was written.",
-      "observed": "FAILS — OpenRouter 404, \"no endpoints found that can handle the requested parameters\", on both roles that used it (31.08.2026). Listed in the response_format catalogue and still unroutable with require_parameters. Kept rather than removed: the failure is instant, costs nothing, and shows as a failed seat saying exactly this — which is more useful to a reader than a quietly shorter menu."
+      "id": "google/gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
+      "price_per_m_in": 0.75,
+      "note": "The newest of the Gemini flashes and the same price as 3.7. Added for decision 0013, which needs seven distinct models and takes the near-siblings on the advocate side where the seat already fixes what gets argued.",
+      "observed": "works — produced a valid judge opinion (justified) in 26.8s (08.09.2026)"
+    },
+    {
+      "id": "google/gemini-3.6-flash",
+      "label": "Gemini 3.6 Flash",
+      "price_per_m_in": 0.75,
+      "note": "The generation between the baseline and 3.7. Added for decision 0013. Its price varies more than any other entry here by endpoint — see $price_note.",
+      "observed": "works — produced a valid judge opinion (not_justified) in 34.8s (08.09.2026)"
     },
     {
       "id": "qwen/qwen3.7-flash",
@@ -46,8 +60,29 @@
       "id": "nvidia/nemotron-3.5-lightning",
       "label": "Nemotron 3.5 Lightning",
       "price_per_m_in": 0.08,
-      "note": "A fourth provider, and the only model on this list that earned its place before being added rather than after. Found by filtering openrouter.ai for cheap models supporting response_format, then verified with `npm run try-model` — one call, not seven.",
+      "note": "The first model on this list to earn its place before being added rather than after. Found by filtering openrouter.ai for cheap models supporting response_format, then verified with `npm run try-model` — one call, not seven.",
       "observed": "works — produced a valid judge opinion (not_justified) in 14.4s (31.08.2026)"
+    },
+    {
+      "id": "inception/mercury-2.5-preview",
+      "label": "Mercury 2.5 Preview",
+      "price_per_m_in": 0.04,
+      "note": "A fifth provider, and the fastest model measured for this project. One of eight candidates screened on 08.09.2026 and the only one of the first five to pass.",
+      "observed": "works — produced a valid judge opinion (justified) in 6.2s (08.09.2026)"
+    },
+    {
+      "id": "bytedance-seed/seed-2-1-turbo",
+      "label": "Seed 2.1 Turbo",
+      "price_per_m_in": 0.50,
+      "note": "A sixth provider. Offered but deliberately NOT allocated a seat in decision 0013: the advocates run concurrently, so the slowest advocate sets the length of the whole first stage, and a model with this spread would set it alone.",
+      "observed": "works (slow) — produced a valid judge opinion (not_justified) in 99.6s, after two earlier attempts were cut off at 45s (08.09.2026). It answers; it cannot be relied on to answer promptly."
+    },
+    {
+      "id": "openai/gpt-5.6-luna",
+      "label": "GPT-5.6 Luna",
+      "price_per_m_in": 0.20,
+      "note": "A different provider, which is the point of having more than one. Price checked against openrouter.ai/openai/gpt-5.6-luna on 31.08.2026 and corrected from 0.10, which was wrong when it was written.",
+      "observed": "FAILS — OpenRouter 404, \"no endpoints found that can handle the requested parameters\", on both roles that used it (31.08.2026). Listed in the response_format catalogue and still unroutable with require_parameters. Kept rather than removed so that archived runs which used it still resolve; no longer offered in the picker."
     },
     {
       "id": "upstage/solar-pro4",

@@ -60,6 +60,16 @@ export function describeModels(doc) {
  * returns prose. Offering those identically to the ones that work is a trap,
  * not a choice: a seat argues nothing and nothing on screen said it was likely.
  *
+ * Since turn 018 those two are filtered out of the picker entirely and this
+ * function no longer fires on them there — it stays because it reads the record
+ * rather than a hardcoded list, so a model that starts failing is labelled the
+ * moment its `observed` field says so, before anyone thinks to filter it.
+ *
+ * `works (slow)` is the case that IS live in the picker. Seed 2.1 Turbo answers
+ * correctly and takes about a minute, and the advocates run concurrently, so one
+ * slow seat sets the length of the whole first stage. That is a real cost to a
+ * visitor and nothing else on screen would have shown it.
+ *
  * The wording comes from `observed` in panel/models.json, which records what a
  * run actually did rather than what a catalogue claims. (turn 013)
  */
@@ -67,5 +77,6 @@ export function modelHealth(model) {
   const observed = String(model?.observed ?? '');
   if (observed.startsWith('FAILS')) return ' · known to fail';
   if (observed.startsWith('UNRELIABLE')) return ' · unreliable';
+  if (observed.startsWith('works (slow)')) return ' · slow, about a minute';
   return '';
 }

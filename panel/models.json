@@ -61,7 +61,7 @@
       "label": "Nemotron 3.5 Lightning",
       "price_per_m_in": 0.08,
       "note": "The first model on this list to earn its place before being added rather than after. Found by filtering openrouter.ai for cheap models supporting response_format, then verified with `npm run try-model` — one call, not seven.",
-      "observed": "works — produced a valid judge opinion (not_justified) in 14.4s (31.08.2026)"
+      "observed": "works, INTERMITTENTLY — passed screening in 14.4s (31.08.2026), then failed its first production run in a judge's seat: `/responds_to/0/answer must NOT have fewer than 20 characters` (run ffc49fca, 08.09.2026). It answers four advocates more tersely than it answered the two the screening tool used to stub. The screen has been widened to four; this entry is the reason."
     },
     {
       "id": "inception/mercury-2.5-preview",

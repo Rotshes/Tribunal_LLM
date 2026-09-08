@@ -78,5 +78,6 @@ export function modelHealth(model) {
   if (observed.startsWith('FAILS')) return ' · known to fail';
   if (observed.startsWith('UNRELIABLE')) return ' · unreliable';
   if (observed.startsWith('works (slow)')) return ' · slow, about a minute';
+  if (observed.startsWith('works, INTERMITTENTLY')) return ' · works, but has failed a run';
   return '';
 }

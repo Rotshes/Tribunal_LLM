@@ -67,16 +67,36 @@ const caseObj = JSON.parse(
 const prompt = loadPrompt('barak_model');
 
 // The advocates are stubbed rather than run, because four more calls would be
-// four more calls. The judge is asked to rule on two short arguments; the shape
-// of the task is unchanged.
-const stubAdvocates = ['jon_snow', 'grey_worm'].map((id) => ({
+// four more calls.
+//
+// THERE ARE FOUR OF THEM, and there used to be two. That change came from a
+// real failure: nvidia/nemotron-3.5-lightning passed this screen in 14.4s on
+// 31.08.2026, was given a judge's seat by decision 0013, and failed on its
+// first production run (ffc49fca, 08.09.2026) with
+// `/responds_to/0/answer must NOT have fewer than 20 characters`.
+//
+// Two stubs is an easier task than the job. A judge answering two advocates can
+// spend a paragraph on each; the same model answering four spreads itself over
+// four and writes "Yes, correct." The screen said the model could do the work
+// and the work it was shown was not the work. So the stub now matches
+// production: four advocates, two seats each, real opposing positions.
+//
+// What this STILL does not test, and no one-call screen can: that the model
+// does it twice. `try-model` reports one observation and says so on every run.
+const stubAdvocates = [
+  ['jon_snow', 'defense', 'justified',
+    'The killing prevented an ongoing campaign of mass slaughter against civilians who had already surrendered, and no lawful mechanism to stop it existed.'],
+  ['tyrion_lannister', 'defense', 'justified',
+    'A ruler who has destroyed a surrendered city and announced further wars has placed herself beyond any remaining institution able to restrain her.'],
+  ['daenerys_targaryen', 'prosecution', 'not_justified',
+    'No individual may appoint himself judge of his sovereign on his own reading of her future intentions, without charge, hearing, or any mandate whatever.'],
+  ['grey_worm', 'prosecution', 'not_justified',
+    'The killing was carried out without authority against an unarmed person posing no immediate threat, with no attempt at arrest or any lesser alternative.'],
+].map(([id, seat, position, case_for_seat]) => ({
   representative_id: id,
-  seat: id === 'jon_snow' ? 'defense' : 'prosecution',
-  position: id === 'jon_snow' ? 'justified' : 'not_justified',
-  case_for_seat:
-    id === 'jon_snow'
-      ? 'The killing prevented an ongoing campaign of mass slaughter against civilians who had already surrendered, and no lawful mechanism to stop it existed.'
-      : 'The killing was carried out without authority against an unarmed person posing no immediate threat, with no attempt at arrest or any lesser alternative.',
+  seat,
+  position,
+  case_for_seat,
   key_points: ['Necessity and the absence of alternatives are the whole question.'],
   argument: 'See the case above.',
   relies_on_facts: [0, 1, 4],

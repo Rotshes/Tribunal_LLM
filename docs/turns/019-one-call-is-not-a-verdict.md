@@ -179,18 +179,68 @@ without checking what it was counting.** Twice in one turn, from the same tool.
 The fix this time is in the tool rather than in my attention, which is the only
 version of the fix that survives the next session.
 
+## 6c. Postscript — the four runs after the top-up
+
+| Run | barak | elon | shamgar | Panel |
+|---|---|---|---|---|
+| 20:52 · 7/7 | justified | justified | not_justified | divided |
+| 20:59 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:00 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:00 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:01 · 6/7 | justified | not_justified | not_justified | divided |
+
+**34 of 35 calls, three judges every time, a divided panel every time.** The one
+failure was grey_worm on `/concedes/2 must NOT have fewer than 20 characters` —
+an advocate, and the panel was unaffected. 31–48s per run.
+
+The four credit-dead runs are excluded from that table on purpose, and not only
+because they are incomplete: OpenRouter's refusal reads *"requires more credits,
+or fewer max_tokens"*, so the calls that did get through were truncated by the
+provider. That accounts for the six non-account failures inside them — barak
+returning fewer than two `responds_to` items, shamgar missing `no_facts_reason`,
+`relies_on_facts` arriving non-integer. Those are not failures of models, they
+are failures of models given a budget. Contaminated, not merely partial.
+
+The compare tool now separates the account refusals from the rate but still
+counts those four runs in the config's denominator, which is why the header reads
+11% where the five real runs are 3%. Named rather than fixed: excluding a whole
+run from a comparison is a bigger judgement than excluding a call, and it is not
+one to make at the end of a long turn.
+
+### The finding worth more than any of it
+
+The per-judge leans survived their models being replaced. shamgar went from a
+Google model to a Meta one and ruled `not_justified` five times out of five, as
+it had thirteen times out of thirteen before. elon went to Inception and kept
+leaning `not_justified`.
+
+0013 was filed under the cost that three judge models make divergence
+unattributable between method and model. This points the other way — the lean
+travels with the seat. **Five runs, and three confounds** written into 0013's
+amendment: barak is the same model in both columns, elon's 4–1 is inside what a
+coin does at temperature 0.7, and the advocate side changed too so the judges are
+not reading identical input across the comparison. The experiment that would
+settle it is permuting the three judge models between the three seats.
+
 ## 7. Outcome
 
 Done: failures attributed by seat, four candidates screened, two seats replaced,
-0013 amended with the five-run evidence, two models downgraded to UNRELIABLE
-with their production records, one misattribution corrected.
+two models downgraded to UNRELIABLE with their production records, one
+misattribution corrected, `isAccountFailure()` and its test so a billing wall
+never again reads as a broken allocation, and 0013 amended with the five-run
+result and the per-judge-lean table.
 
-Also done, in the postscript: `isAccountFailure()` and its test, so a billing
-wall never again reads as a broken allocation.
+**The allocation stands.** Five runs, 34 of 35 calls, three judges every time, a
+divided panel every time — against 26% failures and an empty shamgar seat before
+the replacement.
 
-Open: **four more runs, once the OpenRouter credit is topped up.** One clean run
-exists on this allocation and its panel divided. Four of the five were spent on
-an empty account and prove nothing either way. **If shamgar or grey_worm then
-fails again, 0013's amendment says revert to 0009 rather than screen a third
-round** — two rounds without a stable panel would mean the affordable model pool
-is not deep enough to seat seven, which is a result in itself.
+Open, in order of what they would settle:
+
+1. **0013's status line.** It still reads *provisional*. On this evidence it can
+   be accepted, and that is Roy's line to write, not mine.
+2. **Permute the three judge models between the three seats.** The one experiment
+   that would turn the per-judge-lean table from suggestive into evidence, and
+   the direct answer to the attribution cost 0013 was filed under.
+3. **Whether a run killed by an account refusal belongs in a config's
+   denominator at all.** Today it does, which is why the tool reads 11% where
+   the five real runs are 3%.

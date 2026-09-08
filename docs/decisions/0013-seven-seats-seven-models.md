@@ -56,6 +56,57 @@ to screen a third round. Two rounds of replacement without a stable panel would
 mean the pool of models this project can afford is not deep enough to seat seven,
 which is itself a result worth recording.
 
+### The five runs, same evening
+
+They did not fail. Excluding four runs killed by an exhausted OpenRouter balance
+— which produced no panel and whose surviving calls were truncated by the
+provider, so they are contaminated rather than merely incomplete:
+
+| Run | barak | elon | shamgar | Panel |
+|---|---|---|---|---|
+| 20:52 · 7/7 | justified | justified | not_justified | divided |
+| 20:59 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:00 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:00 · 7/7 | justified | not_justified | not_justified | divided |
+| 21:01 · 6/7 | justified | not_justified | not_justified | divided |
+
+**34 of 35 calls succeeded. All three judges ruled in all five runs. The panel
+divided in all five.** The single failure was grey_worm on
+`/concedes/2 must NOT have fewer than 20 characters` — an advocate, not a judge,
+and the panel was unaffected. Wall time 31–48s.
+
+Against the allocation this replaced — 26% failures and shamgar absent from five
+runs out of five — and against 0009's 1% over thirteen runs, this sits with 0009
+rather than with what it replaced.
+
+### An unplanned finding, and the more interesting one
+
+Compare the per-judge leans across two allocations that share only barak's model:
+
+| Judge | Under 0009 (13 runs) | Under 0013 amended (5 runs) |
+|---|---|---|
+| barak · same model both | justified ×10, not ×2 | justified ×5 |
+| elon · flash-lite → mercury | not ×9, justified ×4 | not ×4, justified ×1 |
+| shamgar · flash-lite → muse-glimmer | not ×13 | not ×5 |
+
+**Each judge kept its lean when its model was replaced.** shamgar moved from a
+Google model to a Meta one and still ruled `not_justified` every time; elon moved
+to Inception and still leaned `not_justified` about four to one.
+
+If this holds, it weakens the cost this decision was filed under. 0013 warned
+that three judge models make divergence unattributable between method and model.
+Five runs suggest the lean travels with the *method* — the prompt and the seat —
+rather than with the model underneath it, which is the claim 0009's comparison
+was originally read as ruling out.
+
+**It is five runs and it is not a finding.** Three qualifications, none of them
+decorative: barak is the same model in both columns and contributes nothing;
+temperature is 0.7 and elon's 4–1 is well inside what a coin does in five throws;
+and the two allocations differ on the advocate side as well, so the judges are
+not reading identical input across the comparison. What would settle it is the
+same panel with the judges' models permuted between seats. That is the
+experiment this table is an argument for, not a substitute for.
+
 ---
 
 ## The decision

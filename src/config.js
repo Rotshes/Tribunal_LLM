@@ -43,15 +43,33 @@ const SEAT_MODELS = {
   'advocate.jon_snow': 'google/gemini-3.7-flash',
   'advocate.tyrion_lannister': 'google/gemini-3.8-flash',
   'advocate.daenerys_targaryen': 'google/gemini-3.6-flash',
-  'advocate.grey_worm': 'qwen/qwen3.7-flash',
+  'advocate.grey_worm': 'inception/mercury-2.5',
 
   // The judges, one vendor each. flash-lite keeps barak_model for the same
   // reason: it is the seat every pre-018 judge measurement was taken on, so it
   // is the one column of the panel that stays comparable across the change.
   'judge.barak_model': 'google/gemini-3.5-flash-lite',
   'judge.elon_model': 'inception/mercury-2.5-preview',
-  'judge.shamgar_model': 'nvidia/nemotron-3.5-lightning',
+  'judge.shamgar_model': 'meta/muse-glimmer-30b',
 };
+
+// TWO SEATS CHANGED ON 08.09.2026, AFTER FIVE RUNS. (0013, amended)
+//
+// shamgar was nvidia/nemotron-3.5-lightning and failed 5 of 5 — three times by
+// answering advocates in under twenty characters, once on a representative_id
+// pattern, once by not answering at all. grey_worm was qwen/qwen3.7-flash and
+// failed 3 of 5, twice to an upstream 429 and once to a 90s cut-off.
+//
+// Both had passed a single screening call. That is the finding, and it is worth
+// more than the allocation it produced: ONE CALL IS NOT A VERDICT. The screening
+// tool now stubs four advocates instead of two, which is what production sends,
+// because a judge answering two can afford a paragraph each and the same model
+// answering four writes "Yes, correct."
+//
+// mercury-2.5 and mercury-2.5-preview are two ids and probably one model. The
+// allocation is therefore seven distinct ids and something less than seven
+// distinct models, and 0013's amendment says so rather than leaving the table
+// to imply otherwise.
 
 // This is a FUNCTION, not a constant, and that is load-bearing.
 //

@@ -8,6 +8,56 @@ Supersedes: `0009-advocates-and-judges-run-different-models.md`
 Evidence: `docs/turns/018-seven-seats-seven-models.md`, and the eight screening
 calls it records.
 
+---
+
+## Amendment, 8 September 2026 — two seats replaced after five runs
+
+The table below is what was committed first. It ran five times and produced this:
+
+| | 0009 (two models) | 0013 as first committed |
+|---|---|---|
+| Runs | 13 | 5 |
+| Call failures | 1 of 91 (**1%**) | 9 of 35 (**26%**) |
+| shamgar ruled | 13 of 13 | **0 of 5** |
+
+`nvidia/nemotron-3.5-lightning` failed all five — three times on
+`/responds_to/0/answer must NOT have fewer than 20 characters`, once on a
+`representative_id` pattern, once cut off at 90s. `qwen/qwen3.7-flash` failed
+three of five: two upstream 429s and one cut-off. Both had passed a single
+screening call.
+
+Two seats therefore change, and nothing else does:
+
+| Seat | Was | Now |
+|---|---|---|
+| judge · shamgar_model | `nvidia/nemotron-3.5-lightning` | `meta/muse-glimmer-30b` |
+| advocate · grey_worm | `qwen/qwen3.7-flash` | `inception/mercury-2.5` |
+
+**Two things this amendment does not claim.**
+
+It does not claim the new models are reliable. Each has passed exactly one
+screening call, which is precisely the evidence that turned out to be worthless
+for nemotron. The status stays **provisional** and five more runs are owed.
+
+It does not claim seven distinct models. `inception/mercury-2.5` and
+`inception/mercury-2.5-preview` are two ids and are probably one model. The
+allocation is seven distinct ids, four vendors, and something short of seven
+distinct models — stated here because the table above will otherwise be read as
+claiming more.
+
+**The finding that outlasts the allocation:** one call is not a verdict. The
+screening tool stubbed two advocates where production sends four, so a model
+that could afford a paragraph per answer in screening wrote "Yes, correct."
+under load. The stub is four now. Whether that is enough is unknown, and the
+only thing that settles it is runs.
+
+**If these two seats fail as well**, the answer is to revert to 0009 rather than
+to screen a third round. Two rounds of replacement without a stable panel would
+mean the pool of models this project can afford is not deep enough to seat seven,
+which is itself a result worth recording.
+
+---
+
 ## The decision
 
 `modelMap()` (`src/config.js`) gives every seat its own model.

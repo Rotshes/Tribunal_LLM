@@ -1549,3 +1549,39 @@ test('--seat sets one role, is repeatable, and cannot smuggle a model past the a
     if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
   }
 });
+
+test('case_id is attached by the runner, not taken from the model', async () => {
+  // The fifth value this project asked a model for and already held, after
+  // provenance, the disclaimer, representative_id and the method. It sat on the
+  // log row from the start and never on the opinion, so the stored object took
+  // whatever the model typed. On 08.09.2026 that was twice not a string, and it
+  // cost barak's seat two calls during the permutation runs.
+  //
+  // A provider that returns a WRONG case_id is the test. If the runner attaches,
+  // the run completes and every stored opinion carries the case's own id; if it
+  // does not, G2 rejects all seven.
+  const liar = {
+    name: 'stub:wrong-case-id',
+    // Pass the whole call through. Destructuring two fields and forwarding only
+    // those silently dropped `model`, and the run failed for a reason that had
+    // nothing to do with case_id — a false positive caught by checking the
+    // failure instead of believing it.
+    async call(args) {
+      const good = makeStubProvider('good');
+      const res = await good.call(args);
+      const parsed = JSON.parse(res.raw);
+      parsed.case_id = 12345; // not a string, and not this case
+      return { ...res, raw: JSON.stringify(parsed) };
+    },
+  };
+
+  const r = await deliberate({ caseObj: CASE, provider: liar });
+
+  assert.equal(r.status, 'complete', 'a wrong case_id from the model must not fail the run');
+  assert.deepEqual(r.advocate_failures, []);
+  assert.deepEqual(r.judge_failures, []);
+  assert.equal(r.advocate_opinions.length + r.judge_opinions.length, 7);
+  for (const o of [...r.advocate_opinions, ...r.judge_opinions]) {
+    assert.equal(o.case_id, CASE.case_id, `${o.judge_id ?? o.representative_id} kept the model's case_id`);
+  }
+});

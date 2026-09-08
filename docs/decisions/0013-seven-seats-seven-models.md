@@ -143,6 +143,63 @@ The third is the most likely and is not a failure of the experiment. Twelve runs
 still cannot settle this; what they can do is say whether the pattern survives
 contact with a design built to break it.
 
+### The permutation, run — 8 September 2026
+
+Fourteen runs across the three conditions. Rulings by seat, each cell reading
+`justified / not_justified`:
+
+| | barak's seat | elon's seat | shamgar's seat |
+|---|---|---|---|
+| **I** flash-lite / mercury / muse-glimmer | 5 / 0 | 1 / 4 | 0 / 5 |
+| **II** mercury / muse-glimmer / flash-lite | 3 / 1 | 0 / 3 | 0 / 3 |
+| **III** muse-glimmer / flash-lite / mercury | **0 / 3** | 1 / 2 | 1 / 4 |
+| **totals by seat** | **8 / 4 — 67%** | **2 / 9 — 18%** | **1 / 12 — 8%** |
+
+And the same opinions counted by model instead of by seat:
+
+| Model | justified | not_justified | |
+|---|---|---|---|
+| `google/gemini-3.5-flash-lite` | 6 | 5 | 55% |
+| `inception/mercury-2.5-preview` | 5 | 9 | 36% |
+| `meta/muse-glimmer-30b` | **0** | **11** | **0%** |
+
+**Neither of the two clean answers is right, and the mixed one is sharper than
+either.**
+
+**The seats order the leans.** 67% / 18% / 8% is monotone and holds in every
+condition: barak's seat is the one that ever grants justification, shamgar's
+almost never does, and that ordering survived every model being moved. This is
+the method doing work, and it is the result 0009's comparison was read as ruling
+out.
+
+**A model can override it.** `muse-glimmer-30b` returned `not_justified` in
+eleven opinions out of eleven, in all three seats. It is the only model that ever
+flipped barak's seat — 0 of 3 justified there, against 5 of 5 for flash-lite and
+3 of 4 for mercury. The seat effect is a tendency, not a property of the design.
+
+### What this means for this decision, specifically
+
+**In the committed allocation the divergence is attributable to the seats.**
+barak sits on flash-lite, which grants justification in barak's seat and withheld
+it in both others; shamgar sits on muse-glimmer, and shamgar's seat refused
+justification under all three models. Both leans reproduce when the models are
+moved. The cost this decision was filed under — that a split could no longer be
+told apart from a model artefact — does not bite for *these* seven models in
+*these* seven seats, and that is now earned rather than hoped.
+
+**It is not a general guarantee, and muse-glimmer is the proof.** A model with a
+strong enough prior flattens the seat effect entirely. Seat one on a judge's
+chair and the panel's divergence becomes that model's opinion wearing a method's
+name. The property has to be re-checked whenever a judge's model changes, which
+is a standing obligation this record now creates.
+
+**Sample.** 14 runs, 36 judge opinions, temperature 0.7. Enough to see a monotone
+ordering across three conditions; not enough for any single cell. `2 / 9` and
+`1 / 12` are the same claim at this size. The 0-of-11 is the strongest number
+here and the one most worth re-testing, because a model that never once returns
+one of two permitted values is either heavily biased or misreading the task, and
+this experiment cannot tell those apart either.
+
 ---
 
 ## The decision

@@ -151,6 +151,14 @@ export async function deliberate({
 
       const opinion = {
         ...parsed,
+        // case_id is the FIFTH value this project asked a model for and already
+        // held, and the list above was written before this one was noticed. It
+        // was on `base` for the log row from the beginning and never attached to
+        // the opinion, so the stored object took whatever the model typed —
+        // which on 08.09.2026 was twice not a string, and cost barak's seat two
+        // calls in the permutation runs. The rule was right and the code did not
+        // follow it here. It does now.
+        case_id: caseObj.case_id,
         ...identity,
         ...(role === 'judge' ? { disclaimer: judgeDisclaimer() } : {}),
         model_id: res.model ?? base.model ?? provider.name,

@@ -269,3 +269,76 @@ button:focus-visible{outline:2px solid var(--rubric);outline-offset:3px}
 .run-open[aria-busy="true"]{opacity:.5;cursor:progress}
 .run-incomplete{color:var(--rubric)!important}
 @media (max-width:640px){.run-row{grid-template-columns:1fr;gap:.3rem}.run-meta{text-align:left}}
+
+/* -------------------------------------------------- writing a charge sheet
+   Turn 021. The form is a legal instrument being filled in, not a signup
+   flow: rules above each group, the constraint printed beside the field it
+   constrains, and nothing offered that the project forbids. */
+
+.modes{display:flex;gap:0;margin:0 0 2rem;border-bottom:1px solid var(--hair)}
+.modes button{
+  background:none;border:0;border-bottom:2px solid transparent;
+  font-family:var(--f-head);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--faint);padding:.6rem 1.1rem;cursor:pointer;margin-bottom:-1px;
+}
+.modes button:hover:not(:disabled){color:var(--ink);background:none}
+.modes button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--rubric)}
+.modes button:disabled{opacity:.4;cursor:not-allowed}
+
+.sheet-form{max-width:82ch;margin:0 0 2rem}
+.sheet-form fieldset{border:0;border-top:1px solid var(--rule);padding:1.4rem 0 .4rem;margin:0 0 1.6rem}
+.sheet-form legend{
+  font-family:var(--f-head);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);padding:0 .7rem 0 0;font-weight:700;
+}
+.sheet-form .legend-ish{
+  font-family:var(--f-head);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);font-weight:700;margin:1.4rem 0 .3rem;
+}
+.sheet-form label{display:block;margin:0 0 1.1rem}
+.sheet-form label > input,
+.sheet-form label > textarea{
+  display:block;width:100%;margin-top:.35rem;
+  font-family:var(--f-body);font-size:.97rem;line-height:1.55;color:var(--ink);
+  background:transparent;border:0;border-bottom:1px solid var(--hair);
+  padding:.45rem .1rem;border-radius:0;
+}
+.sheet-form label > textarea{border:1px solid var(--hair);padding:.6rem .7rem;resize:vertical}
+.sheet-form label > input:focus,
+.sheet-form label > textarea:focus{outline:0;border-color:var(--rubric)}
+.sheet-form small{display:block;margin-top:.35rem;font-size:.8rem;color:var(--faint);line-height:1.5}
+.sheet-form code{font-size:.85em}
+.sheet-form .pair{display:grid;grid-template-columns:1fr 1fr;gap:0 1.6rem}
+
+.counter{
+  font-family:var(--f-head);font-size:.68rem;letter-spacing:.1em;
+  color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.counter[data-ok="no"]{color:var(--rubric)}
+
+.facts-edit label{display:grid;grid-template-columns:2.4rem 1fr;gap:0 .4rem;align-items:start}
+.facts-edit label > small{grid-column:2}
+.fact-n{
+  font-family:var(--f-head);font-size:.7rem;color:var(--faint);
+  padding-top:.7rem;font-variant-numeric:tabular-nums;
+}
+.fact-buttons{display:flex;gap:1.2rem;align-items:center;margin:.2rem 0 .6rem}
+
+.rep-edit{border-left:2px solid var(--hair);padding-left:1.1rem;margin:1.3rem 0}
+.rep-edit .seat{
+  font-family:var(--f-head);font-size:.64rem;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--rubric);margin:0 0 .5rem;
+}
+
+.sheet-form .pinned ul{margin:.7rem 0 0;padding-left:1.1rem;font-size:.85rem;color:var(--soft);line-height:1.7}
+.sheet-form .pinned li{margin:0}
+
+.accepted{
+  border-left:2px solid var(--rubric);padding:.5rem 0 .5rem 1.1rem;
+  margin:0 0 1.8rem;font-size:.92rem;color:var(--soft);max-width:78ch;
+}
+
+@media (max-width:640px){
+  .sheet-form .pair{grid-template-columns:1fr}
+  .modes{flex-wrap:wrap}
+}

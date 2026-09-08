@@ -1585,3 +1585,174 @@ test('case_id is attached by the runner, not taken from the model', async () => 
     assert.equal(o.case_id, CASE.case_id, `${o.judge_id ?? o.representative_id} kept the model's case_id`);
   }
 });
+
+// ------------------------------------------- the charge-sheet form (turn 021)
+
+test('a free case id is found, and a taken one is refused with a free one named', async () => {
+  // Step 2 of the validation order in docs/02-charge-sheet-spec.md, specified
+  // on 24.08.2026 and unimplemented until a form could send a charge sheet.
+  //
+  // This is not tidiness. The Supabase sink sends
+  // `Prefer: resolution=merge-duplicates`, so a write to an existing case_id
+  // UPSERTS — a visitor submitting as T-001 would overwrite the instructor's
+  // case in place, and every stored opinion cites agreed_facts BY INDEX.
+  const { fixtureCaseIds, nextFreeCaseId, checkCaseIdFree } = await import('../src/cases.js');
+
+  assert.ok(fixtureCaseIds().includes('T-001'), 'the fixture must be seen');
+
+  assert.equal(nextFreeCaseId([]), 'T-001');
+  assert.equal(nextFreeCaseId(['T-001']), 'T-002');
+  assert.equal(nextFreeCaseId(['T-001', 'T-002', 'T-004']), 'T-003');
+
+  // The fixture is protected even when the database cannot be read — which is
+  // the case that matters, because a fixture is the thing that cannot be
+  // replaced and Supabase pauses itself after seven quiet days.
+  const blind = checkCaseIdFree('T-001', null);
+  assert.equal(blind.free, false, 'T-001 must be refused with no database at all');
+  assert.equal(blind.checked_stored, false, 'a partial check must admit it is partial');
+
+  const stored = checkCaseIdFree('T-002', ['T-002', 'T-003']);
+  assert.equal(stored.free, false);
+  assert.equal(stored.suggestion, 'T-004');
+  assert.equal(stored.checked_stored, true);
+
+  assert.equal(checkCaseIdFree('T-900', ['T-002']).free, true);
+});
+
+test('POST /api/validate rejects a bad charge sheet by field, and calls no model', async () => {
+  // Definition-of-done item 7: "Submitting an incomplete charge sheet produces
+  // a message naming the missing field, before any model is called."
+  //
+  // /api/deliberate cannot meet that. It is a background function: it answers
+  // 202 with an empty body before its own G1 runs, so its 422 reaches nobody.
+  // Hence a synchronous endpoint in front, importing the same gate.
+  const { default: validate } = await import('../netlify/functions/validate.js');
+  const post = (body) =>
+    new Request('http://local/api/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  // The fixture, with a fresh id, must pass.
+  const fresh = { ...CASE, case_id: 'T-900' };
+  const ok = await validate(post({ charge_sheet: fresh }));
+  assert.equal(ok.status, 200, 'a valid charge sheet must be accepted');
+
+  // The fixture's own id must not.
+  const dup = await validate(post({ charge_sheet: CASE }));
+  assert.equal(dup.status, 422);
+  const dupBody = await dup.json();
+  assert.ok(dupBody.problems.some((p) => p.includes('already exists')));
+  assert.match(dupBody.suggested_case_id, /^T-\d{3}$/, 'a free id must be offered, not just a refusal');
+
+  // EVERY violation, not the first — the spec's reason is that fixing one field
+  // per attempt would otherwise cost seven model calls a go.
+  const broken = { ...fresh, representatives: CASE.representatives.slice(0, 3) };
+  delete broken.issue;
+  const bad = await validate(post({ charge_sheet: broken }));
+  assert.equal(bad.status, 422);
+  const problems = (await bad.json()).problems;
+  assert.ok(problems.length >= 2, 'all violations at once, not the first');
+  assert.ok(problems.some((p) => p.includes('issue')), `the missing field must be named: ${problems}`);
+  assert.ok(problems.some((p) => p.includes('representatives')));
+
+  assert.equal((await validate(new Request('http://local/api/validate'))).status, 405);
+  assert.equal(
+    (await validate(post({ nothing: true }))).status,
+    400,
+    'a body without a charge sheet is a bad request, not a rejected sheet',
+  );
+});
+
+test('the form restates no bound the schema does not hold', async () => {
+  // Four times this project has had one contract stated in two places and let
+  // them drift (CLAUDE.md). The form prints character and word bounds beside
+  // the fields they constrain, which is a second statement of the schema — so
+  // it is checked against the schema rather than trusted.
+  const src = fs.readFileSync('web/src/components/ChargeSheetForm.jsx', 'utf8');
+  const schema = JSON.parse(fs.readFileSync('schemas/charge-sheet.schema.json', 'utf8'));
+  const p = schema.properties;
+
+  // Read the numbers out one entry at a time. The first version of this test
+  // reconstructed the whole object literal into JSON with two regexes and
+  // failed on its own quoting — a test that breaks for a reason unrelated to
+  // what it checks is the false positive this project keeps paying for.
+  const block = src.slice(src.indexOf('export const BOUNDS = {'));
+  const bounds = {};
+  for (const m of block.slice(0, block.indexOf('};')).matchAll(
+    /(\w+):\s*\{\s*min:\s*(\d+),\s*max:\s*(\d+)\s*\}/g,
+  )) {
+    bounds[m[1]] = { min: Number(m[2]), max: Number(m[3]) };
+  }
+  assert.ok(
+    Object.keys(bounds).length >= 7,
+    `expected every bound to parse, got ${Object.keys(bounds)}`,
+  );
+
+  const pairs = [
+    ['title', p.title],
+    ['act_alleged', p.act_alleged],
+    ['issue', p.issue],
+  ];
+  for (const [name, field] of pairs) {
+    assert.equal(bounds[name].min, field.minLength, `${name} min disagrees with the schema`);
+    assert.equal(bounds[name].max, field.maxLength, `${name} max disagrees with the schema`);
+  }
+  assert.equal(bounds.fact.min, p.agreed_facts.items.minLength);
+  assert.equal(bounds.fact.max, p.agreed_facts.items.maxLength);
+  assert.equal(bounds.facts.min, p.agreed_facts.minItems);
+  assert.equal(bounds.facts.max, p.agreed_facts.maxItems);
+  assert.equal(bounds.brief.min, p.representatives.items.properties.brief.minLength);
+  assert.equal(bounds.brief.max, p.representatives.items.properties.brief.maxLength);
+
+  // background is a WORD count, which no JSON Schema can express — it lives in
+  // g1ChargeSheet as code. Checked against that, not against the schema.
+  const gates = fs.readFileSync('src/gates.js', 'utf8');
+  assert.ok(
+    gates.includes(`words < ${bounds.background_words.min}`) &&
+      gates.includes(`words > ${bounds.background_words.max}`),
+    'the background word bounds shown to the submitter disagree with G1',
+  );
+});
+
+test('the form offers nothing the project forbids, and the page can send one', async () => {
+  const form = fs.readFileSync('web/src/components/ChargeSheetForm.jsx', 'utf8');
+
+  // The pinned constants must be asserted, never rendered as inputs. A form
+  // offering `combines_opinions` as a choice offers something decision 0002
+  // forbids outright.
+  assert.match(form, /imposes_sentence:\s*false/);
+  assert.match(form, /combines_opinions:\s*false/);
+  assert.match(form, /fictional:\s*true/);
+  const inputs = form.slice(form.indexOf('return ('));
+  for (const forbidden of ['imposes_sentence', 'combines_opinions']) {
+    assert.ok(
+      !new RegExp(`name=["']${forbidden}|value=\\{f\\.${forbidden}`).test(inputs),
+      `${forbidden} must not be an editable field`,
+    );
+  }
+
+  // Seats fixed 2/2: G1 requires exactly that balance, so a seat control exists
+  // only to be got wrong.
+  assert.match(form, /const SEATS = \['defense', 'defense', 'prosecution', 'prosecution'\]/);
+
+  // And the wiring, end to end: the page validates before it convenes, and
+  // convene() can carry a sheet rather than an id.
+  const api = fs.readFileSync('web/src/api.js', 'utf8');
+  assert.match(api, /\/api\/validate/);
+  assert.match(api, /charge_sheet: chargeSheet/);
+
+  const app = fs.readFileSync('web/src/App.jsx', 'utf8');
+  assert.match(app, /ChargeSheetForm/);
+  assert.match(app, /await validateSheet\(sheet\)/, 'the page must validate before it convenes');
+  assert.ok(
+    app.indexOf('await validateSheet(sheet)') < app.indexOf('setOwnSheet(sheet)'),
+    'a sheet must not become the active case before it has passed G1',
+  );
+
+  assert.match(
+    fs.readFileSync('netlify/functions/validate.js', 'utf8'),
+    /path: '\/api\/validate'/,
+  );
+});

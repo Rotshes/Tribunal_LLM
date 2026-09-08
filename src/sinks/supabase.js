@@ -150,6 +150,32 @@ export async function readDeliberations({ limit = 200, fetchImpl = fetch } = {})
  * summary of them, and `differ` is not computed either: the list shows the
  * three, the way every other surface in this project does. (0002)
  */
+/**
+ * Every stored `case_id`, and nothing else.
+ *
+ * One column, so that the uniqueness check in `src/cases.js` costs a list of
+ * short strings rather than every charge sheet in the database — including
+ * their backgrounds, which are 200-400 words each.
+ *
+ * Throws if the database is unreachable. The caller decides what that means;
+ * `netlify/functions/validate.js` treats it as "the stored half of the check
+ * did not run" and says so in the response, because refusing every submission
+ * whenever Supabase has paused itself would be worse than a partial check that
+ * admits what it is. The fixtures are checked either way, and those are the
+ * cases that cannot be replaced.
+ */
+export async function readCaseIds({ limit = 1000, fetchImpl = fetch } = {}) {
+  const { url, key } = requireConfig();
+  const res = await fetchImpl(
+    `${url}/rest/v1/charge_sheets?select=case_id&limit=${Number(limit)}`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+  );
+  if (!res.ok) {
+    throw new Error(`Supabase read of charge_sheets failed: ${res.status} ${await res.text()}`);
+  }
+  return (await res.json()).map((r) => r.case_id).filter(Boolean);
+}
+
 export async function readDeliberationIndex({ limit = 50, fetchImpl = fetch } = {}) {
   const { url, key } = requireConfig();
   // Not HEADERS(): that carries Prefer: return=minimal, which exists for the

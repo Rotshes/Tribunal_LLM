@@ -19,6 +19,7 @@ import {
   fetchCase,
   fetchModels,
   fetchRun,
+  validateSheet,
 } from './api.js';
 import { describeModels } from './panel.js';
 
@@ -26,6 +27,7 @@ import Advocates from './components/Advocates.jsx';
 import Archive from './components/Archive.jsx';
 import Banner from './components/Banner.jsx';
 import ChargeSheet from './components/ChargeSheet.jsx';
+import ChargeSheetForm from './components/ChargeSheetForm.jsx';
 import ModelPicker from './components/ModelPicker.jsx';
 import Rulings from './components/Rulings.jsx';
 import Waiting from './components/Waiting.jsx';
@@ -34,6 +36,16 @@ export default function App() {
   const [charge, setCharge] = useState(null);
   const [models, setModels] = useState(null);
   const [chosen, setChosen] = useState({});
+
+  // The case on file, kept separately from `charge` so that switching back to
+  // it after writing a charge sheet does not need a second fetch — and so the
+  // fixture cannot be mutated by anything the form does.
+  const [fileCharge, setFileCharge] = useState(null);
+  const [mode, setMode] = useState('file'); // 'file' | 'own'
+  const [ownSheet, setOwnSheet] = useState(null); // set only once G1 has passed
+  const [formProblems, setFormProblems] = useState([]);
+  const [suggestedCaseId, setSuggestedCaseId] = useState(null);
+  const [checking, setChecking] = useState(false);
 
   const [runningSince, setRunningSince] = useState(null);
   const [doc, setDoc] = useState(null);
@@ -60,6 +72,7 @@ export default function App() {
     (async () => {
       try {
         const c = await fetchCase();
+        setFileCharge(c);
         setCharge(c);
         setModels(await fetchModels());
       } catch (err) {
@@ -68,6 +81,45 @@ export default function App() {
     })();
     loadArchive();
   }, [loadArchive]);
+
+  /**
+   * Check a written charge sheet, and on success make it the active case.
+   *
+   * Submitting does NOT start a deliberation. It validates, and a sheet that
+   * passes becomes the case shown above the panel picker — so the submitter
+   * reads back what the models will be given and presses Convene themselves.
+   * Definition-of-done item 7 wants the rejection message; nobody wants seven
+   * paid calls as the way of finding out the sheet was accepted.
+   */
+  async function submitOwnSheet(sheet) {
+    setChecking(true);
+    setFormProblems([]);
+    setError(null);
+    try {
+      await validateSheet(sheet);
+      setOwnSheet(sheet);
+      setCharge(sheet);
+      setSuggestedCaseId(null);
+      document.getElementById('the-panel')?.scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      // Every violation at once, against the fields that caused them. G1
+      // reports all of them for exactly this reason.
+      setFormProblems(err.problems?.length ? err.problems : [err.message]);
+      setSuggestedCaseId(err.suggestedCaseId ?? null);
+      setOwnSheet(null);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  function chooseMode(next) {
+    setMode(next);
+    setError(null);
+    setFormProblems([]);
+    // Switching away from a written sheet restores the fixture rather than
+    // leaving the picker pointed at a case the page is no longer showing.
+    setCharge(next === 'own' ? ownSheet : fileCharge);
+  }
 
   const resetModels = () => setChosen({});
   const chooseModel = (role, id) => setChosen((prev) => ({ ...prev, [role]: id }));
@@ -80,7 +132,14 @@ export default function App() {
 
     try {
       const models_ = { ...models.defaults, ...chosen };
-      const id = await convene({ caseId: charge.case_id, models: models_ });
+      // A submitted sheet is sent whole; a fixture is sent by id. `ownSheet` is
+      // set only after /api/validate has returned 200, so nothing that failed
+      // G1 can reach this line.
+      const id = await convene({
+        caseId: charge.case_id,
+        chargeSheet: mode === 'own' ? ownSheet : null,
+        models: models_,
+      });
       const result = await awaitResult(id);
 
       if (!result) {
@@ -172,10 +231,57 @@ export default function App() {
           <h2 data-part="Part I">The charge sheet</h2>
           <p className="note">
             A case is a specification, not free text. It is validated before any
-            model is called.
+            model is called, and a charge sheet that fails costs nothing.
           </p>
 
-          <ChargeSheet charge={charge} />
+          {/* Two ways in. The case on file is what a visitor with no case of
+              their own should press; writing one is definition-of-done item 1,
+              and it has to be discoverable without being explained. */}
+          <div className="modes" role="tablist">
+            <button
+              role="tab"
+              aria-selected={mode === 'file'}
+              onClick={() => chooseMode('file')}
+              disabled={Boolean(runningSince)}
+            >
+              The case on file
+            </button>
+            <button
+              role="tab"
+              aria-selected={mode === 'own'}
+              onClick={() => chooseMode('own')}
+              disabled={Boolean(runningSince)}
+            >
+              Write a charge sheet
+            </button>
+          </div>
+
+          {mode === 'own' && !ownSheet && (
+            <ChargeSheetForm
+              onSubmit={submitOwnSheet}
+              busy={checking}
+              problems={formProblems}
+              suggestedCaseId={suggestedCaseId}
+            />
+          )}
+
+          {mode === 'own' && ownSheet && (
+            <p className="accepted">
+              Accepted. This is what the seven models will be given — read it
+              back, then convene.{' '}
+              <button
+                type="button"
+                className="linkish"
+                onClick={() => { setOwnSheet(null); setCharge(fileCharge); }}
+              >
+                Write a different one
+              </button>
+            </p>
+          )}
+
+          {(mode === 'file' || ownSheet) && <ChargeSheet charge={charge} />}
+
+          <div id="the-panel" />
 
           <ModelPicker
             charge={charge}

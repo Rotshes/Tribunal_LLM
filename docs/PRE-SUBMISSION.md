@@ -79,6 +79,45 @@ Fixed and shared across the class; these are not choices.
 - [ ] `package-lock.json` is committed
 - [ ] `node_modules/` and `logs/` are not
 
+## Deploy before you send the email
+
+The instructor sees this project when the email arrives, so the site has to be
+current **at that moment** — not merely to have been current at some point.
+
+- [ ] Re-enable Netlify builds and run one final deploy after the last commit
+- [ ] Confirm the deployed site matches `main` — check something only the newest
+      commit has, so "it loads" is not mistaken for "it is current"
+- [ ] Re-check definition of done items 1 and 3 at the public address, after
+      that build
+- [ ] Then send the email
+
+Left undone, this fails quietly and in the worst way: the repository reads as
+finished, the site loads, and the two are different — which is indistinguishable
+from a claim that was never true.
+
+## The database pauses itself — check this before any demo
+
+**Supabase free-plan projects pause after seven days of low activity.** It
+happened on 31.08.2026, mid-session: `npm run compare` reported
+`Supabase read failed: fetch failed` and fell back to local files only.
+
+This matters more than it looks. If the instructor opens the site days after
+submission, a paused database means:
+
+- **Past proceedings is empty** — definition of done item 3 fails at the moment
+  it is being assessed;
+- a new deliberation runs, costs money, and cannot be stored.
+
+The app degrades honestly rather than lying about it — the archive says it could
+not be read, and `compare`'s header names the sources it actually had — but an
+honest failure is still a failure to a grader who only has one look.
+
+- [ ] Wake the Supabase project from the dashboard **the morning of any demo or
+      deadline**, and again if more than a few days have passed
+- [ ] Open the live site in a **private window** and confirm Past proceedings
+      lists runs. Logged-in is not the test; a stranger is
+- [ ] Convene one deliberation there, so the visit itself counts as activity
+
 ## Final state
 
 - [ ] Working tree clean, everything committed

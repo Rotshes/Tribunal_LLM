@@ -86,8 +86,8 @@ npx netlify dev          # http://localhost:8888
 
 **Live at https://subtle-axolotl-3f3681.netlify.app** — anyone can open it,
 convene a tribunal, read three opinions, and read every past proceeding. The
-last compare counted 26 recorded deliberations on T-001 (31.08.2026), with
-deployed runs since.
+record holds **34 deliberations** on T-001 (`docs/evidence/014-final-compare.txt`),
+merged from local files and the database.
 
 What the runs established, in order:
 
@@ -118,8 +118,17 @@ a later note called the routing constraint nearly free after one clean run; and
 turn 012 computed three time budgets against a documented 60-second platform
 limit while this deployment's own log said 30. `docs/turns/` carries all of it.
 
-**Not done:** `G3` has never fired on real output — 73 of 74 judge opinions cite
-all five facts — and the copied-case gate fires only in tests. Both are recorded
+**Operational note:** the Supabase free plan pauses a project after seven days
+of low activity, and it has already happened once. While paused, "Past
+proceedings" reports that the archive cannot be read and new runs cannot be
+stored — the app says so rather than rendering as empty, but the archive is
+genuinely unavailable until the project is woken from the dashboard. See
+`docs/PRE-SUBMISSION.md`.
+
+**Not done:** `G3` has never fired on real output — 94 of 96 judge opinions cite
+all five facts, and the two exceptions cite fewer facts rather than a
+nonexistent one, so the gate has still never seen an out-of-range index — and
+the copied-case gate fires only in tests. Both are recorded
 as written-and-unproven in `docs/GRADING-MAP.md`, not as passing. Two models on
 the allowlist are known to fail and are labelled as such in the picker rather
 than removed.

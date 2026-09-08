@@ -84,7 +84,44 @@ gate rows updated.
 | Every turn has a record | `ls docs/turns/` against the turn numbers | Pass — 001–014, no gaps |
 | No decision record marked DRAFT | Search | Pass — 0007 accepted in turn 011 |
 | `CLAUDE.md` under Module 11's limit | `wc -l` | Pass — 200 |
-| Suite and repo checks | `npm test`, `npm run check` | Pass — 68 tests, 84 files, G5, G8, G9 |
+| The evidence file is complete | Re-run after waking Supabase | Pass — 34 runs, `25 local + 23 in Supabase, merged` (§6b) |
+| Suite and repo checks | `npm test`, `npm run check` | Pass — 68 tests, 85 files, G5, G8, G9 |
+
+### 6b. The evidence file, and what twelve runs did to decision 0009
+
+`docs/evidence/014-final-compare.txt` — **34 runs, 25 local + 23 in Supabase,
+merged.** The first attempt produced a partial file because the Supabase project
+had auto-paused; the header said `25 local, merged` rather than naming a second
+source, which is turn 009's fix working exactly as intended — a missing source
+is visible on the first line instead of inferable from a row count.
+
+The committed allocation now has **twelve runs** behind it, where decision 0009
+rested on five:
+
+| Judge | Then (5 runs) | Now (12 runs) |
+|---|---|---|
+| barak | justified ×3, not ×2 | justified ×9, not ×2, absent ×1 |
+| elon | not ×4, justified ×1 | not ×8, justified ×4 |
+| shamgar | not ×5 | not ×12 |
+
+The finding holds and is firmer than it was. The panel divides under flash-lite
+judges in essentially every run; shamgar has not moved in twelve; barak leans
+justified rather than splitting evenly. 0009 said *"5 runs per condition at
+temperature 0.7 — that is a coin the sample cannot call"*, and that caveat can
+now be narrowed. **Roy: 0009 is yours, so I have not edited it. It is worth a
+dated line saying the sample grew and the conclusion survived.**
+
+Two other things the fuller data shows:
+
+- **G3 is no longer quite the same gap.** 94 of 96 judge opinions cite all five
+  facts, but there are now *two* exceptions rather than one — `[4]` and
+  `[0,1,3,4]`. The gate still has never fired, because neither cites an index
+  that does not exist, but "the judges always fill the array" is no longer
+  strictly true and the record should stop implying it.
+- **A 43-second run completed.** `08-31 12:49`, 4 of 7 calls, `waited 43.4s` —
+  comfortably past the 30-second synchronous limit that shaped turns 012 and
+  013. That is the background function earning its decision, observed rather
+  than asserted.
 
 ### 6a. What this says about the other citations
 
@@ -106,11 +143,11 @@ project had been writing them for two weeks with nothing joining the halves.
   what was decided but is not the same as a contemporaneous note. Both files say
   so at the foot. **Roy: these are the two records most worth your reading, both
   because they are the most cited and because I wrote them from inference.**
-- **That the evidence folder is complete.** Turns 011, 012 and 013 cite live
-  runs — the 6-of-7 truncation, the four-provider panel, the background run —
-  and none has a file in `docs/evidence/`. Decision 0007 requires one per cited
-  run. This is the largest open item and it needs runs that are on Roy's machine
-  and in Supabase, not here.
+- **That every individual cited run has its own file.** `014-final-compare.txt`
+  covers all 34 runs as a table, which is what the turn records' claims rest on.
+  The per-run JSON for browser runs still exists only in Supabase — turn 009
+  established that and `docs/evidence/README.md` says so. Copying those out
+  would need a small extra tool.
 - **Anything about the two thirds of the grade that are not this repository.**
   The grading map's own rows for class engagement and the independent project are
   unchanged and mostly OPEN.
@@ -120,10 +157,13 @@ project had been writing them for two weeks with nothing joining the halves.
 **Locked:** every decision this repository cites now exists and is checked
 mechanically. The grading map matches the deployed state.
 
-**Open:** evidence files for turns 011–013. G3, still unproven. The independent
-project and the engagement third, neither of which this repository can close.
+**Open:** decision 0009 could carry a dated line noting the sample grew from 5
+runs to 12 and the conclusion survived — Roy's file, Roy's call. G3 still
+unproven, though the "judges always fill the array" phrasing needs softening.
+The independent project and the engagement third, neither of which this
+repository can close.
 
-**Next turn:** the evidence sweep, then submission.
+**Next turn:** the final deploy, then the email.
 
 ### Correction issued this turn
 

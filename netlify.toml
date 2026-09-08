@@ -1,8 +1,18 @@
 [build]
-  # No build step. The frontend is plain HTML, CSS and JavaScript served as-is.
-  # See docs/decisions/0008-the-frontend-has-no-build-step.md — revisit if the
-  # app grows past one screen.
-  publish = "web"
+  # Vite builds the React app in web/ to web/dist.
+  #
+  # There was no build step until turn 015. Decision 0008 committed to plain
+  # HTML "until the app grows past one screen", and it has: definition of done
+  # item 1 requires submitting a charge sheet, which needs a second view, and
+  # `docs/01-spec.md` §4 already assumed one when it said G1 fires "on every
+  # form submission". 0008 is superseded by
+  # docs/decisions/0012-the-frontend-is-react-with-a-build-step.md.
+  #
+  # The build takes about a second and touches nothing outside web/. The
+  # functions, src/, the gates and the schemas are unchanged by it — this was a
+  # frontend swap, not a rewrite.
+  command = "npm run build"
+  publish = "web/dist"
   functions = "netlify/functions"
 
 [functions]
@@ -53,5 +63,12 @@
 # Shape: four advocate calls concurrently, then three judge calls concurrently.
 
 [dev]
-  publish = "web"
+  # `npx netlify-cli dev` starts Vite and proxies /api/* to the functions, so
+  # the local page talks to the real backend. Vite alone (`npm run dev:web`)
+  # serves the page with no backend: every fetch 404s and the page says the
+  # case and the archive could not be loaded, which is the honest failure.
+  command = "npm run dev:web"
+  targetPort = 5173
+  framework = "#custom"
+  publish = "web/dist"
   functions = "netlify/functions"

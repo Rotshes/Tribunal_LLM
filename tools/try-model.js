@@ -42,10 +42,19 @@ loadEnv();
 
 const model = process.argv[2];
 if (!model || model.startsWith('-')) {
-  console.error('Usage: npm run try-model -- <openrouter/model-id>');
+  console.error('Usage: npm run try-model -- <openrouter/model-id> [--timeout <seconds>]');
   console.error('Example: npm run try-model -- deepseek/deepseek-v4-flash-0731');
   process.exit(2);
 }
+
+// A screening tool should fail fast. The default was 120 seconds, inherited
+// from the deliberation path where a background function has fifteen minutes;
+// here it meant two silent minutes per candidate with nothing on screen, which
+// reads as a hang. 45 is generous for one judge call — a model that cannot
+// answer in 45 seconds is not one to hand a seat to.
+const timeoutIndex = process.argv.indexOf('--timeout');
+const TIMEOUT_S =
+  timeoutIndex === -1 ? 45 : Math.max(5, Number(process.argv[timeoutIndex + 1]) || 45);
 
 const caseObj = JSON.parse(
   fs.readFileSync('cases/T-001-realm-v-jon-snow.json', 'utf8'),
@@ -73,9 +82,22 @@ const stubAdvocates = ['jon_snow', 'grey_worm'].map((id) => ({
   relies_on_facts: [0, 1, 4],
 }));
 
-const provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: 120_000 });
+const provider = makeOpenRouterProvider({ jsonMode: 'object', timeoutMs: TIMEOUT_S * 1000 });
+
+// Say what is happening BEFORE the wait, not after it. The first version
+// printed nothing until the call returned, so a slow model was
+// indistinguishable from a hung tool — and the honest signal of "still
+// waiting" is a counter that moves.
+console.log('');
+console.log(`\x1b[1m${model}\x1b[0m`);
+process.stdout.write(`\x1b[2mone judge call, up to ${TIMEOUT_S}s — waiting 0s\x1b[0m`);
 
 const started = Date.now();
+const ticker = setInterval(() => {
+  const s = Math.round((Date.now() - started) / 1000);
+  process.stdout.write(`\r\x1b[2mone judge call, up to ${TIMEOUT_S}s — waiting ${s}s\x1b[0m `);
+}, 1000);
+
 let outcome;
 let detail = '';
 
@@ -150,13 +172,15 @@ function clean(message) {
     .slice(0, 180);
 }
 
+clearInterval(ticker);
+process.stdout.write('\r\x1b[2K'); // clear the counter line
+
 const secs = ((Date.now() - started) / 1000).toFixed(1);
 const today = new Date()
   .toLocaleDateString('en-GB')
   .replace(/\//g, '.');
 
-console.log('');
-console.log(`\x1b[1m${model}\x1b[0m  ·  ${secs}s  ·  one call`);
+console.log(`\x1b[2m${secs}s\x1b[0m`);
 console.log('');
 console.log(`  \x1b[1m${outcome}\x1b[0m — ${detail}`);
 console.log('');

@@ -1,7 +1,18 @@
 # 0008 — The frontend has no build step
 
-Status: accepted
+Status: **superseded by 0012** (8 September 2026)
 Date: 31 August 2026
+
+> Superseded, on its own terms rather than against them. This record said
+> *"revisit when the app grows past one screen"*, and the app did: definition of
+> done item 1 requires submitting a charge sheet, which the backend has always
+> accepted and the page never offered. See
+> `docs/decisions/0012-the-frontend-is-react-with-a-build-step.md`.
+>
+> Left in place unedited. A decision that was right for eight turns and then
+> stopped being right is a more useful record than one quietly deleted — and the
+> cost it predicted, that discipline would have to replace a compiler, came due
+> in turn 013 exactly as written.
 
 ## The decision
 

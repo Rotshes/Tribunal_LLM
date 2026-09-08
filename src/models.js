@@ -18,13 +18,12 @@ function file() {
 }
 
 /**
- * What the picker shows: id, label, price, and what the model has actually been
- * observed to do. Safe to send to a browser — none of it is a secret.
+ * Every model on the allowlist, whatever it was observed to do.
  *
- * `observed` travels because two of the five models on this list fail in
- * production while appearing in OpenRouter's own response_format catalogue, and
- * a visitor choosing one has no way to know that. A picker that presents a
- * broken option identically to a working one is a trap, not a choice.
+ * This is the set the backend ACCEPTS. It stays complete on purpose: archived
+ * runs reference models that no longer work, `npm run deliberate` may want one
+ * deliberately, and a test asserts every entry here carries an `observed`
+ * record. Removing an entry would orphan the runs that used it.
  */
 export function allowedModels() {
   return file().models.map(({ id, label, price_per_m_in, note, observed }) => ({
@@ -34,6 +33,25 @@ export function allowedModels() {
     note,
     observed: observed ?? null,
   }));
+}
+
+/**
+ * What the picker OFFERS: the models observed to work, and nothing else.
+ *
+ * Turn 013 left the broken ones in the dropdown with a label — "known to fail",
+ * "unreliable" — on the reasoning that a visitor picking one would get an
+ * instant, free, clearly-explained failed seat, which demonstrates the failure
+ * path. Roy overruled that in turn 018, and the objection is a fair one: a menu
+ * that offers options which never work is a worse interface than a shorter menu,
+ * whatever the labels say.
+ *
+ * They are FILTERED, not deleted. `allowedModels()` above still returns them,
+ * `panel/models.json` still records what each one did and when, and the backend
+ * still accepts them — so a stored run that used GPT-5.6 Luna still resolves,
+ * and the evidence of why it was dropped survives. Only the offer is withdrawn.
+ */
+export function offeredModels() {
+  return allowedModels().filter((m) => String(m.observed ?? '').startsWith('works'));
 }
 
 export function allowedIds() {

@@ -23,11 +23,11 @@ disagreement is the output.
 | `panel/` | The three judges. Fixed across cases, because the course specification fixes the panel. |
 | `prompts/` | The seven prompts — four advocates, three judges. Versioned like code, because they are. |
 | `src/` | The runner: the seven calls, the gates, the providers, the call log. |
-| `tools/repo-checks.js` | G5 and G8 — the checks that run over the repository rather than over a run. |
+| `tools/repo-checks.js` | G5, G8 and G9 — the checks that run over the repository rather than over a run. |
 | `tests/` | The gates, tested mostly from the failing side. |
 | `db/schema.sql` | The Supabase tables. Its most important property is a column that does not exist. |
 | `netlify/functions/` | The HTTP wrapper. Thin on purpose — all the logic is in `src/`. |
-| `web/` | One HTML file, no build step. See decision 0008. |
+| `web/` | The React app, built by Vite. See decision 0012, which supersedes 0008. |
 | `docs/evidence/` | The runs a turn record cites. `logs/` is gitignored; these are copied by hand. |
 | `docs/PRE-SUBMISSION.md` | What to check before the deadline. Several items cannot be fixed late. |
 
@@ -47,7 +47,7 @@ why it is this way rather than the other way that was also considered.
 ```
 npm install
 npm test                                       # the gates, mostly from the failing side
-npm run check                                  # G5 and G8 over the repository
+npm run check                                  # G5, G8 and G9 over the repository
 npm run deliberate -- T-001 --stub good        # a clean run against a fake model
 npm run deliberate -- T-001 --stub judgefail   # two rulings and one failure
 ```
@@ -79,7 +79,8 @@ npm run deliberate -- T-001 --provider openrouter --json-mode object
 Compare runs with `npm run compare`. In the browser:
 
 ```
-npx netlify dev          # http://localhost:8888
+npm run build            # Vite, into web/dist
+npx netlify-cli dev      # http://localhost:8888 — Vite plus the functions
 ```
 
 ## Status

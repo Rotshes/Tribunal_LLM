@@ -15,8 +15,6 @@
 When you hit one of these, stop and state the decision you need from me. Do not
 pick the reasonable-looking option and continue.
 
----
-
 ## What this project is
 
 A web app that takes a charge sheet, has four AI advocates argue opposing sides,
@@ -34,8 +32,8 @@ first of several; keep it that way. (0003)
 
 ## The build
 
-Browser (form and display) → backend (holds the key, the prompts, calls the
-models) → Supabase/Postgres → Netlify.
+Browser (React + Vite, form and display) → backend (holds the key, the prompts,
+calls the models) → Supabase/Postgres → Netlify. (0012)
 
 One row per model call: model, role, its own ruling, tokens in and out, cost,
 latency. **No column anywhere for a result derived from the three.**
@@ -53,8 +51,8 @@ lines are the rule, not the argument.
   three, stop. (0002)
 - **Every model call is logged, failures included** — the failures are the
   interesting rows. (0001)
-- **All three judges receive identical input** and never see each other.
-  Load-bearing: it is the only arrangement in which divergence means anything.
+- **All three judges receive identical input** and never see each other. The
+  only arrangement in which divergence means anything.
 - **Failure is shown as failure** — never as a ruling, never defaulted to
   acquittal. A blank result that reads as an answer is the worst output possible.
 - **The seat does not fix the position — but it does fix that the case gets
@@ -73,6 +71,8 @@ lines are the rule, not the argument.
   reconstructed. (0007)
 - **The deliberation runs in the background** and the page polls the archive.
   No constant decides how many judges sit. (0011)
+- **A build step is not a type checker.** Vite fails on an unresolved import and
+  builds happily with an undefined identifier — verified, not assumed. (0012)
 
 ## How to work here
 
@@ -84,38 +84,40 @@ lines are the rule, not the argument.
   atomic, one change per commit, message naming the intent and never
   overstating it.
 - **Every turn ends with a record in `docs/turns/`**, written during the turn,
-  never reconstructed. A retrofitted trail loses marks even when the build is
-  sound. Follow the shape of the most recent one; there is no template file.
+  never reconstructed — a retrofitted trail loses marks even when the build is
+  sound. Follow the shape of the most recent one.
 - **A gate must be able to fail.** One that has never caught anything, and could
   not, counts as no gate at all — and "written but never fired on real input" is
   *unproven*, not passing.
+- **Write a check against what makes something a defect, not against its
+  shape.** Four false positives in four turns, one cause each time: `(1300)`
+  read as a decision number, `useState` pairs read as undefined, a lookup
+  `.map` read as rendering, `#status` read as a colour. Add the distinguishing
+  condition before running it, not after.
 - **Before writing a gate, say out loud what it would forbid**, and check the
   spec actually forbids it — a gate can enforce the opposite while looking like
   verification, and once green nobody re-reads it (0004). **A gate that exempts
   the code it exists to check is decoration:** scan everything, and mark
   legitimate exceptions with a visible per-line pragma and a reason.
 - **When a rule is stated in two places, add a check that they agree — or delete
-  one statement.** Three silent prompt-versus-schema disagreements in three
-  turns. A citation is the same shape — a claim and its source — and decisions
-  0001 and 0002 were cited eighteen times with neither file written, for
-  thirteen turns, every reference looking authoritative. G9 checks them now.
+  one statement.** Three prompt-versus-schema disagreements in three turns; and
+  decisions 0001 and 0002 cited eighteen times with neither file written. G9
+  checks citations now.
 - **Never ask the model for a value the system already has.** Identity, method,
   provenance, the disclaimer — all known before the call. The model supplies
-  only what only it can supply: the reasoning. The runner attaches the rest and
-  the gates compare against the single source. Four failures, one cause; see
-  the pitfalls.
+  only the reasoning; the runner attaches the rest and the gates compare against
+  the single source. Four failures, one cause.
 - **Where prompt and schema describe different shapes, the schema wins and the
-  prompt is decoration.** A prompt asking for ordered tests against a schema
-  offering `string[]` produces bullet points. If behaviour must differ, the
-  *contract* must differ, not just the instructions.
+  prompt is decoration.** If behaviour must differ, the *contract* must differ,
+  not just the instructions.
 - When I correct you, ask whether the correction belongs here as a standing
   rule. A correction that lives only in the chat is gone next session.
 
 ## What good work looks like here
 
 - A **criterion** is good when two readers could not disagree about whether it
-  was met. A **specification** is good when it settles what you would otherwise
-  guess at — if you are guessing, say so rather than filling the gap.
+  was met. A **specification** settles what you would otherwise guess at — if
+  you are guessing, say so rather than filling the gap.
 - **Documentation** says *why*. You can describe the code accurately; you cannot
   know why I chose it. Ask me.
 - An **interface** is good when a stranger knows what to do next unprompted, and
@@ -123,32 +125,29 @@ lines are the rule, not the argument.
 
 ## Things that have gone wrong before
 
-Grouped by lesson, not by incident, because the incidents repeat. Instances are
-kept as evidence; a new one joins its group rather than starting a new line.
+Grouped by lesson, not incident, because the incidents repeat. A new one joins
+its group rather than starting a line.
 
 - **Two statements of one contract drift, silently.** `responds_to` — prompt
-  demanded two answers, schema allowed one (24.08). Provenance fields — prompt
-  forbade them, schema required them, all seven calls failed (24.08). `grounds`
-  as `string[]` flattening three judicial methods into bullets (31.08). Assume
-  it is happening again somewhere.
+  demanded two answers, schema allowed one (24.08). Provenance — prompt forbade
+  it, schema required it, all seven calls failed (24.08). `grounds` as
+  `string[]` flattening three methods into bullets (31.08). Assume it is
+  happening again somewhere.
 - **Asking the model for what we already hold.** Provenance (24.08), the
   disclaimer paraphrased, `representative_id` misspelled twice (31.08). Each
   cost a call. Fixed by attaching, not requesting.
 - **Gates that could not catch, or caught the wrong thing.** A gate requiring an
-  advocate to agree with its seat — the exact thing the simulation rule forbids,
-  and it would have looked like diligence (24.08). G5 skipping all of `src/`,
-  the only place the defect could appear (24.08). A 600-character answer cap
-  discarding a whole judge opinion — a bound tight enough to reject good output
-  is a bug in the bound (31.08). G3, which has never fired on real input because
-  every judge cites every fact (31.08).
-- **Reading configuration or files wrongly.** `config.js` read
-  `TRIBUNAL_MODEL` at import time, before `.env` was loaded — imports evaluate
-  first, so read config when needed, never at module scope (31.08). The `.env`
-  parser split on `\n`, leaving a carriage return on every value on Windows —
-  anything reading a file must assume CRLF (31.08). `npm run compare > file`
-  wrote the turn 010 evidence as UTF-16 with a BOM and 124 colour escapes, which
-  git would have committed as a binary blob — a step done every turn belongs in
-  the tool, not in a shell whose defaults differ per machine (31.08).
+  advocate to agree with its seat — the exact thing the simulation rule forbids
+  (24.08). G5 skipping all of `src/`, the only place the defect could appear
+  (24.08). A 600-character cap discarding a whole judge opinion — a bound tight
+  enough to reject good output is a bug in the bound (31.08). G3, which has
+  never fired because every judge cites every fact (31.08).
+- **Reading or writing files wrongly.** `config.js` read `TRIBUNAL_MODEL` at
+  import time, before `.env` loaded — read config when needed, never at module
+  scope (31.08). The `.env` parser split on `\n`, leaving a CR on every value on
+  Windows (31.08). `npm run compare > file` wrote evidence as UTF-16 with 124
+  colour escapes — a step done every turn belongs in the tool, not in a shell
+  whose defaults differ per machine (31.08).
 - **Concluding from too little.** Called `--json-mode off` free after one clean
   run; four runs showed ~29% of calls returning prose (31.08). Counted the
   agreed facts from memory as six when there are five (24.08).

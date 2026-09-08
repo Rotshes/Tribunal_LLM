@@ -1,0 +1,271 @@
+/* The Tribunal — turn 017. A printed judgement.
+ *
+ * Turn 016's redesign changed degree, not kind: same ground, same serif, same
+ * grid of cards, larger type. Roy said it looked too similar and he was right.
+ *
+ * This is a different concept rather than a stronger version of the old one.
+ * The page is set as a law report:
+ *
+ *   · NO CARDS. Nothing has a background panel or a shadow. Structure comes
+ *     from rules, indents and running heads, the way it does on paper.
+ *   · Two-colour printing. Black ink and one red, as legal and liturgical
+ *     printing has always done — the red is a RUBRIC, used for the parts that
+ *     depart from the ordinary text. Here: a ruling of not justified, and a
+ *     failure. Nothing else is coloured.
+ *   · Roman-numeral parts, numbered submissions, a numbered schedule of facts,
+ *     footnoted disclaimers. The reader should be able to cite it.
+ *   · The three judges are three columns of set type divided by rules, not
+ *     three boxes in a row.
+ *
+ * The colour still says which way each ruling went, and still says it PER
+ * COLUMN. Nothing compares them and nothing counts them. (decision 0002)
+ */
+
+:root{
+  --paper:#FAF8F3;
+  --ink:#171410;
+  --soft:#4C463C;
+  --faint:#8A8172;
+  --rule:#1A1712;          /* the heavy rules: ink, not grey */
+  --hair:#CFC7B6;
+  --rubric:#8C2B22;        /* the second colour. Used sparingly, on purpose. */
+  --rubric-soft:#F3E5E1;
+  /* One family, kept simple on request (turn 018). Archivo for everything:
+     the law-report structure is carried by rules, indents and running heads
+     rather than by a display serif, so it survives the change. */
+  --f-head:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Archivo","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#12100C;
+    --ink:#EDE7DA;
+    --soft:#B4AB99;
+    --faint:#7F7666;
+    --rule:#EDE7DA;
+    --hair:#332D23;
+    --rubric:#E08C80;
+    --rubric-soft:#2A1613;
+  }
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--f-body);font-size:18px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1180px,100% - 3rem);margin-inline:auto}
+
+/* ------------------------------------------------------------- the masthead
+   A law report opens by naming the court, then the cause, then the number. */
+
+header{padding:3.5rem 0 0}
+header .wrap{border-bottom:3px double var(--rule);padding-bottom:1.6rem}
+.eyebrow{
+  font-family:var(--f-head);font-size:.68rem;font-weight:700;
+  letter-spacing:.34em;text-transform:uppercase;color:var(--soft);
+  margin:0 0 1.1rem;padding-bottom:1.1rem;border-bottom:1px solid var(--hair);
+}
+h1{
+  font-family:var(--f-body);font-weight:700;
+  font-size:clamp(2.2rem,5.5vw,3.6rem);letter-spacing:-.035em;line-height:1.02;
+  margin:0;
+}
+.sub{color:var(--soft);margin:1.1rem 0 0;max-width:64ch;font-size:.98rem;line-height:1.55}
+
+/* ------------------------------------------------------------------- parts
+   Sections are numbered parts of one document, not panels on a page. */
+
+section{padding:3rem 0 0}
+h2{
+  font-family:var(--f-head);font-weight:700;font-size:.72rem;
+  letter-spacing:.26em;text-transform:uppercase;color:var(--ink);
+  margin:0 0 1rem;padding-bottom:.55rem;border-bottom:1.5px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline;gap:1rem;
+}
+h2::after{content:attr(data-part);color:var(--faint);font-weight:600;letter-spacing:.18em}
+.note{color:var(--faint);font-size:.88rem;margin:0 0 2rem;max-width:74ch}
+
+/* ------------------------------------------------------------ charge sheet */
+
+.case{margin-bottom:2.25rem}
+.case h3{font-family:var(--f-body);font-weight:700;font-size:1.45rem;letter-spacing:-.02em;margin:0 0 .2rem}
+.case .docket{font-family:var(--f-head);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 1.3rem}
+.issue{margin:0 0 1.8rem;font-size:1.1rem;line-height:1.55;max-width:78ch;border-left:2px solid var(--rule);padding-left:1.2rem}
+
+.schedule-head{
+  font-family:var(--f-head);font-size:.66rem;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--soft);margin:0 0 .7rem;
+}
+.facts{margin:0;padding:0;list-style:none;counter-reset:f -1;max-width:82ch}
+.facts li{
+  display:grid;grid-template-columns:2.6rem 1fr;gap:.8rem;
+  padding:.5rem 0;border-top:1px solid var(--hair);font-size:.95rem;
+}
+.facts li:last-child{border-bottom:1px solid var(--hair)}
+.facts li::before{
+  counter-increment:f;content:"["counter(f)"]";
+  font-family:var(--f-head);font-size:.7rem;font-weight:600;color:var(--faint);
+  padding-top:.35rem;
+}
+.scope{margin:1.6rem 0 0;font-size:.88rem;color:var(--soft);max-width:78ch}
+
+/* ----------------------------------------------------------------- buttons */
+
+button{font-family:var(--f-head);font-weight:600;font-size:.9rem;padding:.6rem 1.2rem;border:1px solid var(--rule);background:transparent;color:var(--ink);cursor:pointer}
+button:hover:not(:disabled){background:var(--ink);color:var(--paper)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--rubric);outline-offset:3px}
+
+/* THE action. On paper this would be the order that opens the proceeding, so
+   it is set like one: ruled above and below, centred, in the display face. */
+.convene{margin:3rem 0 0;text-align:center;border-top:1px solid var(--hair);padding-top:2.25rem}
+/* SOLID, not a ghost. The outlined version blended into the paper and had to
+   be looked for, which is the one thing this button must never do. */
+.convene button{
+  width:min(720px,100%);
+  font-family:var(--f-body);font-weight:700;
+  font-size:clamp(1.25rem,3.2vw,1.85rem);letter-spacing:-.02em;
+  padding:1.15rem 2rem;
+  border:2px solid var(--ink);
+  background:var(--ink);color:var(--paper);
+  box-shadow:6px 6px 0 var(--rubric);
+  transition:transform .1s ease, box-shadow .1s ease;
+}
+.convene button:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:9px 9px 0 var(--rubric);background:var(--ink);color:var(--paper)}
+.convene button:active:not(:disabled){transform:translate(3px,3px);box-shadow:2px 2px 0 var(--rubric)}
+.convene button:disabled{background:var(--hair);border-color:var(--hair);color:var(--faint);box-shadow:none}
+.convene .cost{display:block;margin:1rem auto 0;font-family:var(--f-head);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+/* ----------------------------------------------------------- waiting state */
+
+#status{margin:2rem auto 0;max-width:720px;border-top:1px solid var(--hair);padding-top:1.1rem}
+.stage{display:flex;gap:.8rem;align-items:baseline;padding:.4rem 0;font-family:var(--f-head);font-size:.85rem;color:var(--faint)}
+.stage b{font-weight:600;color:var(--ink)}
+.stage[data-state="doing"]{color:var(--ink)}
+.stage[data-state="done"]::before{content:"✓";color:var(--soft)}
+.stage[data-state="doing"]::before{content:"…"}
+.stage[data-state="todo"]::before{content:"·"}
+.stage::before{width:1.1rem;display:inline-block;font-family:var(--f-head)}
+.elapsed{font-family:var(--f-head);font-size:.75rem;color:var(--faint);margin-top:.5rem;font-variant-numeric:tabular-nums}
+
+/* A failure is set in the second colour, like a rubric — not in a coloured box. */
+.banner{border-top:1.5px solid var(--rubric);border-bottom:1px solid var(--hair);padding:1rem 0;margin:1.75rem 0}
+.banner h3{font-family:var(--f-head);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;margin:0 0 .5rem;color:var(--rubric)}
+.banner ul{margin:.4rem 0 0;padding-left:1.2rem;font-size:.92rem}
+.banner code{font-size:.85em}
+
+/* ---------------------------------------------------- submissions (advocates)
+   Numbered submissions with hanging indents, not cards. */
+
+.advocates{margin-bottom:3.5rem;counter-reset:sub}
+.adv{
+  display:grid;grid-template-columns:minmax(10rem,15rem) 1fr;gap:1rem 2.5rem;
+  padding:1.6rem 0;border-top:1px solid var(--hair);
+}
+.adv:last-child{border-bottom:1px solid var(--hair)}
+@media (max-width:820px){.adv{grid-template-columns:1fr;gap:.5rem}}
+.adv-head h4{font-family:var(--f-body);font-weight:600;font-size:1.15rem;letter-spacing:-.015em;margin:0}
+.adv-head h4::before{
+  counter-increment:sub;content:counter(sub,upper-roman)". ";
+  color:var(--faint);font-family:var(--f-head);font-size:.75rem;font-weight:700;
+  letter-spacing:.1em;vertical-align:.18em;margin-right:.35rem;
+}
+.seat{font-family:var(--f-head);font-size:.64rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.pos{font-family:var(--f-head);font-size:.78rem;margin:.45rem 0 0;color:var(--soft)}
+.pos .depart{display:block;margin-top:.3rem;color:var(--rubric);font-weight:600;text-transform:none;letter-spacing:0;font-size:.86rem}
+.adv-body p{font-size:.98rem;margin:0 0 .9rem;line-height:1.62}
+.adv-body .label{font-family:var(--f-head);font-size:.62rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 .4rem}
+.adv details{margin-top:.8rem;font-size:.92rem}
+.adv summary{cursor:pointer;font-family:var(--f-head);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.adv summary:hover{color:var(--rubric)}
+.adv.failed .adv-head h4,.adv.failed .seat{color:var(--rubric)}
+
+/* ----------------------------------------------------------------- rulings
+   Three columns of set type, divided by rules. Never combined. */
+
+.rulings{display:grid;grid-template-columns:repeat(3,1fr);border-top:3px double var(--rule)}
+@media (max-width:980px){.rulings{grid-template-columns:1fr}}
+.judge{padding:1.75rem 1.6rem 1.5rem;display:flex;flex-direction:column;border-left:1px solid var(--hair)}
+.judge:first-child{border-left:0;padding-left:0}
+.judge:last-child{padding-right:0}
+@media (max-width:980px){
+  .judge{border-left:0;border-top:1px solid var(--hair);padding-inline:0}
+  .judge:first-child{border-top:0}
+}
+.judge h4{font-family:var(--f-head);font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin:0}
+.method{font-size:.8rem;color:var(--faint);margin:.4rem 0 1.2rem;line-height:1.45}
+
+/* The ruling, set as a line of display type between rules. Black for
+   justified, the second colour for not justified — per column, never compared,
+   never counted. */
+.ruling{
+  font-family:var(--f-body);font-weight:700;font-size:1.6rem;line-height:1.15;
+  letter-spacing:-.025em;margin:0 0 1.2rem;padding:.65rem 0;
+  border-top:1.5px solid currentColor;border-bottom:1px solid var(--hair);
+}
+.ruling[data-ruling="justified"]{color:var(--ink)}
+.ruling[data-ruling="not_justified"]{color:var(--rubric)}
+.judge.failed .ruling{color:var(--rubric);font-size:1.05rem;font-weight:600}
+
+/* Grounds are numbered paragraphs, as they would be in a judgement. */
+.grounds{margin:0 0 1.2rem;padding:0;list-style:none;counter-reset:g}
+.grounds li{
+  display:grid;grid-template-columns:1.8rem 1fr;gap:.5rem;
+  margin-bottom:.75rem;font-size:.93rem;line-height:1.55;
+}
+.grounds li::before{
+  counter-increment:g;content:counter(g)".";
+  font-family:var(--f-head);font-size:.68rem;font-weight:600;color:var(--faint);
+  padding-top:.3rem;
+}
+.judge details{font-size:.92rem;margin-bottom:.85rem}
+.judge summary{cursor:pointer;font-family:var(--f-head);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.judge summary:hover{color:var(--rubric)}
+/* A footnote, set as one. */
+.disclaimer{margin-top:auto;padding-top:1rem;border-top:1px solid var(--hair);font-size:.72rem;line-height:1.5;color:var(--faint)}
+
+/* ------------------------------------------------------------- the picker */
+
+.panel{margin-bottom:2rem;border-top:1px solid var(--hair);padding-top:1.6rem}
+.panel-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline;justify-content:space-between;margin-bottom:1.4rem}
+.panel h3{font-family:var(--f-head);font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;margin:0}
+.linkish{font-family:var(--f-head);font-size:.72rem;background:none;border:0;color:var(--rubric);cursor:pointer;padding:0;text-decoration:underline;letter-spacing:.04em}
+.linkish:hover{opacity:.7;background:none;color:var(--rubric)}
+
+.role-group + .role-group{margin-top:1.8rem;padding-top:1.5rem;border-top:1px solid var(--hair)}
+.role-group > h4{font-family:var(--f-head);font-size:.66rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin:0 0 .3rem}
+.role-group > p{font-size:.86rem;color:var(--faint);margin:0 0 1.1rem;max-width:64ch}
+
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.1rem 1.6rem}
+.role{display:flex;flex-direction:column;gap:.25rem}
+.role label{font-size:.95rem;font-weight:600}
+.role .who{font-family:var(--f-head);font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.role select{font-family:var(--f-head);font-size:.82rem;padding:.45rem .5rem;background:transparent;color:var(--ink);border:0;border-bottom:1px solid var(--hair);width:100%;border-radius:0}
+.role select:focus-visible{outline:0;border-bottom:1.5px solid var(--rubric)}
+.panel-note{font-size:.84rem;color:var(--faint);margin:1.6rem 0 0;padding-top:1rem;border-top:1px solid var(--hair);max-width:80ch}
+
+.protocol{margin:3rem 0 0;padding:1.3rem 0;border-top:3px double var(--rule);border-bottom:1px solid var(--hair);font-size:.92rem;color:var(--soft);max-width:80ch}
+.runline{font-family:var(--f-head);font-size:.7rem;color:var(--faint);margin-top:1.2rem;font-variant-numeric:tabular-nums;word-break:break-word;letter-spacing:.03em}
+
+/* --------------------------------------------- the register (past proceedings)
+   A register of causes, set as a table would be. */
+
+#archive-section{margin-top:3.5rem;padding-bottom:4rem}
+.run-row{
+  display:grid;grid-template-columns:11rem 1fr auto;gap:1rem;align-items:baseline;
+  padding:.7rem 0;border-bottom:1px solid var(--hair);
+}
+.run-row:first-child{border-top:1.5px solid var(--rule)}
+.run-when{font-family:var(--f-head);font-size:.72rem;color:var(--faint);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.run-rulings{display:flex;flex-wrap:wrap;gap:.35rem 1.4rem;font-size:.82rem}
+.run-rulings span{white-space:nowrap;color:var(--faint);font-family:var(--f-head);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase}
+.run-rulings b{font-weight:700;color:var(--ink);font-size:.9rem;letter-spacing:-.01em;text-transform:none}
+.run-rulings b[data-ruling="not_justified"]{color:var(--rubric)}
+.run-meta{font-family:var(--f-head);font-size:.66rem;color:var(--faint);text-align:right;margin-top:.25rem;letter-spacing:.06em}
+.run-open{background:none;border:0;border-bottom:1px solid var(--hair);padding:.2rem 0;font-family:var(--f-head);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--ink)}
+.run-open:hover:not(:disabled){background:none;color:var(--rubric);border-bottom-color:var(--rubric)}
+.run-open[aria-busy="true"]{opacity:.5;cursor:progress}
+.run-incomplete{color:var(--rubric)!important}
+@media (max-width:640px){.run-row{grid-template-columns:1fr;gap:.3rem}.run-meta{text-align:left}}

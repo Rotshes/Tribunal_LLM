@@ -6,5 +6,8 @@ dist/
 .DS_Store
 logs/
 
+# Vite build output. Netlify builds this; it is never committed.
+web/dist/
+
 # Local Netlify folder
 .netlify

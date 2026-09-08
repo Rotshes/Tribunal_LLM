@@ -32,8 +32,8 @@ It is not on slide 7 because slide 7 lists *accounts*. It still blocks all of th
 
    ```
    npm install
-   npm test        # expect 54 passing
-   npm run check   # G5 and G8 over the repo
+   npm test        # expect 69 passing
+   npm run check   # G5, G8 and G9 over the repo
    npm run deliberate -- T-001 --stub good
    ```
 
@@ -159,7 +159,7 @@ everyone at once and keeps being served until someone notices.
 ### The actual steps
 
 Nothing needs to be built or configured in the repository first — `netlify.toml`
-is committed and complete, the frontend has no build step (decision 0008), and
+is committed and complete, the build command is `npm run build` (decision 0012), and
 the four functions are picked up from `netlify/functions/` automatically.
 
 1. **Push everything first.** Netlify deploys what is on GitHub, not what is on
@@ -167,7 +167,7 @@ the four functions are picked up from `netlify/functions/` automatically.
 2. netlify.com → **Add new site → Import an existing project** → GitHub → the
    `tribunal` repository.
 3. When it asks for build settings, **accept what it reads from
-   `netlify.toml`**: no build command, publish directory `web`, functions
+   `netlify.toml`**: build command `npm run build`, publish directory `web/dist`, functions
    directory `netlify/functions`. If it offers to guess instead, decline.
 4. **Site configuration → Environment variables.** Add exactly three:
 

@@ -3,13 +3,16 @@
 // Sending this list is safe: it is the same list the backend validates against,
 // so the browser cannot learn of a model it would be permitted to request.
 
-import { allowedModels } from '../../src/models.js';
+import { offeredModels } from '../../src/models.js';
 import { ROLE_KEYS, modelMap } from '../../src/config.js';
 
 export default async function handler() {
   return new Response(
     JSON.stringify({
-      models: allowedModels(),
+      // Only the models observed to work. The backend still ACCEPTS every
+      // entry on the allowlist (turn 018, src/models.js) — this is the offer,
+      // not the permission.
+      models: offeredModels(),
       roles: ROLE_KEYS,
       // What each role uses if the visitor picks nothing. This is the committed
       // allocation, and it is what the project's model-progression argument is

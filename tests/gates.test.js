@@ -1080,62 +1080,117 @@ test('the deliberate function is a background function with no time budget', () 
 });
 
 test('the page polls the archive rather than reading a response body', () => {
-  const page = fs.readFileSync('web/index.html', 'utf8');
-  assert.match(page, /res\.status !== 202/, 'a background invocation answers 202');
-  assert.match(page, /awaitResult\(id\)/);
-  assert.match(page, /api\/runs\?id=/, 'the archive endpoint is the polling endpoint');
-  assert.match(page, /POLL_GIVE_UP_MS/, 'polling must be bounded, or a dead run hangs the page');
+  const api = fs.readFileSync('web/src/api.js', 'utf8');
+  assert.match(api, /res\.status !== 202/, 'a background invocation answers 202');
+  assert.match(api, /api\/runs\?id=/, 'the archive endpoint is the polling endpoint');
+  assert.match(api, /POLL_GIVE_UP_MS/, 'polling must be bounded, or a dead run hangs the page');
+  assert.match(fs.readFileSync('web/src/App.jsx', 'utf8'), /awaitResult\(id\)/);
 });
 
-test('every function the page calls is defined in the page', async () => {
-  const vm = await import('node:vm');
-  // Turn 013 rewrote run() by replacing everything between it and the click
-  // handler, and took renderArchive, openRun, loadArchive and SHORT with it.
-  // The page then threw `loadArchive is not defined` at the END of a
-  // successful run — after seven paid model calls — and Past proceedings went
-  // blank. Nothing caught it: the page has no build step (decision 0008) and
-  // no test had ever read it as code.
+test('every name a frontend module calls is imported or declared in it', async () => {
+  // Turn 013 deleted three functions while rewriting a fourth, and the page
+  // threw `loadArchive is not defined` after seven paid model calls. The test
+  // written then parsed web/index.html as one script; turn 015 replaced that
+  // file with React modules, so the shape it read is gone.
   //
-  // This parses the page's module and checks that every name it calls is
-  // declared in it. It is the cheapest possible stand-in for the compiler the
-  // no-build-step decision gives up, and it fails against that deletion.
-  const page = fs.readFileSync('web/index.html', 'utf8');
-  const script = page.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
-  assert.ok(script, 'the page must have a module script');
+  // IT WAS NOT REPLACED BY THE COMPILER, and I checked rather than assumed.
+  // Building the app with an undefined identifier in App.jsx succeeds:
+  //
+  //   totallyUndefinedFunction();   →   ✓ built in 651ms
+  //
+  // Vite catches an unresolved IMPORT and fails the build (asserted in the next
+  // test). It does not catch a bare identifier that resolves to nothing at
+  // runtime, which is exactly turn 013's bug. So this check survives the
+  // migration, per module instead of per page — and modules make it sharper,
+  // because scope is now per file rather than one shared soup.
+  const vm = await import('node:vm');
+  const pathMod = await import('node:path');
 
-  // It must at least parse. A syntax error would otherwise ship silently.
-  new vm.Script(script);
-
-  // Strings and comments are not code. Without stripping them the scan reads
-  // `var(--fail)` out of an inline style and "could not be opened (HTTP" out of
-  // a sentence, and reports both as undefined functions. A check that cries
-  // wolf gets deleted, which is worse than not having it.
-  const code = script
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ')
-    .replace(/`(?:[^`\\]|\\.)*`/g, '``')
-    .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
-    .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
-
-  const declared = new Set([
-    ...[...code.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g)].map((m) => m[1]),
-    ...[...code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)].map((m) => m[1]),
-  ]);
-
-  // Names called as `foo(...)` at the start of a statement or after common
-  // operators. Deliberately narrow: this is a smoke check, not a linter.
-  const called = new Set(
-    [...code.matchAll(/(?:^|[\s;{(=>&|?:])([a-z][A-Za-z0-9_$]*)\s*\(/gm)].map((m) => m[1]),
-  );
+  const dir = 'web/src';
+  const files = [];
+  (function walk(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = pathMod.join(d, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (/\.jsx?$/.test(e.name)) files.push(full);
+    }
+  })(dir);
+  assert.ok(files.length >= 8, `expected the frontend modules, found ${files.length}`);
 
   const BUILT_IN = new Set([
     'if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'await', 'new',
-    'fetch', 'setTimeout', 'setInterval', 'clearInterval', 'clearTimeout',
-    'parseInt', 'parseFloat', 'esc', 'options', 'encodeURIComponent', 'decodeURIComponent',
+    'function', 'fetch', 'setTimeout', 'setInterval', 'clearInterval',
+    'clearTimeout', 'parseInt', 'parseFloat', 'encodeURIComponent', 'require',
+    'crypto', 'console', 'String', 'Number', 'Boolean', 'Object', 'Array', 'Map',
+    'Set', 'Promise', 'Date', 'JSON', 'Math', 'super', 'async',
   ]);
 
-  const missing = [...called].filter((n) => !declared.has(n) && !BUILT_IN.has(n));
-  assert.deepEqual(missing, [], `the page calls names it does not define: ${missing.join(', ')}`);
+  for (const file of files) {
+    const src = fs.readFileSync(file, 'utf8');
+
+    // Strings and comments are not code. Without stripping them the scan reads
+    // identifiers out of prose and reports them as undefined functions; a check
+    // that cries wolf gets deleted, which is worse than not having it.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/[^\n]*/g, ' ')
+      .replace(/`(?:[^`\\]|\\.)*`/g, '``')
+      .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+      .replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
+
+    const declared = new Set([
+      // import { a, b } from '…'  and  import a from '…'
+      ...[...code.matchAll(/import\s+([\s\S]*?)\s+from/g)]
+        .flatMap((m) => m[1].replace(/[{}]/g, ' ').split(/[\s,]+/))
+        .filter(Boolean),
+      ...[...code.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g)].map((m) => m[1]),
+      ...[...code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g)].map((m) => m[1]),
+      // Array destructuring, which is how every useState pair is declared:
+      //   const [charge, setCharge] = useState(null)
+      ...[...code.matchAll(/(?:const|let|var)\s*\[([^\]]*)\]/g)]
+        .flatMap((m) => m[1].split(/[\s,]+/))
+        .filter(Boolean),
+      // Destructured props and parameters: ({ a, b }) => …
+      ...[...code.matchAll(/\(\s*\{([^}]*)\}/g)]
+        .flatMap((m) => m[1].split(/[\s,:=]+/))
+        .filter(Boolean),
+      // Plain arrow parameters: (a, b) => …
+      ...[...code.matchAll(/\(([^()]*)\)\s*=>/g)]
+        .flatMap((m) => m[1].split(/[\s,]+/))
+        .filter(Boolean),
+    ]);
+
+    const called = new Set(
+      [...code.matchAll(/(?:^|[\s;{(=>&|?:!])([a-z_$][A-Za-z0-9_$]*)\s*\(/gm)].map((m) => m[1]),
+    );
+
+    const missing = [...called].filter((n) => !declared.has(n) && !BUILT_IN.has(n));
+    assert.deepEqual(missing, [], `${file} calls names it does not import or declare: ${missing.join(', ')}`);
+  }
+});
+
+test('the build fails on an unresolved import', async () => {
+  // What the build DOES catch, asserted rather than assumed — this is half the
+  // argument for decision 0012, and the other half (undefined identifiers) is
+  // disproved in the test above.
+  const { execFileSync } = await import('node:child_process');
+  const backup = fs.readFileSync('web/src/App.jsx', 'utf8');
+  try {
+    fs.writeFileSync(
+      'web/src/App.jsx',
+      backup.replace("./components/Archive.jsx", "./components/NoSuchFile.jsx"),
+    );
+    let failed = false;
+    try {
+      execFileSync('npm', ['run', 'build'], { stdio: 'pipe' });
+    } catch (err) {
+      failed = true;
+      assert.match(String(err.stdout) + String(err.stderr), /NoSuchFile|resolve/i);
+    }
+    assert.ok(failed, 'the build accepted an import that does not exist');
+  } finally {
+    fs.writeFileSync('web/src/App.jsx', backup);
+  }
 });
 
 test('every allowlisted model records what it was observed to do', async () => {
@@ -1154,11 +1209,21 @@ test('every allowlisted model records what it was observed to do', async () => {
   }
 });
 
-test('the picker warns about models observed to fail', () => {
-  const page = fs.readFileSync('web/index.html', 'utf8');
-  assert.match(page, /known to fail/);
-  assert.match(page, /unreliable/);
-  assert.match(page, /m\.observed/, 'the warning must come from the recorded observation');
+test('the picker labels a failing model if one ever reaches it', () => {
+  // Since turn 018 the endpoint filters these out, so in normal operation this
+  // label never renders. It is kept as the second layer: if the filter is
+  // relaxed, or a model is offered whose `observed` record does not begin
+  // "works", the option says so rather than looking like any other choice.
+  // Removing it would leave the picker with no defence of its own.
+  const panel = fs.readFileSync('web/src/panel.js', 'utf8');
+  assert.match(panel, /known to fail/);
+  assert.match(panel, /unreliable/);
+  assert.match(panel, /model\?\.observed/, 'the warning must come from the recorded observation');
+  assert.match(
+    fs.readFileSync('web/src/components/ModelPicker.jsx', 'utf8'),
+    /modelHealth\(m\)/,
+    'and the option must actually show it',
+  );
 });
 
 test('a rejected model report carries no account identifier and pastes as valid JSON', async () => {
@@ -1236,4 +1301,91 @@ test('G9 does not report a four-digit number that is not a decision', () => {
   // missing decision. A check that invents work gets switched off.
   const src = fs.readFileSync('tools/repo-checks.js', 'utf8');
   assert.match(src, /\\\(\(00\\d\{2\}\)\\\)/, 'the bare reference pattern must be limited to 00NN');
+});
+
+test('the rulings render from the fixed judge list, not from what came back', () => {
+  // The guarantee is three columns, always, in the same order — a judge that
+  // failed occupies its column as a failure. Mapping over `judge_opinions`
+  // instead would silently render two columns for a partial run, which looks
+  // exactly like a panel where one judge was not shown. (decision 0002)
+  const src = fs.readFileSync('web/src/components/Rulings.jsx', 'utf8');
+  assert.match(src, /JUDGES\.map\(/, 'the component must iterate the fixed list');
+  // Position, not presence: `(doc.judge_opinions ?? []).map(...)` is legitimate
+  // where it builds a lookup, and the first draft of this test flagged exactly
+  // that. What matters is that the COLUMNS come from JUDGES — so every
+  // `<article className="judge"` must sit after `JUDGES.map(` opens.
+  const mapsFixedList = src.indexOf('JUDGES.map(');
+  const firstColumn = src.indexOf('className="judge"');
+  assert.ok(mapsFixedList !== -1 && mapsFixedList < firstColumn,
+    'the judge columns must be produced by iterating the fixed list');
+  assert.match(src, /Deliberation failed/, 'the empty column must say so');
+
+  // The colour hook is per column and carries no comparison between them.
+  const css = fs.readFileSync('web/src/styles.css', 'utf8');
+  assert.match(css, /\.ruling\[data-ruling="justified"\]/);
+  assert.match(css, /\.ruling\[data-ruling="not_justified"\]/);
+});
+
+test('the stylesheet contains no stray non-ASCII outside the places that need it', () => {
+  // Turn 016 introduced `--accent:#D2AE६B` — a Devanagari digit inside a hex
+  // colour. CSS fails silently: the rule is dropped, the variable keeps its
+  // previous value, and nothing anywhere reports it. The build was happy.
+  //
+  // Non-ASCII is legitimate in comments and in generated content (the ✓ and ·
+  // used as stage markers), so this checks DECLARATIONS only.
+  const css = fs.readFileSync('web/src/styles.css', 'utf8');
+
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const offenders = [];
+
+  withoutComments.split('\n').forEach((line, i) => {
+    // `content:` legitimately carries symbols and quoted text.
+    if (/content\s*:/.test(line)) return;
+    if ([...line].some((c) => c.charCodeAt(0) > 127)) {
+      offenders.push(`${i + 1}: ${line.trim()}`);
+    }
+  });
+
+  assert.deepEqual(offenders, [], `non-ASCII in a CSS declaration:\n${offenders.join('\n')}`);
+
+  // And every hex colour is a hex colour.
+  //
+  // VALUES only: the first draft matched `#status` and `#archive-section` —
+  // id selectors, which begin with the same character and are not colours.
+  // Fourth false positive in four turns, same cause each time: a check written
+  // against the shape of the defect rather than against what makes it one.
+  for (const line of withoutComments.split('\n')) {
+    const colon = line.indexOf(':');
+    if (colon === -1) continue;
+    for (const m of line.slice(colon).matchAll(/#([0-9A-Za-z]{3,8})\b/g)) {
+      assert.match(m[1], /^[0-9A-Fa-f]{3,8}$/, `${m[0]} is not a valid hex colour`);
+    }
+  }
+});
+
+test('the picker offers only models observed to work, and the backend still accepts the rest', async () => {
+  // Turn 013 left the broken models in the dropdown with a label. Turn 018
+  // removed them from the offer on Roy's instruction: a menu of options that
+  // never work is a worse interface than a shorter menu, whatever the labels
+  // say.
+  //
+  // Filtered, not deleted — a stored run that used one must still resolve, and
+  // the record of why it was dropped must survive.
+  const { allowedModels, offeredModels, allowedIds } = await import('../src/models.js');
+
+  const offered = offeredModels();
+  assert.ok(offered.length >= 3, 'the picker must still offer a usable panel');
+  for (const m of offered) {
+    assert.match(m.observed, /^works/, `${m.id} is offered but not observed to work`);
+  }
+
+  const broken = allowedModels().filter((m) => !/^works/.test(m.observed));
+  assert.ok(broken.length > 0, 'this test is meaningless if nothing is filtered');
+  for (const m of broken) {
+    assert.ok(!offered.some((o) => o.id === m.id), `${m.id} is still offered`);
+    assert.ok(allowedIds().has(m.id), `${m.id} was removed from the allowlist, orphaning its runs`);
+  }
+
+  const fn = fs.readFileSync('netlify/functions/models.js', 'utf8');
+  assert.match(fn, /offeredModels\(\)/, 'the endpoint must serve the offer, not the allowlist');
 });

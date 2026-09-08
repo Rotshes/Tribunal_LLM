@@ -152,6 +152,35 @@ export function resolveModelMap(overrides = {}, allowedIds = null) {
   return { map: base, problems: [...new Set(problems)] };
 }
 
+/**
+ * `--seat <role>=<model>`, repeatable, from a terminal argv.
+ *
+ * The CLI already has `--advocates` and `--judges`, which set a whole layer.
+ * That is the right shape for a layer comparison and the wrong shape for the
+ * experiment 0013 leaves open: PERMUTING the three judge models between the
+ * three judge seats, so that each model sits each seat once. The lean either
+ * travels with the seat — the method and the prompt — or with the model, and
+ * three runs arranged as a Latin square is the cheapest arrangement that can
+ * tell those apart.
+ *
+ * Returns overrides only. Every one is untrusted the same way a browser's is,
+ * and is checked against the allowlist by resolveModelMap() above; parsing here
+ * validates nothing about the values on purpose, so there is exactly one place
+ * that decides what is allowed.
+ */
+export function parseSeatFlags(args = []) {
+  const out = {};
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] !== '--seat') continue;
+    const pair = args[i + 1];
+    if (!pair || pair.startsWith('--')) continue; // a --seat with nothing after it
+    const eq = pair.indexOf('=');
+    if (eq <= 0) continue; // not role=model; resolveModelMap reports the rest
+    out[pair.slice(0, eq)] = pair.slice(eq + 1);
+  }
+  return out;
+}
+
 export const EXPECTED_CALLS = 7; // 4 advocates + 3 judges. Not a maximum: an exact count.
 
 // Also a function, for the same reason.

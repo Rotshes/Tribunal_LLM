@@ -1,9 +1,13 @@
 # 0013 — Seven seats, seven models
 
-Status: **provisional.** Accepted on instruction (Roy, 8 September 2026);
-adopted before the comparison that 0009 said this change would need.
+Status: **accepted** (Roy, 8 September 2026).
+Adopted on instruction the same day, filed *provisional* because it was taken
+before the comparison 0009 said it would need, and accepted that evening on the
+five runs in the amendment below — after the first allocation it committed had
+already been withdrawn on its own evidence.
 Date decided: 8 September 2026
 Date written: 8 September 2026
+Date accepted: 8 September 2026
 Supersedes: `0009-advocates-and-judges-run-different-models.md`
 Evidence: `docs/turns/018-seven-seats-seven-models.md`, and the eight screening
 calls it records.
@@ -106,6 +110,38 @@ and the two allocations differ on the advocate side as well, so the judges are
 not reading identical input across the comparison. What would settle it is the
 same panel with the judges' models permuted between seats. That is the
 experiment this table is an argument for, not a substitute for.
+
+### The permutation, specified
+
+Three conditions, a Latin square: each of the three judge models sits each of
+the three seats exactly once. **The advocates never change**, so all three
+conditions feed the judges comparable input and the only variable is which model
+occupies which seat.
+
+| Condition | barak | elon | shamgar |
+|---|---|---|---|
+| **I** — as committed, 5 runs already held | flash-lite | mercury-preview | muse-glimmer |
+| **II** | mercury-preview | muse-glimmer | flash-lite |
+| **III** | muse-glimmer | flash-lite | mercury-preview |
+
+Run four of each of II and III. `--seat <role>=<model>` (added turn 019) sets one
+seat; `model_map` is stored per run, so `npm run compare` groups the three
+conditions as three configs without being told to.
+
+**What each outcome would mean, written before the runs rather than after:**
+
+- **Leans stay with the seats** — barak justified, shamgar not_justified,
+  whichever model is underneath. The judicial method drives the ruling, and
+  0013's stated cost mostly dissolves.
+- **Leans move with the models** — flash-lite carries "justified" from barak to
+  shamgar. Then divergence is a model artefact, the seats are decorative, and
+  0013's cost is real and worse than stated.
+- **Neither** — the leans scatter. Then five runs was noise, which is the
+  outcome the sample size actually predicts and the one to expect.
+
+The third is the most likely and is not a failure of the experiment. Twelve runs
+still cannot settle this; what they can do is say whether the pattern survives
+contact with a design built to break it.
 
 ---
 

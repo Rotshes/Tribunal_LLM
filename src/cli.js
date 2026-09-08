@@ -12,7 +12,7 @@ import { makeStubProvider } from './providers/stub.js';
 import { loadEnv } from './env.js';
 import { persistDeliberation } from './persist.js';
 import { supabaseConfigured, writeDeliberation } from './sinks/supabase.js';
-import { ADVOCATE_ORDER, JUDGE_ORDER, configWarnings } from './config.js';
+import { ADVOCATE_ORDER, JUDGE_ORDER, configWarnings, parseSeatFlags } from './config.js';
 import { allowedIds } from './models.js';
 
 function findCase(caseId) {
@@ -71,6 +71,20 @@ if (advocatesModel) {
 if (judgesModel) {
   for (const id of JUDGE_ORDER) modelOverrides[`judge.${id}`] = judgesModel;
 }
+
+// --seat <role>=<model>, repeatable, applied last so it wins over a layer flag.
+//
+//   npm run deliberate -- T-001 --provider openrouter \
+//     --seat judge.barak_model=inception/mercury-2.5-preview \
+//     --seat judge.elon_model=meta/muse-glimmer-30b \
+//     --seat judge.shamgar_model=google/gemini-3.5-flash-lite
+//
+// This exists for one experiment. 0013 seated three judge models on three judge
+// seats and five runs showed each judge keeping the lean it had under the old
+// two-model allocation — shamgar `not_justified` whether it ran on Google or on
+// Meta. That is either the method driving the ruling or a coincidence at n=5,
+// and permuting the models between the seats is what separates them.
+Object.assign(modelOverrides, parseSeatFlags(args));
 
 const caseObj = findCase(caseId);
 const result = await deliberate({

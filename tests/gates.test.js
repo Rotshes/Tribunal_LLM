@@ -1509,3 +1509,43 @@ test('an account refusal is told apart from a model failure', async () => {
     'compare.js must apply the classifier to the rate, the reasons and the roles',
   );
 });
+
+test('--seat sets one role, is repeatable, and cannot smuggle a model past the allowlist', async () => {
+  // The flag exists for 0013's open experiment: permute the three judge models
+  // between the three judge seats so that each model sits each seat once. If
+  // the lean travels with the seat it is the method; if it travels with the
+  // model it is the model. Nothing else separates those two.
+  const { parseSeatFlags, resolveModelMap, modelMap } = await import('../src/config.js');
+
+  const argv = [
+    'T-001',
+    '--provider', 'openrouter',
+    '--seat', 'judge.barak_model=inception/mercury-2.5-preview',
+    '--seat', 'judge.shamgar_model=google/gemini-3.5-flash-lite',
+  ];
+  assert.deepEqual(parseSeatFlags(argv), {
+    'judge.barak_model': 'inception/mercury-2.5-preview',
+    'judge.shamgar_model': 'google/gemini-3.5-flash-lite',
+  });
+
+  // Malformed flags are dropped here rather than guessed at. A --seat with
+  // nothing after it, or without an "=", is not a role and not a model.
+  assert.deepEqual(parseSeatFlags(['--seat']), {});
+  assert.deepEqual(parseSeatFlags(['--seat', '--provider']), {});
+  assert.deepEqual(parseSeatFlags(['--seat', 'judge.barak_model']), {});
+  assert.deepEqual(parseSeatFlags([]), {});
+
+  // The whole point: coming from a terminal buys no exemption. The allowlist
+  // check is resolveModelMap's, in one place, for the browser and the CLI both.
+  const before = process.env.TRIBUNAL_UNIFORM_MODEL;
+  delete process.env.TRIBUNAL_UNIFORM_MODEL;
+  try {
+    const evil = parseSeatFlags(['--seat', 'judge.barak_model=anthropic/claude-opus-5']);
+    const { map, problems } = resolveModelMap(evil, allowedIds());
+    assert.ok(problems.some((p) => p.includes('not an allowed model')));
+    assert.equal(map['judge.barak_model'], modelMap()['judge.barak_model'],
+      'a refused seat must keep the committed model, not the requested one');
+  } finally {
+    if (before !== undefined) process.env.TRIBUNAL_UNIFORM_MODEL = before;
+  }
+});

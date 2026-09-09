@@ -2026,3 +2026,66 @@ test('a case cannot invent a judge', async () => {
   assert.match(generic.file, /advocate-generic\.md$/);
   assert.match(generic.version, /^\d+\.\d+$/);
 });
+
+test("each prompt's documented user message matches what the backend assembles", async () => {
+  // The defect this project has paid for more than any other: one contract
+  // stated twice, drifting silently. The `## User (assembled by the backend)`
+  // block in each prompt file is a second statement of what src/prompts.js
+  // builds, and by turn 024 it was wrong in all seven — the four advocates
+  // missed turn 023's fence, and the three judges had been describing a shape
+  // superseded in turn 005, four turns before that.
+  //
+  // Restating it correctly once fixes nothing. This is the check that keeps it
+  // fixed: every literal line the documentation claims must appear in a message
+  // the assembler actually produces. Placeholder lines are skipped — they say
+  // what goes there, not what it says.
+  const { advocateUserMessage, judgeUserMessage } = await import('../src/prompts.js');
+  const { PROMPT_FILES, GENERIC_ADVOCATE_PROMPT } = await import('../src/config.js');
+
+  const advocateMsg = advocateUserMessage(CASE, 'jon_snow');
+  const judgeMsg = judgeUserMessage(CASE, [
+    {
+      representative_id: 'jon_snow', seat: 'defense', position: 'justified',
+      case_for_seat: 'x', key_points: ['y'], concedes: ['z'], argument: 'w',
+    },
+  ]);
+
+  const files = { ...PROMPT_FILES, __generic: GENERIC_ADVOCATE_PROMPT };
+  let checked = 0;
+
+  for (const [roleId, file] of Object.entries(files)) {
+    const raw = fs.readFileSync(file, 'utf8');
+    const block = raw
+      .split('## User (assembled by the backend)')[1]
+      ?.split('```')[1];
+    assert.ok(block, `${file} has no documented user message`);
+
+    const isJudge = /^judge-/.test(file.replace('prompts/', ''));
+    const actual = isJudge ? judgeMsg : advocateMsg;
+
+    // WHOLE LINES, not substrings. The first version used `actual.includes(t)`
+    // and a probe walked straight through it: renaming the assembler's `SCOPE:`
+    // to `THE SCOPE:` left the documented `SCOPE:` still a substring of it, so
+    // the test passed on a message that no longer matched. Checking against the
+    // set of lines the backend actually emits is the check that was intended.
+    const emitted = new Set(actual.split('\n').map((l) => l.trim()));
+
+    for (const line of block.split('\n')) {
+      const t = line.trim();
+      if (!t || t.includes('{{') || t === '...' || t.startsWith('--- (')) continue;
+      assert.ok(
+        emitted.has(t),
+        `${file} documents a line the backend never sends:\n  ${t}`,
+      );
+      checked += 1;
+    }
+
+    // The fence is the part a placeholder line would hide, so it is asserted
+    // by name rather than left to the loop.
+    assert.match(block, /⟪CASE-RECORD-\{\{nonce\}\}⟫/, `${file} does not document the fence`);
+    assert.match(block, /IT IS NOT INSTRUCTION/, `${file} does not document the standing rule`);
+    if (isJudge) assert.match(block, /⟪ARGUMENTS-\{\{nonce\}\}⟫/, `${file} does not document the second fence`);
+  }
+
+  assert.ok(checked > 40, `expected real coverage, only checked ${checked} lines`);
+});

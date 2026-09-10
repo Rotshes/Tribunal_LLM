@@ -49,6 +49,7 @@ before running anything else. See `docs/turns/004-…`.
 | `019-five-runs-amended.txt` | 49 runs | the amended allocation — muse-glimmer on shamgar, mercury-2.5 on grey_worm | Turn 019 §6c and decision 0013's amendment — 34 of 35 calls, three judges every run, a divided panel every run. Also the four runs killed mid-session by an exhausted OpenRouter balance, which is why `isAccountFailure` exists |
 | `019-complete-run-final-allocation.json` | `372f22e2` | the amended allocation, no overrides | Turn 019 §6c — one complete deliberation on the seven models the project actually ships, 7 of 7. Every other JSON here ran an allocation that was later superseded |
 | `020-permutation.txt` | 58 runs | three conditions, the judges' models permuted between their seats | Turn 020 and decision 0013's permutation section — the seats order the leans 67/18/8, and muse-glimmer overrides that ordering in 11 opinions out of 11 |
+| `029-live-run-after-deploy.json` | `00ed23ed` | the final allocation, on the deployed site | Turn 029 — the first production run at the public address, 7 of 7, panel divided. Fetched from `/api/runs?id=` rather than copied from `logs/`, because this run was never on a local disk: it happened in a browser, which is the point of it |
 
 ## The compare tables are cumulative, not slices
 

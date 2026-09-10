@@ -44,6 +44,30 @@ before running anything else. See `docs/turns/004-…`.
 | `010-compare-three-conditions.txt` | 26 runs | flash-lite ×13, 3.7-flash ×5, mixed ×5, plus 3 json-off | Turn 010 and decision 0009 — uniform 3.7-flash never divides; the split returns with flash-lite judges |
 | `010-run-e-committed-allocation.json` | `cbdf1b97` | the committed allocation, no overrides | Turn 010 §6d — 7 of 7 on real models, both models recorded per call, panel divided |
 | `014-final-compare.txt` | 34 runs | every configuration, both sources merged | Turn 014 §6b — the committed allocation over 12 runs, and the four-provider panel |
+| `018-first-run-seven-models.json` | `ffc49fca` | decision 0013 as first committed — nemotron on shamgar, qwen on grey_worm | Turn 019 §5 — 6 of 7, shamgar refused for answering four advocates in under twenty characters |
+| `019-five-runs-seven-models.txt` | 40 runs | as above, five runs of it | Turn 019 §5 — 26% of calls failed and shamgar ruled in none of the five, which is what withdrew that allocation |
+| `019-five-runs-amended.txt` | 49 runs | the amended allocation — muse-glimmer on shamgar, mercury-2.5 on grey_worm | Turn 019 §6c and decision 0013's amendment — 34 of 35 calls, three judges every run, a divided panel every run. Also the four runs killed mid-session by an exhausted OpenRouter balance, which is why `isAccountFailure` exists |
+| `019-complete-run-final-allocation.json` | `372f22e2` | the amended allocation, no overrides | Turn 019 §6c — one complete deliberation on the seven models the project actually ships, 7 of 7. Every other JSON here ran an allocation that was later superseded |
+| `020-permutation.txt` | 58 runs | three conditions, the judges' models permuted between their seats | Turn 020 and decision 0013's permutation section — the seats order the leans 67/18/8, and muse-glimmer overrides that ordering in 11 opinions out of 11 |
+
+## The compare tables are cumulative, not slices
+
+`npm run compare` prints **every** stored deliberation, so each `*-compare` and
+`*-runs` file here contains all the runs the ones before it contain. The counts
+in the Config column above — 26, 34, 40, 49, 58 — are totals at the moment of
+capture, not the size of the thing that turn was arguing about.
+
+That is deliberate: a slice would need the tool to filter, and a filter is a
+choice about what to leave out. What each file adds over its predecessor is
+named in the Cited by column, and the tool's own per-configuration blocks are
+where a reader should look rather than at the total.
+
+It is also why the three files captured on 08–09.09 must not be regenerated to
+"bring them up to date". Each is a snapshot of what was known when the argument
+citing it was made; re-running the tool over all of them would produce three
+identical files and destroy exactly the thing they are for. That very nearly
+happened on 09.09 — two of them were overwritten with the same table and had to
+be restored from git.
 
 ## Adding to this folder
 

@@ -1270,24 +1270,58 @@ test('the build fails on an unresolved import', async () => {
   // What the build DOES catch, asserted rather than assumed — this is half the
   // argument for decision 0012, and the other half (undefined identifiers) is
   // disproved in the test above.
+  //
+  // TWO WINDOWS FAULTS, found when the pre-commit hook ran this suite on Roy's
+  // machine for the first time (turn 028):
+  //
+  //   1. `execFileSync('npm', …)` cannot spawn on Windows, where npm is
+  //      `npm.cmd`. It threw ENOENT — an error with no stdout and no stderr —
+  //      so the assertion below compared the string "undefinedundefined".
+  //      Fixed by running vite through node directly, which needs no shell and
+  //      behaves the same on every platform.
+  //
+  //   2. THE FIRST FAULT WAS HIDING BEHIND THE SECOND. The test asks whether
+  //      the build failed, and a build that cannot start also fails — so had
+  //      the message assertion been any looser, this would have PASSED on
+  //      Windows while proving nothing at all. That is the verification theatre
+  //      Module 13 names, and it was live in this repository. The check below
+  //      now separates "the build ran and rejected the import" from "the build
+  //      never ran", because only the first is evidence.
   const { execFileSync } = await import('node:child_process');
   const backup = fs.readFileSync('web/src/App.jsx', 'utf8');
   try {
     fs.writeFileSync(
       'web/src/App.jsx',
-      backup.replace("./components/Archive.jsx", "./components/NoSuchFile.jsx"),
+      backup.replace('./components/Archive.jsx', './components/NoSuchFile.jsx'),
     );
-    let failed = false;
+
+    let err = null;
     try {
-      execFileSync('npm', ['run', 'build'], { stdio: 'pipe' });
-    } catch (err) {
-      failed = true;
-      assert.match(String(err.stdout) + String(err.stderr), /NoSuchFile|resolve/i);
+      execFileSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build'], {
+        stdio: 'pipe',
+      });
+    } catch (e) {
+      err = e;
     }
-    assert.ok(failed, 'the build accepted an import that does not exist');
+
+    assert.ok(err, 'the build accepted an import that does not exist');
+    assert.ok(
+      typeof err.status === 'number',
+      `the build never ran, so this proves nothing: ${err.code ?? err.message}`,
+    );
+    // NAMED, not merely "something about resolving". The old pattern was
+    // /NoSuchFile|resolve/i, and node's own module loader says
+    // `_resolveFilename` when it cannot find a script — so pointing this at a
+    // build tool that does not exist matched the alternative and passed. The
+    // build must name the import WE broke, or it has not demonstrated anything.
+    assert.match(`${err.stdout ?? ''}${err.stderr ?? ''}`, /NoSuchFile/);
   } finally {
     fs.writeFileSync('web/src/App.jsx', backup);
   }
+  // The source file is mutated above and restored here. Assert it: a killed
+  // process would leave a broken App.jsx behind, and the next thing to notice
+  // would be a failed deploy.
+  assert.equal(fs.readFileSync('web/src/App.jsx', 'utf8'), backup);
 });
 
 test('every allowlisted model records what it was observed to do', async () => {
@@ -1607,176 +1641,6 @@ test('case_id is attached by the runner, not taken from the model', async () => 
   }
 });
 
-// ------------------------------------------- the charge-sheet form (turn 021)
-
-test('a free case id is found, and a taken one is refused with a free one named', async () => {
-  // Step 2 of the validation order in docs/02-charge-sheet-spec.md, specified
-  // on 24.08.2026 and unimplemented until a form could send a charge sheet.
-  //
-  // This is not tidiness. The Supabase sink sends
-  // `Prefer: resolution=merge-duplicates`, so a write to an existing case_id
-  // UPSERTS — a visitor submitting as T-001 would overwrite the instructor's
-  // case in place, and every stored opinion cites agreed_facts BY INDEX.
-  const { fixtureCaseIds, nextFreeCaseId, checkCaseIdFree } = await import('../src/cases.js');
-
-  assert.ok(fixtureCaseIds().includes('T-001'), 'the fixture must be seen');
-
-  assert.equal(nextFreeCaseId([]), 'T-001');
-  assert.equal(nextFreeCaseId(['T-001']), 'T-002');
-  assert.equal(nextFreeCaseId(['T-001', 'T-002', 'T-004']), 'T-003');
-
-  // The fixture is protected even when the database cannot be read — which is
-  // the case that matters, because a fixture is the thing that cannot be
-  // replaced and Supabase pauses itself after seven quiet days.
-  const blind = checkCaseIdFree('T-001', null);
-  assert.equal(blind.free, false, 'T-001 must be refused with no database at all');
-  assert.equal(blind.checked_stored, false, 'a partial check must admit it is partial');
-
-  const stored = checkCaseIdFree('T-002', ['T-002', 'T-003']);
-  assert.equal(stored.free, false);
-  assert.equal(stored.suggestion, 'T-004');
-  assert.equal(stored.checked_stored, true);
-
-  assert.equal(checkCaseIdFree('T-900', ['T-002']).free, true);
-});
-
-test('POST /api/validate rejects a bad charge sheet by field, and calls no model', async () => {
-  // Definition-of-done item 7: "Submitting an incomplete charge sheet produces
-  // a message naming the missing field, before any model is called."
-  //
-  // /api/deliberate cannot meet that. It is a background function: it answers
-  // 202 with an empty body before its own G1 runs, so its 422 reaches nobody.
-  // Hence a synchronous endpoint in front, importing the same gate.
-  const { default: validate } = await import('../netlify/functions/validate.js');
-  const post = (body) =>
-    new Request('http://local/api/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-  // The fixture, with a fresh id, must pass.
-  const fresh = { ...CASE, case_id: 'T-900' };
-  const ok = await validate(post({ charge_sheet: fresh }));
-  assert.equal(ok.status, 200, 'a valid charge sheet must be accepted');
-
-  // The fixture's own id must not.
-  const dup = await validate(post({ charge_sheet: CASE }));
-  assert.equal(dup.status, 422);
-  const dupBody = await dup.json();
-  assert.ok(dupBody.problems.some((p) => p.includes('already exists')));
-  assert.match(dupBody.suggested_case_id, /^T-\d{3}$/, 'a free id must be offered, not just a refusal');
-
-  // EVERY violation, not the first — the spec's reason is that fixing one field
-  // per attempt would otherwise cost seven model calls a go.
-  const broken = { ...fresh, representatives: CASE.representatives.slice(0, 3) };
-  delete broken.issue;
-  const bad = await validate(post({ charge_sheet: broken }));
-  assert.equal(bad.status, 422);
-  const problems = (await bad.json()).problems;
-  assert.ok(problems.length >= 2, 'all violations at once, not the first');
-  assert.ok(problems.some((p) => p.includes('issue')), `the missing field must be named: ${problems}`);
-  assert.ok(problems.some((p) => p.includes('representatives')));
-
-  assert.equal((await validate(new Request('http://local/api/validate'))).status, 405);
-  assert.equal(
-    (await validate(post({ nothing: true }))).status,
-    400,
-    'a body without a charge sheet is a bad request, not a rejected sheet',
-  );
-});
-
-test('the form restates no bound the schema does not hold', async () => {
-  // Four times this project has had one contract stated in two places and let
-  // them drift (CLAUDE.md). The form prints character and word bounds beside
-  // the fields they constrain, which is a second statement of the schema — so
-  // it is checked against the schema rather than trusted.
-  const src = fs.readFileSync('web/src/components/ChargeSheetForm.jsx', 'utf8');
-  const schema = JSON.parse(fs.readFileSync('schemas/charge-sheet.schema.json', 'utf8'));
-  const p = schema.properties;
-
-  // Read the numbers out one entry at a time. The first version of this test
-  // reconstructed the whole object literal into JSON with two regexes and
-  // failed on its own quoting — a test that breaks for a reason unrelated to
-  // what it checks is the false positive this project keeps paying for.
-  const block = src.slice(src.indexOf('export const BOUNDS = {'));
-  const bounds = {};
-  for (const m of block.slice(0, block.indexOf('};')).matchAll(
-    /(\w+):\s*\{\s*min:\s*(\d+),\s*max:\s*(\d+)\s*\}/g,
-  )) {
-    bounds[m[1]] = { min: Number(m[2]), max: Number(m[3]) };
-  }
-  assert.ok(
-    Object.keys(bounds).length >= 7,
-    `expected every bound to parse, got ${Object.keys(bounds)}`,
-  );
-
-  const pairs = [
-    ['title', p.title],
-    ['act_alleged', p.act_alleged],
-    ['issue', p.issue],
-  ];
-  for (const [name, field] of pairs) {
-    assert.equal(bounds[name].min, field.minLength, `${name} min disagrees with the schema`);
-    assert.equal(bounds[name].max, field.maxLength, `${name} max disagrees with the schema`);
-  }
-  assert.equal(bounds.fact.min, p.agreed_facts.items.minLength);
-  assert.equal(bounds.fact.max, p.agreed_facts.items.maxLength);
-  assert.equal(bounds.facts.min, p.agreed_facts.minItems);
-  assert.equal(bounds.facts.max, p.agreed_facts.maxItems);
-  assert.equal(bounds.brief.min, p.representatives.items.properties.brief.minLength);
-  assert.equal(bounds.brief.max, p.representatives.items.properties.brief.maxLength);
-
-  // background is a WORD count, which no JSON Schema can express — it lives in
-  // g1ChargeSheet as code. Checked against that, not against the schema.
-  const gates = fs.readFileSync('src/gates.js', 'utf8');
-  assert.ok(
-    gates.includes(`words < ${bounds.background_words.min}`) &&
-      gates.includes(`words > ${bounds.background_words.max}`),
-    'the background word bounds shown to the submitter disagree with G1',
-  );
-});
-
-test('the form offers nothing the project forbids, and the page can send one', async () => {
-  const form = fs.readFileSync('web/src/components/ChargeSheetForm.jsx', 'utf8');
-
-  // The pinned constants must be asserted, never rendered as inputs. A form
-  // offering `combines_opinions` as a choice offers something decision 0002
-  // forbids outright.
-  assert.match(form, /imposes_sentence:\s*false/);
-  assert.match(form, /combines_opinions:\s*false/);
-  assert.match(form, /fictional:\s*true/);
-  const inputs = form.slice(form.indexOf('return ('));
-  for (const forbidden of ['imposes_sentence', 'combines_opinions']) {
-    assert.ok(
-      !new RegExp(`name=["']${forbidden}|value=\\{f\\.${forbidden}`).test(inputs),
-      `${forbidden} must not be an editable field`,
-    );
-  }
-
-  // Seats fixed 2/2: G1 requires exactly that balance, so a seat control exists
-  // only to be got wrong.
-  assert.match(form, /const SEATS = \['defense', 'defense', 'prosecution', 'prosecution'\]/);
-
-  // And the wiring, end to end: the page validates before it convenes, and
-  // convene() can carry a sheet rather than an id.
-  const api = fs.readFileSync('web/src/api.js', 'utf8');
-  assert.match(api, /\/api\/validate/);
-  assert.match(api, /charge_sheet: chargeSheet/);
-
-  const app = fs.readFileSync('web/src/App.jsx', 'utf8');
-  assert.match(app, /ChargeSheetForm/);
-  assert.match(app, /await validateSheet\(sheet\)/, 'the page must validate before it convenes');
-  assert.ok(
-    app.indexOf('await validateSheet(sheet)') < app.indexOf('setOwnSheet(sheet)'),
-    'a sheet must not become the active case before it has passed G1',
-  );
-
-  assert.match(
-    fs.readFileSync('netlify/functions/validate.js', 'utf8'),
-    /path: '\/api\/validate'/,
-  );
-});
 
 // ------------------------------------------------- light and dark (turn 022)
 
@@ -2088,4 +1952,142 @@ test("each prompt's documented user message matches what the backend assembles",
   }
 
   assert.ok(checked > 40, `expected real coverage, only checked ${checked} lines`);
+});
+
+// ------------------------------------------------- the pre-commit hook (026)
+
+test('the pre-commit hook refuses a commit that fails the checks', async () => {
+  // Module 12: "A hook runs automatically whenever a commit is attempted. It
+  // refuses that commit when the check fails." Module 17, on secrets: "Enforce
+  // this with a scanning hook, not with care."
+  //
+  // Until turn 026 this project ran G5, G8 and G9 by typing `npm run check`.
+  // A check you have to remember is a check you skip at 2am — Module 13: "The
+  // day you skip it is the day it guarded."
+  const hook = fs.readFileSync('.githooks/pre-commit', 'utf8');
+
+  assert.match(hook, /npm run --silent check/, 'the hook must run the repository checks');
+  assert.match(hook, /npm test/, 'the hook must run the tests');
+  assert.match(hook, /^set -e$/m, 'a failing check must stop the hook, not be passed over');
+  assert.match(hook, /exit 1/, 'the hook must refuse the commit');
+
+  // No escape hatch. A hook that can be told to skip itself is a hook that
+  // gets told to, on the night it matters.
+  //
+  // CODE, NOT PROSE. The first version scanned the whole file, so a comment
+  // explaining why `|| true` was avoided failed the test that forbids `|| true`
+  // — the hook's own guard firing on an explanation of itself. Comments are
+  // stripped first: the defect is an escape that RUNS, not a mention of one.
+  const code = hook
+    .split('\n')
+    .filter((l) => !/^\s*#/.test(l))
+    .join('\n');
+  assert.ok(
+    !/SKIP|--no-verify|\|\| true|\|\| :|if \[ -n "\$FORCE/.test(code),
+    'the hook must not offer a way around itself',
+  );
+
+  // Installed by an explicit command, because git does not run hooks from a
+  // fetched repository — so a hook nobody installs is decoration.
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  assert.equal(pkg.scripts.hooks, 'git config core.hooksPath .githooks');
+
+  // And the checks it runs are the real ones, not a copy that could drift.
+  assert.equal(pkg.scripts.check, 'node tools/repo-checks.js');
+});
+
+test('G8 fails on a TRACKED .env, and not on a working one', async () => {
+  // Turn 026's pre-commit hook found this on its first real run. G8 fired
+  // whenever a `.env` existed in the working tree — which is the correct state
+  // of every machine that can run this app — so `npm run check` failed on a
+  // healthy checkout and the hook refused every commit on it.
+  //
+  // A gate that fires on the normal case is worse than no gate: it teaches the
+  // person to reach for --no-verify, and Module 13 says where that ends. The
+  // defect was never the file existing. It is the file being committed.
+  const { execFileSync } = await import('node:child_process');
+  const os = await import('node:os');
+  const pathMod = await import('node:path');
+
+  const checker = pathMod.resolve('tools/repo-checks.js');
+  const run = (dir) => {
+    try {
+      execFileSync('node', [checker], { cwd: dir, encoding: 'utf8', stdio: 'pipe' });
+      return { code: 0, out: '' };
+    } catch (e) {
+      return { code: e.status, out: `${e.stdout ?? ''}${e.stderr ?? ''}` };
+    }
+  };
+
+  const tmp = fs.mkdtempSync(pathMod.join(os.tmpdir(), 'tribunal-g8-'));
+  try {
+    execFileSync('git', ['init', '-q', '.'], { cwd: tmp });
+    fs.mkdirSync(pathMod.join(tmp, 'docs/decisions'), { recursive: true });
+    // Deliberately NOT key-shaped. This test is about a .env being tracked,
+    // which G8 decides from the filename; putting a realistic key here would
+    // make G8 flag this very file, which it duly did on the first attempt.
+    fs.writeFileSync(pathMod.join(tmp, '.env'), 'PLACEHOLDER=value\n');
+
+    // Untracked and gitignored: the healthy case. G8 must say nothing.
+    fs.writeFileSync(pathMod.join(tmp, '.gitignore'), '.env\n');
+    execFileSync('git', ['add', '-A'], { cwd: tmp });
+    const ok = run(tmp);
+    assert.equal(ok.code, 0, `a gitignored .env must pass:\n${ok.out}`);
+
+    // Tracked: the actual defect.
+    execFileSync('git', ['add', '-f', '.env'], { cwd: tmp });
+    const bad = run(tmp);
+    assert.equal(bad.code, 1, 'a tracked .env must fail');
+    assert.match(bad.out, /TRACKED BY GIT/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('the gates scan what git knows about, not the working directory', () => {
+  // Scanning the filesystem meant 1201 files on a working machine against 120
+  // in a clean container — build caches and whatever a tool had left lying
+  // about, none of which can reach the repository. `git ls-files` is the exact
+  // set these gates are about, and it includes files staged but not committed,
+  // which is what a pre-commit hook must judge.
+  const src = fs.readFileSync('tools/repo-checks.js', 'utf8');
+  assert.match(src, /git['"],\s*\['ls-files'/, 'the scan must come from git');
+  assert.match(src, /walkFilesystem/, 'a fallback must exist where git is unavailable');
+  assert.ok(
+    src.indexOf('walkFilesystem') > src.indexOf("'ls-files'"),
+    'the filesystem walk must be the fallback, not the primary',
+  );
+});
+
+test('the deliberate endpoint hears only the cases in its repository', async () => {
+  // Turn 021 built a form that sent an inline charge sheet; turn 027 withdrew
+  // the feature on Roy's instruction. Removing the form was not enough on its
+  // own: /api/deliberate is public, so anyone could still have posted a charge
+  // sheet of their own, and Module 17's "a charge sheet can order the judge to
+  // acquit" is about the endpoint rather than about the form.
+  //
+  // This is the door being shut, and it is the check that says so.
+  const { default: deliberateFn } = await import('../netlify/functions/deliberate.js');
+  const post = (body) =>
+    new Request('http://local/api/deliberate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  const refused = await deliberateFn(post({ charge_sheet: CASE }));
+  assert.equal(refused.status, 400, 'an inline charge sheet must be refused');
+  const body = await refused.json();
+  assert.match(body.error, /only the cases in its repository/);
+
+  // An unknown id is a 404, not a 400 — a different failure with a different
+  // meaning, and the endpoint must keep telling them apart.
+  assert.equal((await deliberateFn(post({ case_id: 'T-999' }))).status, 404);
+  assert.equal((await deliberateFn(post({}))).status, 404);
+
+  // And nothing in the browser can construct one.
+  const api = fs.readFileSync('web/src/api.js', 'utf8');
+  assert.ok(!api.includes('charge_sheet'), 'the page must not send a charge sheet');
+  assert.ok(!fs.existsSync('web/src/components/ChargeSheetForm.jsx'));
+  assert.ok(!fs.existsSync('netlify/functions/validate.js'));
 });

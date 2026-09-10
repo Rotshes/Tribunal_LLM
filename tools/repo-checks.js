@@ -8,6 +8,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'logs', 'dist']);
 
@@ -57,23 +58,71 @@ const G8_UNPARDONABLE = [/sk-or-v1-[A-Za-z0-9]{16,}/, /sb_secret_[A-Za-z0-9]{16,
 // count — because the point is that a later reader can judge it.
 const G8_PRAGMA = /g8-ok:\s*\S+/;
 
-function* walk(dir) {
+/**
+ * The files git knows about, which is the set these gates are actually about.
+ *
+ * THIS WALKED THE FILESYSTEM UNTIL TURN 026, and the pre-commit hook exposed
+ * two faults in that on its first real run:
+ *
+ *   · It scanned 1201 files on a working machine against 120 in a clean
+ *     container — build caches, `.netlify/`, whatever a tool had left lying
+ *     about. Every one of those is a file that cannot reach the repository, so
+ *     scanning it is noise at best and a false positive at worst.
+ *   · Maintaining SKIP_DIRS meant guessing every directory a future tool might
+ *     create. That list is unwinnable.
+ *
+ * `git ls-files` is the exact answer instead of an approximation of it: the
+ * index, which includes files staged but not yet committed — precisely what a
+ * pre-commit hook must judge. G5 and G8 both ask what reaches the repository,
+ * so the repository's own idea of that is the right universe.
+ *
+ * Falls back to the filesystem walk where git is unavailable, because a check
+ * that refuses to run is worse than one running on a wider set.
+ */
+function trackedFiles() {
+  try {
+    const out = execFileSync('git', ['ls-files', '-z'], {
+      encoding: 'utf8',
+      // stderr silenced: outside a repository git says so loudly, and the
+      // fallback below is a normal path, not an error worth printing.
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const files = out.split('\0').filter(Boolean);
+    if (files.length) return files;
+  } catch {
+    // no git, or not a repository
+  }
+  return [...walkFilesystem('.')];
+}
+
+function* walkFilesystem(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (SKIP_DIRS.has(entry.name)) continue;
     const p = path.join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(p);
+    if (entry.isDirectory()) yield* walkFilesystem(p);
     else yield p;
   }
 }
 
+const walk = () => trackedFiles();
+
 const problems = [];
 let scanned = 0;
 
-for (const file of walk('.')) {
+for (const file of walk()) {
   const rel = file.replace(/^\.[\\/]/, '').replace(/\\/g, '/');
   if (rel === '.env.example') continue; // documented empty placeholders
   if (rel === '.env') {
-    problems.push(`G8: .env is present in the working tree — confirm it is gitignored`);
+    // TRACKED, not merely present. The old check fired whenever a .env existed
+    // in the working tree — which is the correct state of every machine that
+    // can actually run this app, so `npm run check` failed on a healthy
+    // checkout and the pre-commit hook refused every commit on it (turn 026).
+    //
+    // A gate that fires on the normal case is worse than no gate: it teaches
+    // the person to reach for --no-verify, and Module 13 names where that ends.
+    // The defect was never the file existing; it is the file being committed.
+    // Reaching here at all means git listed it, so it is in the index.
+    problems.push('G8: .env is TRACKED BY GIT. Remove it from the index and confirm .gitignore covers it.');
     continue;
   }
 
@@ -134,7 +183,7 @@ const decisionNumbers = new Set(decisionFiles.map((f) => f.slice(0, 4)));
 
 const seenRefs = new Map(); // "0002" -> first file that named it
 
-for (const file of walk('.')) {
+for (const file of walk()) {
   const rel = file.replace(/^\.[\\/]/, '').replace(/\\/g, '/');
   if (rel.startsWith('docs/decisions/')) continue; // a record may cite itself
   let text;

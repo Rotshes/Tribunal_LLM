@@ -58,11 +58,12 @@ violated. It is written down first for that reason.
 *What must be true for the work to count as finished. Test: could two people
 reading the result disagree about whether it was met?*
 
-1. *(revised 24.08.2026)* A stranger can open a public web address, submit a
-   charge sheet that satisfies `schemas/charge-sheet.schema.json`, and read the
-   opinions — without being told how. The charge sheet is a typed object, not
-   three free-text fields; the reason for the change is in
-   `docs/02-charge-sheet-spec.md`.
+1. *(revised 24.08.2026; narrowed 10.09.2026)* A stranger can open a public web
+   address, **convene the tribunal on a case this repository holds**, and read
+   the opinions — without being told how. The charge sheet is a typed object,
+   not three free-text fields, and it is authored as a repository fixture; the
+   reason it is a typed object is in `docs/02-charge-sheet-spec.md`, and the
+   reason a stranger no longer submits one is in the revision log below.
 2. The three judges' rulings appear side by side on one screen, each with its
    own reasoning, and no single combined verdict appears anywhere in the
    output. A reader can see which judges disagreed and on what grounds.
@@ -72,8 +73,10 @@ reading the result disagree about whether it was met?*
 5. A deliberation that exceeds the per-run call cap aborts and says so.
 6. When a model returns a malformed or empty response, the screen says the
    deliberation failed. It does not display a verdict.
-7. Submitting an incomplete charge sheet produces a message naming the missing
-   field, before any model is called.
+7. *(narrowed 10.09.2026)* An invalid charge sheet is rejected by G1 **before
+   any model is called**, with every violation named. Since 10.09.2026 the only
+   charge sheets that exist are repository fixtures, so this is checked in the
+   test suite and by `npm run check` over `cases/*.json` rather than at a form.
 8. The OpenRouter key does not appear anywhere in the browser bundle or the repo.
 
 Each of these has one true-or-false answer. "The Tribunal gives good judgements"
@@ -103,4 +106,5 @@ someone could reasonably have expected it in scope.*
 |---|---|---|
 | (initial) | First draft | — |
 | 24.08.2026 | Open gap closed; §1 PENDING narrowed to the instructor's domain | The gap was worth stating rather than guessing at — the framing survived the decision unchanged apart from two marked places, which is what "written to survive it" was supposed to mean |
+| 10.09.2026 | **Definition of done items 1 and 7 narrowed: a stranger convenes a case the repository holds, and no longer submits one.** The form built in turn 021 is removed, and `/api/deliberate` now refuses an inline charge sheet outright | Roy's call: the Tribunal hears the case the instructor supplied and no other, so a submission path was scope the project did not need. Recorded here rather than left standing, because a definition of done that describes a feature the app does not have is the one failure this document exists to prevent — and amending it downward on the day is honest in a way that quietly leaving it is not. What it costs is stated in `docs/turns/027`: the app can no longer accept a case from anyone who cannot commit files, which is what 0003 anticipated and what item 1 used to promise |
 | 24.08.2026 | §3 item 1 revised: charge sheet is a typed object, not three fields | The instructor's case carries background, an agreed factual record, and a scope note. None of it is decoration: without the agreed record the four advocates argue from private reconstructions and the three judges rule on different cases |

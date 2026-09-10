@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# The gate that fires without being asked.
+#
+# Module 12: "A hook runs automatically whenever a commit is attempted. It
+# refuses that commit when the check fails… It turns away bad changes with
+# nobody present. This is mechanical catching, in the smallest possible
+# structure."
+#
+# Module 17, on secrets: "Enforce this with a scanning hook, not with care."
+# And: "Run these before the commit, never after."
+#
+# Until turn 026 this project had G5, G8 and G9 and ran them by typing
+# `npm run check`. A check you have to remember is a check you skip at 2am with
+# a deadline near — which Module 13 names exactly: "The day you skip it is the
+# day it guarded. Make the tools refuse the merge mechanically. Willpower at a
+# late hour is not a control."
+#
+# Install once:  npm run hooks
+# It is NOT installed by cloning. Git does not run hooks from a fetched
+# repository, for good reasons, so the command above points core.hooksPath here.
+
+set -e
+
+echo "pre-commit: repository checks (G5 no combined result, G8 secrets, G9 citations)"
+npm run --silent check
+
+echo "pre-commit: tests"
+#
+# The output is kept and the failures are printed. The first version of this
+# hook sent everything to /dev/null and said "run npm test to see which" — so
+# its first real refusal told the person nothing except that something was
+# wrong, on a machine where the same suite passed elsewhere. A gate that
+# refuses without saying why is a gate you argue with rather than fix.
+out=$(mktemp)
+if npm test --silent >"$out" 2>&1; then
+  rm -f "$out"
+else
+  echo ""
+  echo "  TESTS FAILED. The commit is refused."
+  echo ""
+  # sed, not grep: grep exits 1 when it matches nothing, which under set -e
+  # would abort the hook, and the obvious patch for that is `|| true` — which
+  # the hook's own test forbids as an escape hatch, and duly caught.
+  found=$(sed -n "/^not ok/p" "$out")
+  if [ -n "$found" ]; then
+    printf "%s\n" "$found" | sed "s/^/  /"
+  else
+    # No "not ok" line at all. The suite exited non-zero without reporting a
+    # failing test — a file that would not parse, a top-level throw, a crash.
+    # The first version printed nothing here and the refusal said only that
+    # something was wrong, which is the fault this hook was just fixed for.
+    echo "  No failing test was named. The suite did not get that far."
+    echo ""
+    tail -n 25 "$out" | sed "s/^/  /"
+  fi
+  echo ""
+  echo "  Full output: npm test"
+  rm -f "$out"
+  exit 1
+fi
+
+echo "pre-commit: passed"

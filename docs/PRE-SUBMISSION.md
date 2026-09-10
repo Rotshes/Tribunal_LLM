@@ -68,6 +68,12 @@ Fixed and shared across the class; these are not choices.
 
 - [ ] `npm test` passes
 - [ ] `npm run check` passes
+- [ ] **`npm run hooks` has been run in this clone.** Git does not run hooks
+      from a fetched repository, so `.githooks/pre-commit` is tracked but not
+      active until someone points `core.hooksPath` at it. A hook nobody
+      installed is decoration (Module 12)
+- [ ] The hook has actually refused something. If it never has, it is untested
+      infrastructure — see *verification theatre*, Module 13
 - [ ] Every gate has failed at least once, visibly, somewhere in the history
 - [ ] Any gate that has never fired on real input is recorded as **unproven**,
       not as passing
@@ -75,7 +81,9 @@ Fixed and shared across the class; these are not choices.
 ## Secrets and hygiene
 
 - [ ] `.env` is gitignored and has never been committed
-- [ ] No key in any tracked file — `npm run check` runs G8
+- [ ] No key in any tracked file — `npm run check` runs G8, and since turn 026
+      the pre-commit hook runs it without being asked. Module 17: *"Enforce
+      this with a scanning hook, not with care"*
 - [ ] `package-lock.json` is committed
 - [ ] `node_modules/` and `logs/` are not
 
@@ -88,7 +96,8 @@ current **at that moment** — not merely to have been current at some point.
 - [ ] Confirm the deployed site matches `main` — check something only the newest
       commit has, so "it loads" is not mistaken for "it is current"
 - [ ] Re-check definition of done items 1 and 3 at the public address, after
-      that build
+      that build. Item 1 was narrowed on 10.09.2026 — convene a repository case
+      and read the opinions; there is no submission form to check
 - [ ] Then send the email
 
 Left undone, this fails quietly and in the worst way: the repository reads as
@@ -125,6 +134,27 @@ honest failure is still a failure to a grader who only has one look.
 - [ ] No stranded branch, no half-finished work in a stash
 - [ ] The build runs from a fresh clone: `npm install && npm test`
 - [ ] Instructor added as a collaborator on both repositories
+
+## From lessons 7-9, and still open
+
+These arrived with Modules 12-17 and are named in the slides rather than
+inferred. Recorded here honestly rather than quietly dropped.
+
+- [ ] **The Merge-Readiness Pack.** Five criteria, each shown by evidence and
+      never by claim: functional completeness, sound verification, engineering
+      hygiene, rationale, auditability (L7 s42, L9 s11-12). Not built. L9 s46
+      suggests it lives as a skill plus a reviewer's instructions
+- [ ] **Whoever writes the tests was not shown the code.** L7 s35: *"One agent
+      writes the code, another writes tests. Show the second the specification,
+      never the code."* Not done — the same agent wrote both throughout, which
+      is the failure L7 s33 describes. Cannot be retrofitted across 90 tests;
+      **can** be done visibly for one change and recorded
+- [ ] **`/code-review` and `/security-review` run, and their output filed as
+      evidence** (L9 s24, s45). Close to free and directly asked for
+- [ ] **A coordination design document** naming each agent's role, input,
+      output and boundary, the handoffs, what happens when one fails, and what
+      the arrangement costs and buys (L8 s38). Partly in `docs/01-spec.md`;
+      not written as the artefact Module 15 describes
 
 ## The other two thirds
 

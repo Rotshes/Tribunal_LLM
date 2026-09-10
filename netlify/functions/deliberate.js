@@ -80,10 +80,27 @@ async function runDeliberation(req) {
     return json(400, { error: 'Body must be JSON.' });
   }
 
-  // A charge sheet may arrive by id (a repository fixture) or inline. Either
-  // way it goes through G1 before a single model is called: an incomplete
-  // charge sheet must cost nothing.
-  const caseObj = body.case_id ? loadCase(body.case_id) : body.charge_sheet;
+  // BY ID ONLY, since turn 027.
+  //
+  // This accepted an inline `charge_sheet` from turn 011, and turn 021 built a
+  // form that sent one. Roy withdrew that feature: the Tribunal hears the case
+  // the instructor supplied and no other. Definition-of-done items 1 and 7 were
+  // amended the same day rather than left claiming a form that no longer exists.
+  //
+  // Refusing here rather than merely removing the form is the point. The form
+  // was one way to reach this endpoint; the endpoint is public, so anyone could
+  // still have posted a charge sheet of their own — and Module 17's "a charge
+  // sheet can order the judge to acquit" is about the endpoint, not the form.
+  // Closing the door is what actually removes the attack surface. The fence
+  // around case data in src/prompts.js and G10 both stay, as the second layer.
+  if (body.charge_sheet) {
+    return json(400, {
+      error: 'This Tribunal hears only the cases in its repository.',
+      detail: 'Send { "case_id": "T-001" }. An inline charge sheet is not accepted.',
+    });
+  }
+
+  const caseObj = loadCase(body.case_id);
   if (!caseObj) {
     return json(404, { error: `No such case: ${body.case_id ?? '(none given)'}` });
   }

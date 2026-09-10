@@ -35,35 +35,6 @@ export async function fetchRun(id) {
 }
 
 /**
- * Check a charge sheet before anything is spent on it.
- *
- * `/api/deliberate` runs G1 too, and its answer is unreadable: it is a
- * background function, so it replies 202 with an empty body before its own
- * validation runs. Definition-of-done item 7 requires a message naming the
- * missing field, and a background function cannot give one. Hence a separate
- * synchronous endpoint in front of it — same imported gate, both doors.
- *
- * Returns { ok, note } on 200. Throws with `.problems` on 422 so the form can
- * put every violation against its own field.
- */
-export async function validateSheet(chargeSheet) {
-  const res = await fetch('/api/validate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ charge_sheet: chargeSheet }),
-  });
-
-  const body = await res.json().catch(() => null);
-  if (res.ok) return body ?? { ok: true };
-
-  const err = new Error(body?.error ?? `The charge sheet could not be checked (HTTP ${res.status}).`);
-  err.problems = body?.problems ?? [];
-  err.suggestedCaseId = body?.suggested_case_id ?? null;
-  err.note = body?.note ?? null;
-  throw err;
-}
-
-/**
  * Start a deliberation.
  *
  * `/api/deliberate` is a background function (decision 0011): it answers 202
@@ -75,20 +46,16 @@ export async function validateSheet(chargeSheet) {
  * Returns the id it minted. Throws only if the invocation itself was refused,
  * which means the run never started.
  */
-export async function convene({ caseId, chargeSheet, models }) {
+export async function convene({ caseId, models }) {
   const id = crypto.randomUUID();
 
-  // A case arrives by id (a repository fixture) or inline (the form). The
-  // backend has accepted both since turn 011; until turn 021 nothing sent the
-  // second, which is why definition-of-done item 1 sat at PARTIAL.
-  const body = chargeSheet
-    ? { charge_sheet: chargeSheet, models, deliberation_id: id }
-    : { case_id: caseId, models, deliberation_id: id };
-
+  // BY ID ONLY. A case is a repository fixture; the backend refuses an inline
+  // charge sheet outright (turn 027). Sending one would be refused anyway, and
+  // there is nothing here that could construct one.
   const res = await fetch('/api/deliberate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ case_id: caseId, models, deliberation_id: id }),
   });
 
   if (res.status !== 202 && !res.ok) {
